@@ -2,6 +2,8 @@
 #define KERNEL_H
 
 #include "util/vga.h"
+#include "../mem/memory.h"
+#include "../mem/paging.h"
 
 /**
  * @brief Init a kernel

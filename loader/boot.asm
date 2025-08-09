@@ -15,7 +15,10 @@ start:
     mov dl, 0x80
     int 0x13
     
-    mov bx, 0x1000
+    mov ax, 0x0100
+    mov es, ax
+    mov bx, 0x0000
+    
     mov ah, 0x02
     mov al, 20
     mov ch, 0
@@ -26,7 +29,11 @@ start:
 
     jc disk_error
 
-    jmp 0x1000
+    mov si, load_success
+    call print_string
+    
+    cli
+    jmp 0x0100:0x0000
 
 
 disk_error:
@@ -52,6 +59,7 @@ done:
 
 boot_msg db 'LiteCore kernel Booting...', 13, 10, 0
 error_msg db 'Boot Error!', 13, 10, 0
+load_success db 'Kernel Booted successfully, jumping to 0x1000...', 13, 10, 0
 
 times 510-($-$$) db 0
 dw 0xaa55

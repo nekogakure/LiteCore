@@ -6,11 +6,12 @@ SECTIONS
     
     .text.boot : ALIGN(16)
     {
-        *(.text)
+        *(.text.boot)
     }
     
     .text : ALIGN(16)
     {
+        *(.text)
         *(.text.*)
     }
     

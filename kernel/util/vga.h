@@ -1,9 +1,6 @@
 #ifndef VGA_H
 #define VGA_H
-
-#define TEXT_WIDTH 80
-#define TEXT_HEIGHT 25
-#define TEXT_MEMORY 0xB8000
+#include "config.h"
 
 // Text color definitions
 enum text_color {
@@ -46,6 +43,20 @@ void text_putchar(char c);
  * @param str String to print
  */
 void printk(const char* str);
+
+/**
+ * @brief Print a formatted string to the text buffer (simplified version)
+ * @param format Format string
+ * @param value Integer value to format
+ */
+void printk_int(const char* format, int value);
+
+/**
+ * @brief Print a formatted hex value to the text buffer
+ * @param format Format string
+ * @param value Hex value to format
+ */
+void printk_hex(const char* format, unsigned long long value);
 
 /**
  * @brief Set the text color

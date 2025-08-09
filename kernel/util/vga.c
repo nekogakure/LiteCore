@@ -90,3 +90,100 @@ void printk(const char* str) {
 void text_set_color(enum text_color fg, enum text_color bg) {
     current_color = text_entry_color(fg, bg);
 }
+
+static void int_to_string(int num, char* str, int base) {
+    if (num == 0) {
+        str[0] = '0';
+        str[1] = '\0';
+        return;
+    }
+    
+    int i = 0;
+    int is_negative = 0;
+    
+    if (num < 0 && base == 10) {
+        is_negative = 1;
+        num = -num;
+    }
+    
+    while (num != 0) {
+        int remainder = num % base;
+        str[i++] = (remainder < 10) ? remainder + '0' : (remainder - 10) + 'a';
+        num = num / base;
+    }
+    
+    if (is_negative) {
+        str[i++] = '-';
+    }
+    
+    str[i] = '\0';
+    
+    int start = 0;
+    int end = i - 1;
+    while (start < end) {
+        char temp = str[start];
+        str[start] = str[end];
+        str[end] = temp;
+        start++;
+        end--;
+    }
+}
+
+static void hex_to_string(unsigned long long num, char* str) {
+    if (num == 0) {
+        str[0] = '0';
+        str[1] = '\0';
+        return;
+    }
+    
+    int i = 0;
+    while (num != 0) {
+        int digit = num % 16;
+        str[i++] = digit < 10 ? digit + '0' : (digit - 10) + 'a';
+        num /= 16;
+    }
+    
+    str[i] = '\0';
+    
+    int start = 0;
+    int end = i - 1;
+    while (start < end) {
+        char temp = str[start];
+        str[start] = str[end];
+        str[end] = temp;
+        start++;
+        end--;
+    }
+}
+
+void printk_int(const char* format, int value) {
+    char buffer[32];
+    
+    while (*format) {
+        if (*format == '%' && *(format + 1) == 'd') {
+            int_to_string(value, buffer, 10);
+            printk(buffer);
+            format += 2;
+        } else {
+            char temp[2] = {*format, '\0'};
+            printk(temp);
+            format++;
+        }
+    }
+}
+
+void printk_hex(const char* format, unsigned long long value) {
+    char buffer[32];
+    
+    while (*format) {
+        if (*format == '%' && *(format + 1) == 'x') {
+            hex_to_string(value, buffer);
+            printk(buffer);
+            format += 2;
+        } else {
+            char temp[2] = {*format, '\0'};
+            printk(temp);
+            format++;
+        }
+    }
+}
