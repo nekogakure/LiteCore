@@ -1,44 +1,50 @@
-SRC_DIR = .
+LOADER_DIR = loader
+KERNEL_DIR = kernel
 BUILD_DIR = boot
 
-ASM_SRC = $(SRC_DIR)/boot.asm
-START_ASM = $(SRC_DIR)/start.asm
-C_SRCS = $(SRC_DIR)/k_main.c $(SRC_DIR)/vga.c $(SRC_DIR)/kernel.c
-OBJS = $(BUILD_DIR)/start.o $(BUILD_DIR)/k_main.o $(BUILD_DIR)/vga.o $(BUILD_DIR)/kernel.o
+
+LOADER_ASM = $(LOADER_DIR)/boot.asm
+KERNEL_START_ASM = $(KERNEL_DIR)/start.asm
+KERNEL_C_SRCS = $(KERNEL_DIR)/k_main.c $(KERNEL_DIR)/kernel.c $(KERNEL_DIR)/util/vga.c
+KERNEL_OBJS = $(BUILD_DIR)/start.o $(BUILD_DIR)/k_main.o $(BUILD_DIR)/kernel.o $(BUILD_DIR)/vga.o
 
 IMG = $(BUILD_DIR)/litecore.img
-KERNEL = $(BUILD_DIR)/kernel.bin
+BOOT_BIN = $(BUILD_DIR)/boot.bin
+KERNEL_BIN = $(BUILD_DIR)/kernel.bin
+KERNEL_ELF = $(BUILD_DIR)/kernel.elf
+
+CFLAGS = -m64 -ffreestanding -fno-pic -mcmodel=large -mno-red-zone -mno-mmx -mno-sse -mno-sse2 -I$(KERNEL_DIR) -I$(KERNEL_DIR)/util
 
 all: $(IMG)
 
-$(BUILD_DIR)/boot.bin: $(ASM_SRC)
+$(BOOT_BIN): $(LOADER_ASM)
 	mkdir -p $(BUILD_DIR)
 	nasm -f bin -o $@ $<
 
-$(BUILD_DIR)/start.o: $(START_ASM)
+$(BUILD_DIR)/start.o: $(KERNEL_START_ASM)
 	mkdir -p $(BUILD_DIR)
 	nasm -f elf64 -o $@ $<
 
-$(BUILD_DIR)/k_main.o: $(SRC_DIR)/k_main.c $(SRC_DIR)/vga.h $(SRC_DIR)/kernel.h
+$(BUILD_DIR)/k_main.o: $(KERNEL_DIR)/k_main.c $(KERNEL_DIR)/kernel.h $(KERNEL_DIR)/util/vga.h $(KERNEL_DIR)/util/config.h
 	mkdir -p $(BUILD_DIR)
-	gcc -m64 -ffreestanding -fno-pic -mcmodel=large -mno-red-zone -mno-mmx -mno-sse -mno-sse2 -c $< -o $@
+	gcc $(CFLAGS) -c $< -o $@
 
-$(BUILD_DIR)/vga.o: $(SRC_DIR)/vga.c $(SRC_DIR)/vga.h
+$(BUILD_DIR)/kernel.o: $(KERNEL_DIR)/kernel.c $(KERNEL_DIR)/kernel.h $(KERNEL_DIR)/util/vga.h
 	mkdir -p $(BUILD_DIR)
-	gcc -m64 -ffreestanding -fno-pic -mcmodel=large -mno-red-zone -mno-mmx -mno-sse -mno-sse2 -c $< -o $@
+	gcc $(CFLAGS) -c $< -o $@
 
-$(BUILD_DIR)/kernel.o: $(SRC_DIR)/kernel.c $(SRC_DIR)/kernel.h $(SRC_DIR)/vga.h
+$(BUILD_DIR)/vga.o: $(KERNEL_DIR)/util/vga.c $(KERNEL_DIR)/util/vga.h
 	mkdir -p $(BUILD_DIR)
-	gcc -m64 -ffreestanding -fno-pic -mcmodel=large -mno-red-zone -mno-mmx -mno-sse -mno-sse2 -c $< -o $@
+	gcc $(CFLAGS) -c $< -o $@
 
-$(KERNEL): $(OBJS)
-	ld -m elf_x86_64 -T linker.ld -o $(BUILD_DIR)/kernel.elf $^
-	objcopy -O binary $(BUILD_DIR)/kernel.elf $@
+$(KERNEL_BIN): $(KERNEL_OBJS)
+	ld -m elf_x86_64 -T $(KERNEL_DIR)/linker.ld -o $(KERNEL_ELF) $^
+	objcopy -O binary $(KERNEL_ELF) $@
 	@echo "\033[0;32mKernel size: $$(wc -c < $@) bytes\033[0m"
 	@echo "entry: 0x1000(16bit mode)"
 
-$(IMG): $(BUILD_DIR)/boot.bin $(KERNEL)
-	cat $(BUILD_DIR)/boot.bin $(KERNEL) > $(IMG)
+$(IMG): $(BOOT_BIN) $(KERNEL_BIN)
+	cat $(BOOT_BIN) $(KERNEL_BIN) > $(IMG)
 	truncate -s 10M $(IMG)
 
 run: $(IMG)

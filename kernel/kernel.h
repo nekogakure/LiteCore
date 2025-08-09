@@ -1,7 +1,7 @@
 #ifndef KERNEL_H
 #define KERNEL_H
 
-#include "vga.h"
+#include "util/vga.h"
 
 /**
  * @brief Init a kernel

@@ -1,6 +1,6 @@
-#include "vga.h"
+#include "util/vga.h"
+#include "util/config.h"
 #include "kernel.h"
-#include "config.h"
 
 void k_main() {
     kernel_init();
