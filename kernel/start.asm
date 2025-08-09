@@ -15,20 +15,28 @@ start_16bit:
 
     cli
 
-    mov eax, gdt_start
-    mov [gdt_ptr + 2], eax
+    mov bx, gdt_start
+    mov ax, _start
+    sub bx, ax
+
+    mov ax, bx
+    add ax, 0x7C00
+    mov [gdt_ptr + 2], ax
+
+    mov ax, 0
+    adc ax, 0
+    mov [gdt_ptr + 4], ax
+
     lgdt [gdt_ptr]
 
 enable_protected_mode:
     mov eax, cr0
     or eax, 1
     mov cr0, eax
-    jmp dword 0x08:.protmode
+    jmp 0x08:protmode
 
 [bits 32]
-.protmode:
-
-[bits 32]
+protmode:
 protected_mode:
 start_32bit:
     mov ax, 0x10
@@ -41,7 +49,7 @@ start_32bit:
 
 setup_for_long_mode:
     call setup_paging
-    
+
     mov ecx, 0xC0000080
     rdmsr
     or eax, (1 << 8)
@@ -51,12 +59,9 @@ enable_long_mode:
     mov eax, cr0
     or eax, (1 << 31)
     mov cr0, eax
-    
+
     wbinvd
-    
-    db 0xEA
-    dd .longmode
-    dw 0x18
+    jmp 0x18:.longmode
 
 [bits 64]
 .longmode:
@@ -70,20 +75,20 @@ start_64bit:
     mov fs, ax
     mov gs, ax
     mov ss, ax
-    
+
     mov rsp, 0x200000
-    
+
     xor rdi, rdi
     xor rsi, rsi
     xor rdx, rdx
     xor rcx, rcx
     xor r8, r8
     xor r9, r9
-    
+
     and rsp, -16
-    
+
     call kernel_arch_init
-    
+
     call k_main
 
     cli
@@ -99,16 +104,16 @@ setup_paging:
     xor eax, eax
     mov ecx, 4096
     rep stosd
-    
+
     call setup_paging_tables
-    
+
     mov eax, cr4
     or eax, (1 << 5)
     mov cr4, eax
-    
+
     mov eax, 0x70000
     mov cr3, eax
-    
+
     ret
 
 align 16
@@ -123,4 +128,4 @@ gdt_end:
 align 8
 gdt_ptr:
     dw gdt_end - gdt_start - 1
-    dd gdt_start
+    dd 0
