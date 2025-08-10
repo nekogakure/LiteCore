@@ -37,10 +37,12 @@ $ cd LiteCore
 ```sh
 $ chmod +x ./run.sh
 $ chmod +x ./make.sh
+$ chmod +x ./debug.sh
 ```
 3. それぞれのスクリプトの役割
     1. `run.sh`: プロジェクトをビルドし、QEMUで実行します
     2. `make.sh`: プロジェクトをビルドします
+    3. `debug.sh`: プロジェクトをビルドし、QEMUで実行して、ログをすべて`qemu.log`に出力します
 
 ## ライセンス
 [ライセンスファイル](./LICENSE)を参照してください
