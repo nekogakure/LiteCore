@@ -58,9 +58,12 @@ $(BUILD_DIR)/vga.o: kernel/util/vga.c kernel/util/vga.h
 
 $(BUILD_DIR)/arch.o: kernel/arch/arch.c kernel/arch/arch.h
 	mkdir -p $(BUILD_DIR)
-	gcc $(CFLAGS) -c $< -o $@
+	gcc -m32 -ffreestanding -fno-pic -Ikernel -Ikernel/util -Imem -g -O0 -DKERNEL_VERSION=\"$(VERSION)\" -mno-red-zone -c $< -o $@
 
-$(KERNEL_BIN): $(KERNEL_OBJS)
+$(BUILD_DIR)/arch_boot.o: $(BUILD_DIR)/arch.o
+	objcopy -O elf64-x86-64 -B i386:x86-64 $(BUILD_DIR)/arch.o $(BUILD_DIR)/arch_boot.o
+
+$(KERNEL_BIN): $(filter-out $(BUILD_DIR)/arch.o,$(KERNEL_OBJS)) $(BUILD_DIR)/arch_boot.o
 	ld -m elf_x86_64 -T $(KERNEL_DIR)/linker.ld -o $(KERNEL_ELF) --build-id=none -g $^ -z noexecstack
 	objcopy -O binary $(KERNEL_ELF) $@
 	@echo "\033[0;32mKernel size: $$(wc -c < $@) bytes\033[0m"

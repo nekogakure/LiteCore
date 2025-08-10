@@ -55,7 +55,7 @@ mkdir -p $RELEASE_DIR
 
 mkdir -p /tmp/$RELEASE_NAME
 
-cp -r kernel loader mem scripts LICENSE README.md Makefile make.sh version.txt /tmp/$RELEASE_NAME/
+cp -r kernel loader mem scripts LICENSE README.md Makefile make.sh version.txt CHANGELOG.txt /tmp/$RELEASE_NAME/
 
 tar -cJf $RELEASE_DIR/$RELEASE_FILE -C /tmp $RELEASE_NAME
 

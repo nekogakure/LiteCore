@@ -205,8 +205,16 @@ $(BUILD_DIR)/start.o: $(KERNEL_START_ASM)
             deps_str = " ".join(deps) if deps else ""
             makefile_content += f"{obj_path}: {c_file} {deps_str}\n"
             makefile_content += "\tmkdir -p $(BUILD_DIR)\n"
-            makefile_content += "\tgcc $(CFLAGS) -c $< -o $@\n\n"
-        makefile_content += """$(KERNEL_BIN): $(KERNEL_OBJS)
+            
+            if "arch/arch.c" in c_file:
+                arch_cflags = f"-m32 -ffreestanding -fno-pic {self.includes} {self.debug_flags} -DKERNEL_VERSION=\\\"$(VERSION)\\\" -mno-red-zone"
+                makefile_content += f"\tgcc {arch_cflags} -c $< -o $@\n\n"
+            else:
+                makefile_content += "\tgcc $(CFLAGS) -c $< -o $@\n\n"
+        makefile_content += """$(BUILD_DIR)/arch_boot.o: $(BUILD_DIR)/arch.o
+\tobjcopy -O elf64-x86-64 -B i386:x86-64 $(BUILD_DIR)/arch.o $(BUILD_DIR)/arch_boot.o
+
+$(KERNEL_BIN): $(filter-out $(BUILD_DIR)/arch.o,$(KERNEL_OBJS)) $(BUILD_DIR)/arch_boot.o
 \tld -m elf_x86_64 -T $(KERNEL_DIR)/linker.ld -o $(KERNEL_ELF) --build-id=none -g $^ -z noexecstack
 \tobjcopy -O binary $(KERNEL_ELF) $@
 \t@echo "\\033[0;32mKernel size: $$(wc -c < $@) bytes\\033[0m"

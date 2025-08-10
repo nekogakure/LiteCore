@@ -6,7 +6,7 @@ extern prepare_long_mode
 extern switch_to_long_mode
 extern kernel_panic
 
-section .text.boot org=0x1000
+section .text.boot
 _start:
 start_16bit:
     mov ax, 0x0100
@@ -26,10 +26,7 @@ start_16bit:
     or eax, 1
     mov cr0, eax
     
-    mov si, gdt_loaded_msg
-    call print_debug_msg
-    
-    jmp 0x08:protmode
+    jmp dword 0x08:protmode
 
 [bits 32]
 protmode:
@@ -40,9 +37,7 @@ protmode:
     mov gs, ax
     mov ss, ax
     mov esp, 0x90000
-
     call prepare_long_mode
-
     call switch_to_long_mode
     
     push boot_failure_message
