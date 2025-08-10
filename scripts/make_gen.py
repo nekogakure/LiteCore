@@ -175,7 +175,8 @@ BOOT_BIN = $(BUILD_DIR)/boot.bin
 KERNEL_BIN = $(BUILD_DIR)/kernel.bin
 KERNEL_ELF = $(BUILD_DIR)/kernel.elf
 
-CFLAGS = {self.cflags} {self.includes} {self.debug_flags}
+VERSION = $(shell cat version.txt)
+CFLAGS = {self.cflags} {self.includes} {self.debug_flags} -DKERNEL_VERSION=\\"$(VERSION)\\"
 
 all: $(IMG)
 

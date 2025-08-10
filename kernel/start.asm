@@ -34,14 +34,13 @@ start_16bit:
 
 [bits 32]
 protmode:
-    ; 32ビットモードでのセグメントレジスタ設定
-    mov ax, 0x10    ; データセグメントは0x10（GDTの3番目エントリ）
+    mov ax, 0x10
     mov ds, ax
     mov es, ax
     mov fs, ax
     mov gs, ax
     mov ss, ax
-    mov esp, 0x90000 ; スタックポインタを高いアドレスに
+    mov esp, 0x90000
 
     call prepare_long_mode
 

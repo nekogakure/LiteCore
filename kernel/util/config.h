@@ -7,7 +7,9 @@
 #ifndef KERNEL_CONFIG_H
 #define KERNEL_CONFIG_H
 
-#define KERNEL_VERSION "0.0.1"
+#ifndef KERNEL_VERSION
+#define KERNEL_VERSION "Version is not defined"
+#endif
 
 /* VGA CONFIG */
 #define TEXT_WIDTH 80
