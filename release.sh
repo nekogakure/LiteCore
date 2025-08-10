@@ -1,9 +1,7 @@
 #!/bin/bash
 
-# GPG鍵生成用のフラグ
 GENERATE_KEY=0
 
-# 引数の処理
 for arg in "$@"; do
   if [ "$arg" = "-gk" ]; then
     GENERATE_KEY=1
@@ -15,9 +13,8 @@ MAJOR=$1
 MINOR=$2
 PATCH=$3
 
-# GPG鍵を生成する場合
 if [ $GENERATE_KEY -eq 1 ]; then
-  echo "GPG鍵を生成します..."
+  echo "generate GPG key..."
   cat > /tmp/gpg_key_gen_input << EOF
 Key-Type: RSA
 Key-Length: 4096
@@ -30,7 +27,6 @@ EOF
   gpg --batch --generate-key /tmp/gpg_key_gen_input
   rm -f /tmp/gpg_key_gen_input
   echo "GPG鍵の生成が完了しました"
-  # 鍵を生成した後は通常のリリース処理を続行する
 fi
 
 if [ -z "$MAJOR" ] || [ -z "$MINOR" ] || [ -z "$PATCH" ]; then
