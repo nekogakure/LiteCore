@@ -5,16 +5,10 @@
 void k_main() {
     kernel_init();
     
-    text_set_color(TEXT_COLOR_LIGHT_CYAN, TEXT_COLOR_BLACK);
-    printk("=================================\n");
-    printk("   Welcome to LiteCore kernel!     \n");
-    printk("=================================\n\n");
-    
     text_set_color(TEXT_COLOR_WHITE, TEXT_COLOR_BLACK);
-    printk("LiteCore kernel v");
+    printk("version: ");
     printk(KERNEL_VERSION);
     printk("\n");
-    printk("Built with love in C and Assembly\n\n");
     
     text_set_color(TEXT_COLOR_YELLOW, TEXT_COLOR_BLACK);
     printk("System Information:\n");

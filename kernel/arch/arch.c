@@ -14,9 +14,9 @@ void kernel_arch_init() {
 }
 
 void setup_paging_tables() {
-    uint32_t* pml4 = (uint32_t*)PML4_ADDRESS;
-    uint32_t* pdpt = (uint32_t*)PDPT_ADDRESS;
-    uint32_t* pd = (uint32_t*)PD_ADDRESS;
+    uint32_t* pml4 = (uint32_t*)PML4_ADDRESS;  // PML4 (Page Map Level 4)
+    uint32_t* pdpt = (uint32_t*)PDPT_ADDRESS;  // PDPT (Page Directory Pointer Table)
+    uint32_t* pd = (uint32_t*)PD_ADDRESS;      // PD (Page Directory)
 
     for (int i = 0; i < 512; i++) {
         pml4[i] = 0;
@@ -26,7 +26,6 @@ void setup_paging_tables() {
 
     pml4[0] = (uint32_t)PDPT_ADDRESS | PAGE_PRESENT | PAGE_WRITE;
     pdpt[0] = (uint32_t)PD_ADDRESS | PAGE_PRESENT | PAGE_WRITE;
-
     for (int i = 0; i < 512; i++) {
         pd[i] = ((uint32_t)i * 0x200000) | PAGE_PRESENT | PAGE_WRITE | PAGE_HUGE;
     }
@@ -53,23 +52,34 @@ int cpu_has_long_mode() {
 }
 
 static void gdt_set_gate(int num, uint32_t base, uint32_t limit, uint8_t access, uint8_t gran) {
-    gdt[num].base_low = (base & 0xFFFF);
+    gdt[num].base_low = (base & 0xFFFF); 
     gdt[num].base_middle = (base >> 16) & 0xFF;
     gdt[num].base_high = (base >> 24) & 0xFF;
 
     gdt[num].limit_low = (limit & 0xFFFF);
-    gdt[num].granularity = ((limit >> 16) & 0x0F) | (gran & 0xF0);
+    gdt[num].granularity = ((limit >> 16) & 0x0F) | (gran & 0xF0); 
 
     gdt[num].access = access;
 }
 
 void gdt_init() {
+    for (int i = 0; i < 3; i++) {
+        gdt[i].limit_low = 0;
+        gdt[i].base_low = 0;
+        gdt[i].base_middle = 0;
+        gdt[i].access = 0;
+        gdt[i].granularity = 0;
+        gdt[i].base_high = 0;
+    }
+    
     gp.limit = (sizeof(struct gdt_entry) * 3) - 1;
     gp.base = (uintptr_t)&gdt;
 
-    gdt_set_gate(0, 0, 0, 0, 0);               /* NULL */
-    gdt_set_gate(1, 0, 0xFFFFFFFF, 0x9A, 0xAF);/* 64bit code */
-    gdt_set_gate(2, 0, 0xFFFFFFFF, 0x92, 0xAF);/* 64bit data */
+    gdt_set_gate(0, 0, 0, 0, 0);
+    
+    gdt_set_gate(1, 0, 0xFFFFFFFF, 0x9A, 0xCF);
+    
+    gdt_set_gate(2, 0, 0xFFFFFFFF, 0x92, 0xCF);
 
     struct __attribute__((packed)) {
         uint16_t limit;
@@ -79,7 +89,11 @@ void gdt_init() {
     gdtr.limit = gp.limit;
     gdtr.base = (uint32_t)gp.base;
 
-    asm volatile ("lgdt %0" :: "m"(gdtr) : "memory");
+    asm volatile (
+        "lgdt %0\n\t"
+        :: "m"(gdtr) 
+        : "memory"
+    );
 }
 
 
@@ -90,7 +104,8 @@ void prepare_long_mode() {
     asm volatile (
         "mov %0, %%eax\n\t"
         "mov %%eax, %%cr3\n\t"
-        :: "r"(pml4) : "eax", "memory"
+        :: "r"(pml4) 
+        : "eax", "memory"
     );
 
     asm volatile (
@@ -106,7 +121,8 @@ void prepare_long_mode() {
         "rdmsr\n\t"
         "or $0x100, %%eax\n\t"
         "wrmsr\n\t"
-        :: "r"(msr) : "eax", "edx", "ecx", "memory"
+        :: "r"(msr) 
+        : "eax", "edx", "ecx", "memory"
     );
 }
 
@@ -116,7 +132,8 @@ void switch_to_long_mode() {
         "mov %%cr0, %%eax\n\t"
         "or %0, %%eax\n\t"
         "mov %%eax, %%cr0\n\t"
-        :: "r"(pg_bit) : "eax", "memory"
+        :: "r"(pg_bit) 
+        : "eax", "memory"
     );
 
     asm volatile ("wbinvd" ::: "memory");

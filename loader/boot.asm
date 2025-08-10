@@ -20,7 +20,7 @@ start:
     mov bx, 0x0000
     
     mov ah, 0x02
-    mov al, 40
+    mov al, 60
     mov ch, 0
     mov cl, 2
     mov dh, 0
@@ -29,14 +29,23 @@ start:
 
     jc disk_error
 
+    cmp al, 60
+    jl disk_error
+
     mov si, load_success
     call print_string
     
     mov ax, 0x0100
     mov ds, ax
     mov es, ax
+    mov fs, ax
+    mov gs, ax
+    mov ss, ax
+    
+    mov sp, 0x9000
     
     cli
+    
     jmp 0x0100:0x0000
 
 
