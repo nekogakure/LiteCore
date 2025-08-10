@@ -93,10 +93,10 @@ void switch_to_protected_mode() {
     gdt_init();
     
     asm volatile(
-        "movq %%cr0, %%rax\n"
-        "or $1, %%rax\n"
-        "movq %%rax, %%cr0\n"
-        ::: "rax", "memory"
+        "movl %%cr0, %%eax\n"
+        "or $1, %%eax\n"
+        "movl %%eax, %%cr0\n"
+        ::: "eax", "memory"
     );
     
     asm volatile(
@@ -114,23 +114,23 @@ void prepare_long_mode() {
     setup_paging_tables();
     
     asm volatile(
-        "mov %0, %%eax\n"
-        "mov %%eax, %%cr3\n"
+        "movl %0, %%eax\n"
+        "movl %%eax, %%cr3\n"
         :: "r" ((uint32_t)PML4_ADDRESS)
         : "eax", "memory"
     );
     
     asm volatile(
-        "mov %%cr4, %%eax\n"
-        "or $0x20, %%eax\n"
-        "mov %%eax, %%cr4\n"
+        "movl %%cr4, %%eax\n"
+        "orl $0x20, %%eax\n"
+        "movl %%eax, %%cr4\n"
         ::: "eax", "memory"
     );
     
     asm volatile(
-        "mov $0xC0000080, %%ecx\n"
+        "movl $0xC0000080, %%ecx\n"
         "rdmsr\n"
-        "or $0x100, %%eax\n"
+        "orl $0x100, %%eax\n"
         "wrmsr\n"
         ::: "eax", "edx", "ecx", "memory"
     );
@@ -139,11 +139,10 @@ void prepare_long_mode() {
 
 void switch_to_long_mode() {
     asm volatile(
-        "movq %%cr0, %%rax\n"
-        "movabs $0x8000000000000000, %%rcx\n"
-        "orq %%rcx, %%rax\n"
-        "movq %%rax, %%cr0\n"
-        ::: "rax", "rcx", "memory"
+        "movl %%cr0, %%eax\n"
+        "orl $0x80000000, %%eax\n"
+        "movl %%eax, %%cr0\n"
+        ::: "eax", "memory"
     );
     
     asm volatile("wbinvd" ::: "memory");

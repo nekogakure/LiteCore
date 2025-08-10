@@ -72,7 +72,7 @@ fi
 (cd $RELEASE_DIR && sha256sum $RELEASE_FILE > $RELEASE_FILE.sha256)
 
 rm -rf /tmp/$RELEASE_NAME
-
+echo ""
 echo "[SUCCESS] create release $VERSION in $RELEASE_DIR/$RELEASE_FILE"
 echo "          $PGP_STATUS"
 echo "          SHA256: $RELEASE_DIR/$RELEASE_FILE.sha256"

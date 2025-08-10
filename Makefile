@@ -15,7 +15,8 @@ BOOT_BIN = $(BUILD_DIR)/boot.bin
 KERNEL_BIN = $(BUILD_DIR)/kernel.bin
 KERNEL_ELF = $(BUILD_DIR)/kernel.elf
 
-CFLAGS = -m64 -ffreestanding -fno-pic -mcmodel=large -mno-red-zone -mno-mmx -mno-sse -mno-sse2 -Ikernel -Ikernel/util -Imem -g -O0
+VERSION = $(shell cat version.txt)
+CFLAGS = -m64 -ffreestanding -fno-pic -mcmodel=large -mno-red-zone -mno-mmx -mno-sse -mno-sse2 -Ikernel -Ikernel/util -Imem -g -O0 -DKERNEL_VERSION=\"$(VERSION)\"
 
 all: $(IMG)
 
