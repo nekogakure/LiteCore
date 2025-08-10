@@ -52,11 +52,6 @@ struct gdt_ptr {
 void gdt_init();
 
 /**
- * @brief change to protected mode
- */
-void switch_to_protected_mode();
-
-/**
  * @brief 64bit mode preparation
  */
 void prepare_long_mode();

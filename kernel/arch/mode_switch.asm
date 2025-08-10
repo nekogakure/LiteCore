@@ -7,11 +7,11 @@ extern kernel_panic
 
 section .text
 switch_to_long_mode_asm:
-    jmp 0x18:.longmode
+    jmp 0x08:.longmode
 
 [bits 64]
 .longmode:
-    mov ax, 0x20
+    mov ax, 0x10
     mov ds, ax
     mov es, ax
     mov fs, ax

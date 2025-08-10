@@ -2,7 +2,6 @@
 
 global _start
 extern gdt_init
-extern switch_to_protected_mode
 extern prepare_long_mode
 extern switch_to_long_mode
 extern kernel_panic
@@ -23,12 +22,12 @@ start_16bit:
     cli
     call gdt_init
     
-    mov si, gdt_loaded_msg
-    call print_debug_msg
-    
     mov eax, cr0
     or eax, 1
     mov cr0, eax
+    
+    mov si, gdt_loaded_msg
+    call print_debug_msg
     
     jmp 0x08:protmode
 
