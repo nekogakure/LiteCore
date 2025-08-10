@@ -9,7 +9,7 @@ static inline unsigned char text_entry_color(enum text_color fg, enum text_color
     return fg | bg << 4;
 }
 
-void text_init() {
+void vga_init() {
     cursor_x = 0;
     cursor_y = 0;
     current_color = text_entry_color(TEXT_COLOR_LIGHT_GREY, TEXT_COLOR_BLACK);
@@ -186,4 +186,109 @@ void printk_hex(const char* format, unsigned long long value) {
             format++;
         }
     }
+}
+
+static int strlen(const char* str) {
+    int len = 0;
+    while (str[len] != '\0') len++;
+    return len;
+}
+
+void text_putchar_color(char c, unsigned char color) {
+    unsigned char old_color = current_color;
+    current_color = color;
+    text_putchar(c);
+    current_color = old_color;
+}
+
+void print(const char* str, unsigned char color) {
+    for (int i = 0; str[i] != '\0'; i++) {
+        text_putchar_color(str[i], color);
+    }
+}
+
+void print_hex(unsigned long num, unsigned char color) {
+    char hex_chars[] = "0123456789ABCDEF";
+    char buffer[17];
+    buffer[16] = '\0';
+    
+    int i = 15;
+    while (i >= 0) {
+        buffer[i] = hex_chars[num & 0xF];
+        num >>= 4;
+        i--;
+        if (num == 0 && i != 14) break;
+    }
+    
+    print("0x", color);
+    print(&buffer[i+1], color);
+}
+
+void print_dec(long num, unsigned char color) {
+    char buffer[21];
+    buffer[20] = '\0';
+    
+    int i = 19;
+    int negative = 0;
+    
+    if (num < 0) {
+        negative = 1;
+        num = -num;
+    }
+    
+    do {
+        buffer[i--] = '0' + (num % 10);
+        num /= 10;
+    } while (num > 0);
+    
+    if (negative) {
+        buffer[i--] = '-';
+    }
+    
+    print(&buffer[i+1], color);
+}
+
+void text_vprintf(unsigned char color, const char* fmt, va_list args) {
+    for (int i = 0; fmt[i] != '\0'; i++) {
+        if (fmt[i] == '%' && fmt[i+1] != '\0') {
+            i++;
+            switch (fmt[i]) {
+                case 's': {
+                    const char* str = va_arg(args, const char*);
+                    print(str ? str : "(null)", color);
+                    break;
+                }
+                case 'd': {
+                    int num = va_arg(args, int);
+                    print_dec(num, color);
+                    break;
+                }
+                case 'x': {
+                    unsigned int num = va_arg(args, unsigned int);
+                    print_hex(num, color);
+                    break;
+                }
+                case 'p': {
+                    void* ptr = va_arg(args, void*);
+                    print_hex((unsigned long)ptr, color);
+                    break;
+                }
+                case '%':
+                    text_putchar_color('%', color);
+                    break;
+                default:
+                    text_putchar_color('%', color);
+                    text_putchar_color(fmt[i], color);
+            }
+        } else {
+            text_putchar_color(fmt[i], color);
+        }
+    }
+}
+
+void printf(unsigned char color, const char* fmt, ...) {
+    va_list args;
+    va_start(args, fmt);
+    text_vprintf(color, fmt, args);
+    va_end(args);
 }

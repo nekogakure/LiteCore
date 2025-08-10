@@ -1,3 +1,10 @@
+/**
+ * @file mem/config.h
+ * @brief Memory configuration and constants
+ * @details This file defines memory-related constants and macros for the LiteCore kernel,
+ * including heap configuration, page size, and paging flags.
+ */
+
 #ifndef MEM_CONFIG_H
 #define MEM_CONFIG_H
 
@@ -14,14 +21,14 @@
 #define PD_ENTRIES 512
 #define PT_ENTRIES 512
 
-#define PAGE_PRESENT    (1ULL << 0)  // page found
-#define PAGE_WRITE      (1ULL << 1)  // writable
+#include "../kernel/util/config.h"
+
+// Extended paging flags not defined in kernel config
 #define PAGE_USER       (1ULL << 2)  // user mode writable
 #define PAGE_WRITETHROUGH (1ULL << 3)  // cache write policy
 #define PAGE_CACHE_DISABLE (1ULL << 4)  // disable cache
 #define PAGE_ACCESSED   (1ULL << 5)  // accessed
 #define PAGE_DIRTY      (1ULL << 6)  // written
-#define PAGE_HUGE       (1ULL << 7)  // huge page (2MB)
 #define PAGE_GLOBAL     (1ULL << 8)  // global (keep on TLB flush)
 #define PAGE_NX         (1ULL << 63) // disallow execution
 

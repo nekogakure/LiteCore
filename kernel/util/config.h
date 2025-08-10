@@ -1,3 +1,9 @@
+/**
+ * @file kernel/util/config.h
+ * @brief Kernel configuration and constants
+ * @details any config and constant used in the kerner should be defined
+ */
+
 #ifndef KERNEL_CONFIG_H
 #define KERNEL_CONFIG_H
 

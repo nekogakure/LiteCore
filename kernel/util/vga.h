@@ -1,6 +1,14 @@
+/**
+ * @file kernel/util/vga.h
+ * @brief VGA text mode utilities
+ * @details This file provides functions for initializing and managing the VGA text mode,
+ * including printing characters, strings, and formatted output with color support.
+ */
+
 #ifndef VGA_H
 #define VGA_H
 #include "config.h"
+#include <stdarg.h>
 
 // Text color definitions
 enum text_color {
@@ -25,7 +33,7 @@ enum text_color {
 /**
  * @brief Initialize the text mode
  */
-void text_init();
+void vga_init();
 
 /**
  * @brief Clear the text buffer
@@ -64,5 +72,49 @@ void printk_hex(const char* format, unsigned long long value);
  * @param bg Background color
  */
 void text_set_color(enum text_color fg, enum text_color bg);
+
+/**
+ * @brief Print a character with a specific color
+ * @param c Character to print
+ * @param color Color to use (combination of foreground and background)
+ */
+void text_putchar_color(char c, unsigned char color);
+
+/**
+ * @brief Print a string with a specific color
+ * @param str String to print
+ * @param color Color to use (combination of foreground and background)
+ */
+void print(const char* str, unsigned char color);
+
+/**
+ * @brief Print a hex number with a specific color
+ * @param num Number to print
+ * @param color Color to use (combination of foreground and background)
+ */
+void print_hex(unsigned long num, unsigned char color);
+
+/**
+ * @brief Print a decimal number with a specific color
+ * @param num Number to print
+ * @param color Color to use (combination of foreground and background)
+ */
+void print_dec(long num, unsigned char color);
+
+/**
+ * @brief Print a formatted string with a specific color
+ * @param color Color to use (combination of foreground and background)
+ * @param fmt Format string
+ * @param args Variable arguments
+ */
+void text_vprintf(unsigned char color, const char* fmt, va_list args);
+
+/**
+ * @brief Print a formatted string with a specific color
+ * @param color Color to use (combination of foreground and background)
+ * @param fmt Format string
+ * @param ... Variable arguments
+ */
+void printf(unsigned char color, const char* fmt, ...);
 
 #endif

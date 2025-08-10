@@ -1,7 +1,7 @@
 #include "kernel.h"
 
 void kernel_init() {
-    text_init();
+    vga_init();
     memory_init();
     paging_init();
 }

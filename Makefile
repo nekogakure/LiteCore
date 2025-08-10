@@ -4,17 +4,18 @@ MEM_DIR = mem
 ARCH_DIR = $(KERNEL_DIR)/arch
 BUILD_DIR = boot
 
-LOADER_ASM = $(LOADER_DIR)/boot.asm
-KERNEL_START_ASM = $(KERNEL_DIR)/start.asm
-KERNEL_C_SRCS = $(KERNEL_DIR)/k_main.c $(KERNEL_DIR)/kernel.c $(KERNEL_DIR)/util/vga.c $(MEM_DIR)/memory.c $(MEM_DIR)/paging.c $(ARCH_DIR)/arch.c
-KERNEL_OBJS = $(BUILD_DIR)/start.o $(BUILD_DIR)/k_main.o $(BUILD_DIR)/kernel.o $(BUILD_DIR)/vga.o $(BUILD_DIR)/memory.o $(BUILD_DIR)/paging.o $(BUILD_DIR)/arch.o
+LOADER_ASM = loader/boot.asm
+KERNEL_START_ASM = kernel/start.asm
+KERNEL_C_SRCS = mem/memory.c mem/paging.c kernel/panic.c kernel/kernel.c kernel/k_main.c kernel/util/vga.c kernel/arch/arch.c
+OTHER_ASM_SRCS = kernel/arch/mode_switch.asm
+KERNEL_OBJS = boot/start.o boot/memory.o boot/paging.o boot/panic.o boot/kernel.o boot/k_main.o boot/vga.o boot/arch.o boot/mode_switch.o
 
 IMG = $(BUILD_DIR)/litecore.img
 BOOT_BIN = $(BUILD_DIR)/boot.bin
 KERNEL_BIN = $(BUILD_DIR)/kernel.bin
 KERNEL_ELF = $(BUILD_DIR)/kernel.elf
 
-CFLAGS = -m64 -ffreestanding -fno-pic -mcmodel=large -mno-red-zone -mno-mmx -mno-sse -mno-sse2 -I$(KERNEL_DIR) -I$(KERNEL_DIR)/util -I$(MEM_DIR) -g -O0
+CFLAGS = -m64 -ffreestanding -fno-pic -mcmodel=large -mno-red-zone -mno-mmx -mno-sse -mno-sse2 -Ikernel -Ikernel/util -Imem -g -O0
 
 all: $(IMG)
 
@@ -24,34 +25,42 @@ $(BOOT_BIN): $(LOADER_ASM)
 
 $(BUILD_DIR)/start.o: $(KERNEL_START_ASM)
 	mkdir -p $(BUILD_DIR)
-	nasm -f elf64 -g -F dwarf -o $@ $<
+	nasm -f elf64 -g -F dwarf -o $@ $< -w-gnu-stack
 
-$(BUILD_DIR)/k_main.o: $(KERNEL_DIR)/k_main.c $(KERNEL_DIR)/kernel.h $(KERNEL_DIR)/util/vga.h $(KERNEL_DIR)/util/config.h
+$(BUILD_DIR)/mode_switch.o: kernel/arch/mode_switch.asm
 	mkdir -p $(BUILD_DIR)
-	gcc $(CFLAGS) -c $< -o $@
+	nasm -f elf64 -g -F dwarf -o $@ $< -w-gnu-stack
 
-$(BUILD_DIR)/kernel.o: $(KERNEL_DIR)/kernel.c $(KERNEL_DIR)/kernel.h $(KERNEL_DIR)/util/vga.h
-	mkdir -p $(BUILD_DIR)
-	gcc $(CFLAGS) -c $< -o $@
-
-$(BUILD_DIR)/vga.o: $(KERNEL_DIR)/util/vga.c $(KERNEL_DIR)/util/vga.h
-	mkdir -p $(BUILD_DIR)
-	gcc $(CFLAGS) -c $< -o $@
-	
-$(BUILD_DIR)/memory.o: $(MEM_DIR)/memory.c $(MEM_DIR)/memory.h
+$(BUILD_DIR)/memory.o: mem/memory.c mem/memory.h mem/config.h
 	mkdir -p $(BUILD_DIR)
 	gcc $(CFLAGS) -c $< -o $@
 
-$(BUILD_DIR)/paging.o: $(MEM_DIR)/paging.c $(MEM_DIR)/paging.h
+$(BUILD_DIR)/paging.o: mem/paging.c mem/paging.h mem/memory.h
 	mkdir -p $(BUILD_DIR)
 	gcc $(CFLAGS) -c $< -o $@
-	
-$(BUILD_DIR)/arch.o: $(ARCH_DIR)/arch.c $(ARCH_DIR)/arch.h
+
+$(BUILD_DIR)/panic.o: kernel/panic.c kernel/panic.h kernel/util/vga.h kernel/util/config.h
+	mkdir -p $(BUILD_DIR)
+	gcc $(CFLAGS) -c $< -o $@
+
+$(BUILD_DIR)/kernel.o: kernel/kernel.c kernel/kernel.h
+	mkdir -p $(BUILD_DIR)
+	gcc $(CFLAGS) -c $< -o $@
+
+$(BUILD_DIR)/k_main.o: kernel/k_main.c kernel/util/vga.h kernel/util/config.h kernel/kernel.h
+	mkdir -p $(BUILD_DIR)
+	gcc $(CFLAGS) -c $< -o $@
+
+$(BUILD_DIR)/vga.o: kernel/util/vga.c kernel/util/vga.h
+	mkdir -p $(BUILD_DIR)
+	gcc $(CFLAGS) -c $< -o $@
+
+$(BUILD_DIR)/arch.o: kernel/arch/arch.c kernel/arch/arch.h
 	mkdir -p $(BUILD_DIR)
 	gcc $(CFLAGS) -c $< -o $@
 
 $(KERNEL_BIN): $(KERNEL_OBJS)
-	ld -m elf_x86_64 -T $(KERNEL_DIR)/linker.ld -o $(KERNEL_ELF) --build-id=none -g $^
+	ld -m elf_x86_64 -T $(KERNEL_DIR)/linker.ld -o $(KERNEL_ELF) --build-id=none -g $^ -z noexecstack
 	objcopy -O binary $(KERNEL_ELF) $@
 	@echo "\033[0;32mKernel size: $$(wc -c < $@) bytes\033[0m"
 	@echo "entry: 0x1000(16bit mode)"

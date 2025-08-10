@@ -1,7 +1,14 @@
+/**
+ * @file kernel/kernel.h
+ * @brief kernel utility functions
+ * @details This file in the kernel control functions.
+ */
+
 #ifndef KERNEL_H
 #define KERNEL_H
 
 #include "util/vga.h"
+#include "panic.h"
 #include "../mem/memory.h"
 #include "../mem/paging.h"
 
