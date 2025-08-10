@@ -7,17 +7,24 @@ extern prepare_long_mode
 extern switch_to_long_mode
 extern kernel_panic
 
-section .text.boot
+section .text.boot org=0x1000
 _start:
 start_16bit:
-    xor ax, ax
+    mov ax, 0x0100
     mov ds, ax
     mov es, ax
     mov ss, ax
-    mov sp, 0x7C00
+    
+    mov sp, 0x9000
+
+    mov si, kernel_started_msg
+    call print_debug_msg
 
     cli
     call gdt_init
+    
+    mov si, gdt_loaded_msg
+    call print_debug_msg
     
     mov eax, cr0
     or eax, 1
@@ -27,13 +34,14 @@ start_16bit:
 
 [bits 32]
 protmode:
-    mov ax, 0x10
+    ; 32ビットモードでのセグメントレジスタ設定
+    mov ax, 0x10    ; データセグメントは0x10（GDTの3番目エントリ）
     mov ds, ax
     mov es, ax
     mov fs, ax
     mov gs, ax
     mov ss, ax
-    mov esp, 0x90000
+    mov esp, 0x90000 ; スタックポインタを高いアドレスに
 
     call prepare_long_mode
 
@@ -48,5 +56,17 @@ protmode:
     hlt
     jmp .halt
 
+print_debug_msg:
+    lodsb
+    or al, al
+    jz .done
+    mov ah, 0x0e
+    int 0x10
+    jmp print_debug_msg
+.done:
+    ret
+
 section .data
+kernel_started_msg: db "LiteCore kernel loadeed successfully", 13, 10, 0
+gdt_loaded_msg: db "GDT loaded successfully", 13, 10, 0
 boot_failure_message: db "Failed to switch to long mode", 0

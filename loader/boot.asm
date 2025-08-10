@@ -32,6 +32,10 @@ start:
     mov si, load_success
     call print_string
     
+    mov ax, 0x0100
+    mov ds, ax
+    mov es, ax
+    
     cli
     jmp 0x0100:0x0000
 

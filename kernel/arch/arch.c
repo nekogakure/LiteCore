@@ -73,7 +73,20 @@ void gdt_init() {
     gdt_set_gate(3, 0, 0xFFFFFFFF, 0x9A, 0xAF);/* 64bit code */
     gdt_set_gate(4, 0, 0xFFFFFFFF, 0x92, 0xAF);/* 64bit data */
 
-    asm volatile("lgdt (%0)" : : "r" (&gp) : "memory");
+    asm volatile(
+        "xorw %%ax, %%ax\n"
+        "movw %0, %%ax\n"
+        "movl %1, %%ebx\n"
+        "movw %%ax, (%%ebx)\n"
+        "addw $2, %%bx\n"
+        "movl %2, %%eax\n"
+        "movl %%eax, (%%ebx)\n"
+        "subw $2, %%bx\n"
+        "lgdt (%%ebx)\n"
+        :
+        : "m"(gp.limit), "r"(&gp), "r"((uintptr_t)&gdt)
+        : "eax", "ebx", "memory"
+    );
 }
 
 void switch_to_protected_mode() {
@@ -101,25 +114,25 @@ void prepare_long_mode() {
     setup_paging_tables();
     
     asm volatile(
-        "mov %0, %%rax\n"
-        "mov %%rax, %%cr3\n"
-        :: "r" ((uint64_t)PML4_ADDRESS)
-        : "rax", "memory"
+        "mov %0, %%eax\n"
+        "mov %%eax, %%cr3\n"
+        :: "r" ((uint32_t)PML4_ADDRESS)
+        : "eax", "memory"
     );
     
     asm volatile(
-        "movq %%cr4, %%rax\n"
-        "or $ (1 << 5), %%rax\n"
-        "movq %%rax, %%cr4\n"
-        ::: "rax", "memory"
+        "mov %%cr4, %%eax\n"
+        "or $0x20, %%eax\n"
+        "mov %%eax, %%cr4\n"
+        ::: "eax", "memory"
     );
     
     asm volatile(
         "mov $0xC0000080, %%ecx\n"
         "rdmsr\n"
-        "or $ (1 << 8), %%eax\n"
+        "or $0x100, %%eax\n"
         "wrmsr\n"
-        ::: "rax", "rdx", "rcx", "memory"
+        ::: "eax", "edx", "ecx", "memory"
     );
 }
 
