@@ -1,6 +1,9 @@
 # LiteCore
 中学生によって作成された、x86_64で動作するシンプルなカーネル
 
+## ドキュメント
+[GithubWiki](https://github.com/nekogakure/LiteCore/wiki)を参照してください
+
 ## ビルド
 ### Linux
 **必要なツール**
