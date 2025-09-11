@@ -6,14 +6,10 @@ from typing import List, Dict, Set, Tuple, Optional
 class MakefileGenerator:
     def __init__(self, project_root: str):
         self.project_root = project_root
-        self.build_dir = "boot"
-        self.loader_dir = "loader"
+        self.build_dir = "bin"
+        self.loader_dir = "boot"
         self.kernel_dir = "kernel"
-        self.mem_dir = "mem"
-        self.fix_linker_script = True
-        self.arch_dir = f"{self.kernel_dir}/arch"
         self.cflags = "-m64 -ffreestanding -fno-pic -mcmodel=large -mno-red-zone -mno-mmx -mno-sse -mno-sse2"
-        self.includes = f"-I{self.kernel_dir} -I{self.kernel_dir}/util -I{self.mem_dir}"
         self.debug_flags = "-g -O0"
         self.img = f"{self.build_dir}/litecore.img"
         self.boot_bin = f"{self.build_dir}/boot.bin"
@@ -22,20 +18,37 @@ class MakefileGenerator:
         self.asm_files = []
         self.c_files = []
         self.h_files = []
+        self.include_dirs = set()
 
     def find_files(self):
         for root, _, files in os.walk(self.project_root):
-            if ".git" in root:
+            if ".git" in root or self.build_dir in root:
                 continue
+            
             for file in files:
                 full_path = os.path.join(root, file)
                 rel_path = os.path.relpath(full_path, self.project_root)
+                
                 if file.endswith(".c"):
                     self.c_files.append(rel_path)
+                    # Add directory to include paths
+                    dir_path = os.path.dirname(rel_path)
+                    if dir_path:
+                        self.include_dirs.add(dir_path)
                 elif file.endswith(".h"):
                     self.h_files.append(rel_path)
+                    # Add directory to include paths
+                    dir_path = os.path.dirname(rel_path)
+                    if dir_path:
+                        self.include_dirs.add(dir_path)
                 elif file.endswith(".asm"):
                     self.asm_files.append(rel_path)
+
+    def get_include_flags(self) -> str:
+        if not self.include_dirs:
+            return ""
+        include_flags = " ".join([f"-I{dir}" for dir in sorted(self.include_dirs)])
+        return include_flags
 
     def get_dependencies(self, c_file: str) -> List[str]:
         deps = []
@@ -65,139 +78,61 @@ class MakefileGenerator:
             print(f"Warn: {c_file} : {e}", file=sys.stderr)
         return deps
 
-    def check_and_fix_linker_script(self) -> Optional[str]:
-        linker_script_path = os.path.join(self.project_root, self.kernel_dir, "linker.ld")
-        if not os.path.exists(linker_script_path) or not self.fix_linker_script:
-            return None
-            
-        backup_path = f"{linker_script_path}.bak"
-        if not os.path.exists(backup_path):
-            try:
-                with open(linker_script_path, 'r') as f:
-                    original_content = f.read()
-                with open(backup_path, 'w') as f:
-                    f.write(original_content)
-                print(f"Backup created: {backup_path}")
-            except Exception as e:
-                print(f"Warning: Error during linker script backup: {e}")
-                return None
-        
-        # Create new linker script with correct format
-        new_linker_script = """ENTRY(_start)
-
-PHDRS
-{
-  text PT_LOAD FLAGS(5); /* r-x */
-  rodata PT_LOAD FLAGS(4); /* r-- */
-  data PT_LOAD FLAGS(6); /* rw- */
-}
-
-SECTIONS
-{
-    . = 0x1000;
-    
-    .text.boot ALIGN(16) : {
-        *(.text.boot)
-    } :text
-    
-    .text ALIGN(16) : {
-        *(.text)
-        *(.text.*)
-    } :text
-    
-    .rodata ALIGN(16) : {
-        *(.rodata)
-        *(.rodata.*)
-        *(.eh_frame)
-        *(.rela.dyn)
-    } :rodata
-    
-    .data ALIGN(16) : {
-        *(.data)
-        *(.data.*)
-        *(.got)
-        *(.got.plt)
-        *(.igot.plt)
-    } :data
-    
-    .bss ALIGN(16) : {
-        *(COMMON)
-        *(.bss)
-        *(.bss.*)
-    } :data
-}
-"""
-        
-        try:
-            with open(linker_script_path, 'w') as f:
-                f.write(new_linker_script)
-            return linker_script_path
-        except Exception as e:
-            print(f"Warn: linkerscript fixing err: {e}")
-            return None
 
     def generate_makefile(self) -> str:
-        kernel_start_asm = next((f for f in self.asm_files if f.endswith("start.asm") and self.kernel_dir in f), "")
-        loader_asm = next((f for f in self.asm_files if f.endswith("boot.asm") and self.loader_dir in f), "")
+        # GRUB対応：start.asmは不要（C言語で_startを実装）
         other_asm_files = [f for f in self.asm_files 
-                          if f != kernel_start_asm and 
-                             f != loader_asm and
-                             (f.startswith(self.kernel_dir) or f.startswith(self.mem_dir))]
-        kernel_c_srcs = [f for f in self.c_files if f.startswith(self.kernel_dir) or f.startswith(self.mem_dir)]
+                          if not f.startswith(self.loader_dir)]
+        kernel_c_srcs = [f for f in self.c_files if not f.startswith(self.loader_dir)]
         kernel_c_srcs_var = " ".join(kernel_c_srcs)
+        
+        # Build kernel objects list（C言語のみ）
         kernel_objs = []
         for src in kernel_c_srcs:
             obj_name = os.path.basename(src).replace(".c", ".o")
             kernel_objs.append(f"{self.build_dir}/{obj_name}")
-        if kernel_start_asm:
-            kernel_objs.insert(0, f"{self.build_dir}/start.o")
+        
+        # その他のASMファイルがあれば追加
         for asm_file in other_asm_files:
             obj_name = os.path.basename(asm_file).replace(".asm", ".o")
             obj_path = f"{self.build_dir}/{obj_name}"
             if obj_path not in kernel_objs:
                 kernel_objs.append(obj_path)
+        
         kernel_objs_var = " ".join(kernel_objs)
         other_asm_files_var = " ".join(other_asm_files)
-        makefile_content = f"""LOADER_DIR = {self.loader_dir}
+        include_flags = self.get_include_flags()
+        
+        makefile_content = f"""# GRUB対応 LiteCore Makefile (C言語ベース)
 KERNEL_DIR = {self.kernel_dir}
-MEM_DIR = {self.mem_dir}
-ARCH_DIR = $(KERNEL_DIR)/arch
 BUILD_DIR = {self.build_dir}
 
-LOADER_ASM = {loader_asm}
-KERNEL_START_ASM = {kernel_start_asm}
 KERNEL_C_SRCS = {kernel_c_srcs_var}
 OTHER_ASM_SRCS = {other_asm_files_var}
 KERNEL_OBJS = {kernel_objs_var}
 
-IMG = $(BUILD_DIR)/litecore.img
-BOOT_BIN = $(BUILD_DIR)/boot.bin
 KERNEL_BIN = $(BUILD_DIR)/kernel.bin
 KERNEL_ELF = $(BUILD_DIR)/kernel.elf
+ISO = $(BUILD_DIR)/litecore.iso
 
-VERSION = $(shell cat version.txt)
-CFLAGS = {self.cflags} {self.includes} {self.debug_flags} -DKERNEL_VERSION=\\"$(VERSION)\\"
+VERSION = $(shell cat version.txt 2>/dev/null || echo "dev")
+CFLAGS = {self.cflags} {include_flags} {self.debug_flags} -DKERNEL_VERSION=\\"$(VERSION)\\"
 
-all: $(IMG)
+all: $(ISO)
 
-$(BOOT_BIN): $(LOADER_ASM)
-\tmkdir -p $(BUILD_DIR)
-\tnasm -f bin -o $@ $<
-
-$(BUILD_DIR)/start.o: $(KERNEL_START_ASM)
-\tmkdir -p $(BUILD_DIR)
-\tnasm -f elf64 -g -F dwarf -o $@ $< -w-gnu-stack
+kernel: $(KERNEL_BIN)
 
 """
+        
+        # その他のASMファイルがあれば処理
         for asm_file in other_asm_files:
             obj_name = os.path.basename(asm_file).replace(".asm", ".o")
             obj_path = f"$(BUILD_DIR)/{obj_name}"
             makefile_content += f"{obj_path}: {asm_file}\n"
             makefile_content += "\tmkdir -p $(BUILD_DIR)\n"
-            if "arch" in asm_file or "mode_switch" in asm_file:
-                makefile_content += "\tnasm -f elf64 -g -F dwarf -o $@ $< -w-gnu-stack\n\n"
-            else:
-                makefile_content += "\tnasm -f elf64 -g -F dwarf -o $@ $< -w-gnu-stack\n\n"
+            makefile_content += "\tnasm -f elf64 -g -F dwarf -o $@ $< -w-gnu-stack\n\n"
+            
+        # C言語ファイルのコンパイル
         for c_file in kernel_c_srcs:
             obj_name = os.path.basename(c_file).replace(".c", ".o")
             obj_path = f"$(BUILD_DIR)/{obj_name}"
@@ -205,34 +140,29 @@ $(BUILD_DIR)/start.o: $(KERNEL_START_ASM)
             deps_str = " ".join(deps) if deps else ""
             makefile_content += f"{obj_path}: {c_file} {deps_str}\n"
             makefile_content += "\tmkdir -p $(BUILD_DIR)\n"
-            
-            if "arch/arch.c" in c_file:
-                arch_cflags = f"-m32 -ffreestanding -fno-pic {self.includes} {self.debug_flags} -DKERNEL_VERSION=\\\"$(VERSION)\\\" -mno-red-zone"
-                makefile_content += f"\tgcc {arch_cflags} -c $< -o $@\n\n"
-            else:
-                makefile_content += "\tgcc $(CFLAGS) -c $< -o $@\n\n"
-        makefile_content += """$(BUILD_DIR)/arch_boot.o: $(BUILD_DIR)/arch.o
-\tobjcopy -O elf64-x86-64 -B i386:x86-64 $(BUILD_DIR)/arch.o $(BUILD_DIR)/arch_boot.o
-
-$(KERNEL_BIN): $(filter-out $(BUILD_DIR)/arch.o,$(KERNEL_OBJS)) $(BUILD_DIR)/arch_boot.o
+            makefile_content += "\tgcc $(CFLAGS) -c $< -o $@\n\n"
+        makefile_content += """
+$(KERNEL_BIN): $(KERNEL_OBJS)
 \tld -m elf_x86_64 -T $(KERNEL_DIR)/linker.ld -o $(KERNEL_ELF) --build-id=none -g $^ -z noexecstack
 \tobjcopy -O binary $(KERNEL_ELF) $@
 \t@echo "\\033[0;32mKernel size: $$(wc -c < $@) bytes\\033[0m"
-\t@echo "entry: 0x1000(16bit mode)"
 
-$(IMG): $(BOOT_BIN) $(KERNEL_BIN)
-\tcat $(BOOT_BIN) $(KERNEL_BIN) > $(IMG)
-\ttruncate -s 10M $(IMG)
+$(ISO): $(KERNEL_BIN)
+\tmkdir -p $(BUILD_DIR)/iso/boot/grub
+\tcp $(KERNEL_BIN) $(BUILD_DIR)/iso/boot/
+\tcp grub/grub.cfg $(BUILD_DIR)/iso/boot/grub/
+\tgrub-mkrescue -o $(ISO) $(BUILD_DIR)/iso
+\t@echo "\\033[0;32mGRUB ISO created: $(ISO)\\033[0m"
 
-run: $(IMG)
-\tqemu-system-x86_64 -drive file=$(IMG),format=raw -monitor stdio -cpu qemu64 -no-reboot -no-shutdown
+run: $(ISO)
+\tqemu-system-x86_64 -cdrom $(ISO) -monitor stdio -cpu qemu64 -no-reboot -no-shutdown
 
-run-debug: $(IMG)
-\tqemu-system-x86_64 -drive file=$(IMG),format=raw -monitor stdio -cpu qemu64 -no-reboot -no-shutdown -d int,cpu_reset,exec,in_asm,page -D qemu.log
+run-debug: $(ISO)
+\tqemu-system-x86_64 -cdrom $(ISO) -monitor stdio -cpu qemu64 -no-reboot -no-shutdown -d int,cpu_reset,exec,in_asm,page -D qemu.log
 
-debug: $(IMG) clean-qemu
+debug: $(ISO) clean-qemu
 \t@echo "Starting QEMU with GDB server on port 1234..."
-\tqemu-system-x86_64 -drive file=$(IMG),format=raw -s -S -cpu qemu64 -no-reboot -no-shutdown &
+\tqemu-system-x86_64 -cdrom $(ISO) -s -S -cpu qemu64 -no-reboot -no-shutdown &
 \t@sleep 1
 \t@echo "Starting GDB and connecting to QEMU..."
 \tgdb -ex "file $(KERNEL_ELF)" -ex "target remote localhost:1234" -ex "set disassembly-flavor intel" -ex "layout asm" -ex "break *0x1000" -ex "continue"
@@ -256,22 +186,16 @@ memory-map: $(KERNEL_ELF)
 \t@echo "\\n======== Disassembly of start ========"
 \t@objdump -d -j .text.boot $(KERNEL_ELF)
 
-.PHONY: all clean run run-debug debug memory-map
+.PHONY: all kernel run run-debug debug clean clean-qemu memory-map
 """
         return makefile_content
 
     def run(self):
         self.find_files()
-        
-        fixed_script = self.check_and_fix_linker_script()
-        if fixed_script:
-            print(f"fixed linker script: {fixed_script}")
-        
         makefile_content = self.generate_makefile()
         makefile_path = os.path.join(self.project_root, "Makefile")
         with open(makefile_path, "w") as f:
             f.write(makefile_content)
-        
         print(f"generated makefile: {makefile_path}")
 
 if __name__ == "__main__":
