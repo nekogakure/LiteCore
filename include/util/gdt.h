@@ -1,5 +1,5 @@
 /**
- * @file gdt.h
+ * @file util/gdt.h
  * @brief Global Descriptor Table definitions
  * @details
  * Provides definitions and initialization functions for the GDT for x86_64.

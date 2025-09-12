@@ -11,6 +11,14 @@
 #define _CONSOLE_H
 
 #include <stdint.h>
+#include <stdarg.h>
+
+void init_console(void);
+void console_clear(void);
+void console_write(const char* str);
+void console_putchar(char c);
+void set_text_color(enum vga_color fg, enum vga_color bg);
+void printk(const char* fmt, ...);
 
 /** @brief VGA color codes */
 enum vga_color {
@@ -43,6 +51,13 @@ void init_console(void);
  * @param str Null-terminated string to write
  */
 void console_puts(const char *str);
+
+/**
+ * @brief print to the console. Like printf but without formatting.
+ * @param format Null-terminated string to write
+ * @return Number of characters written
+ */
+int printk(const char *format, ...);
 
 /**
  * @brief Set the console colors

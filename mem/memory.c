@@ -7,7 +7,7 @@
  */
 
 #include "memory.h"
-#include "console.h"
+#include "vga/console.h"
 
 void init_memory(void) {
     // Temporary implementation

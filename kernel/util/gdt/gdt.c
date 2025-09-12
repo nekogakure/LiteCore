@@ -10,7 +10,7 @@
  * @date 2025-09-12
  */
 
-#include "gdt.h"
+#include "util/gdt.h"
 
 /** @brief Number of GDT entries */
 #define GDT_ENTRIES 5

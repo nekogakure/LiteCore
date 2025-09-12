@@ -8,8 +8,8 @@
  * @date 2025-09-12
  */
 
-#include "interrupt_handler.h"
-#include "console.h"
+#include "util/interrupt_handler.h"
+#include "vga/console.h"
 
 /**
  * @brief Common interrupt handler

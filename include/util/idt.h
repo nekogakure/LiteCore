@@ -1,5 +1,5 @@
 /**
- * @file idt.h
+ * @file util/idt.h
  * @brief Interrupt Descriptor Table definitions
  * @details
  * Provides definitions and initialization functions for interrupts and exception handlers.

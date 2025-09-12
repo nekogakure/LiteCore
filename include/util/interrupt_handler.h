@@ -1,5 +1,5 @@
 /**
- * @file interrupt_handler.h
+ * @file util/interrupt_handler.h
  * @brief Common interrupt handler declarations
  * @details
  * Defines common functions for interrupt handling.

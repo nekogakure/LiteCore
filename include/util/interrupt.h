@@ -1,5 +1,5 @@
 /**
- * @file interrupt.h
+ * @file util/interrupt.h
  * @brief Interrupt handlers definitions
  * @details
  * Provides definitions for various interrupt handlers.

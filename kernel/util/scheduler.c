@@ -7,7 +7,7 @@
  */
 
 #include "scheduler.h"
-#include "console.h"
+#include "vga/console.h"
 
 void init_scheduler(void) {
     // Temporary implementation

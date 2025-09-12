@@ -1,42 +1,33 @@
-OUTPUT_FORMAT(elf64-x86-64)
-OUTPUT_ARCH(i386:x86-64)
-ENTRY(kernel_main)
+ENTRY(_start)
 
 SECTIONS
 {
-    . = 0x100000;
+    . = 1M;
 
-    /* Multiboot header first */
-    .text BLOCK(4K) : ALIGN(4K)
-    {
+    .text : {
+        /* Multiboot header must be at the very beginning */
         *(.multiboot)
+        *(.text.boot)
         *(.text)
     }
+    . = ALIGN(8);
 
     /* Read-only data */
-    .rodata BLOCK(4K) : ALIGN(4K)
+    .rodata :
     {
         *(.rodata)
     }
 
     /* Read-write data (initialized) */
-    .data BLOCK(4K) : ALIGN(4K)
+    .data :
     {
         *(.data)
     }
 
     /* Read-write data (uninitialized) and stack */
-    .bss BLOCK(4K) : ALIGN(4K)
+    .bss :
     {
         *(COMMON)
         *(.bss)
-        *(.bootstrap_stack)
-    }
-
-    /* Remove unused sections */
-    /DISCARD/ :
-    {
-        *(.eh_frame)
-        *(.comment)
     }
 }

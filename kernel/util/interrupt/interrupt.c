@@ -8,8 +8,8 @@
  * @date 2025-09-12
  */
 
-#include "interrupt.h"
-#include "console.h"
+#include "util/interrupt.h"
+#include "vga/console.h"
 
 void interrupt_default_handler(void) {
     console_puts("Unknown interrupt occurred!\n");

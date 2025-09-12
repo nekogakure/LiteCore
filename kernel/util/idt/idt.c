@@ -8,8 +8,8 @@
  * @date 2025-09-12
  */
 
-#include "idt.h"
-#include "interrupt.h"
+#include "util/idt.h"
+#include "util/interrupt.h"
 
 /** @brief Number of IDT entries */
 #define IDT_ENTRIES 256
