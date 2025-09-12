@@ -2,9 +2,9 @@
 KERNEL_DIR = kernel
 BUILD_DIR = bin
 
-KERNEL_C_SRCS = kernel/main.c kernel/console.c
-OTHER_ASM_SRCS = 
-KERNEL_OBJS = bin/main.o bin/console.o
+KERNEL_C_SRCS = kernel/memory.c kernel/gdt.c kernel/interrupt_handler.c kernel/idt.c kernel/scheduler.c kernel/main.c kernel/interrupt.c kernel/console.c
+OTHER_ASM_SRCS = kernel/interrupt_asm.asm kernel/gdt_asm.asm kernel/idt_asm.asm
+KERNEL_OBJS = bin/memory.o bin/gdt.o bin/interrupt_handler.o bin/idt.o bin/scheduler.o bin/main.o bin/interrupt.o bin/console.o bin/interrupt_asm.o bin/gdt_asm.o bin/idt_asm.o
 
 KERNEL_BIN = $(BUILD_DIR)/kernel.bin
 KERNEL_ELF = $(BUILD_DIR)/kernel.elf
@@ -17,7 +17,43 @@ all: $(ISO)
 
 kernel: $(KERNEL_BIN)
 
-$(BUILD_DIR)/main.o: kernel/main.c include/multiboot.h include/console.h
+$(BUILD_DIR)/interrupt_asm.o: kernel/interrupt_asm.asm
+	mkdir -p $(BUILD_DIR)
+	nasm -f elf64 -g -F dwarf -o $@ $< -w-gnu-stack
+
+$(BUILD_DIR)/gdt_asm.o: kernel/gdt_asm.asm
+	mkdir -p $(BUILD_DIR)
+	nasm -f elf64 -g -F dwarf -o $@ $< -w-gnu-stack
+
+$(BUILD_DIR)/idt_asm.o: kernel/idt_asm.asm
+	mkdir -p $(BUILD_DIR)
+	nasm -f elf64 -g -F dwarf -o $@ $< -w-gnu-stack
+
+$(BUILD_DIR)/memory.o: kernel/memory.c include/memory.h include/console.h
+	mkdir -p $(BUILD_DIR)
+	gcc $(CFLAGS) -c $< -o $@
+
+$(BUILD_DIR)/gdt.o: kernel/gdt.c include/gdt.h
+	mkdir -p $(BUILD_DIR)
+	gcc $(CFLAGS) -c $< -o $@
+
+$(BUILD_DIR)/interrupt_handler.o: kernel/interrupt_handler.c include/interrupt_handler.h include/console.h
+	mkdir -p $(BUILD_DIR)
+	gcc $(CFLAGS) -c $< -o $@
+
+$(BUILD_DIR)/idt.o: kernel/idt.c include/idt.h include/interrupt.h
+	mkdir -p $(BUILD_DIR)
+	gcc $(CFLAGS) -c $< -o $@
+
+$(BUILD_DIR)/scheduler.o: kernel/scheduler.c include/scheduler.h include/console.h
+	mkdir -p $(BUILD_DIR)
+	gcc $(CFLAGS) -c $< -o $@
+
+$(BUILD_DIR)/main.o: kernel/main.c include/multiboot.h include/console.h include/system.h include/memory.h include/scheduler.h
+	mkdir -p $(BUILD_DIR)
+	gcc $(CFLAGS) -c $< -o $@
+
+$(BUILD_DIR)/interrupt.o: kernel/interrupt.c include/interrupt.h include/console.h
 	mkdir -p $(BUILD_DIR)
 	gcc $(CFLAGS) -c $< -o $@
 

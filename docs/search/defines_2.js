@@ -1,4 +1,4 @@
 var searchData=
 [
-  ['vga_5fbuffer_0',['VGA_BUFFER',['../console_8c.html#a551bd2955ebca4b3c65d73d1ca46cae5',1,'console.c']]]
+  ['idt_5fentries_0',['IDT_ENTRIES',['../idt_8c.html#a2a59a505aa55f15c152f30f811fbd310',1,'idt.c']]]
 ];

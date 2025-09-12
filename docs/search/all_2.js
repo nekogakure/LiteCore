@@ -1,4 +1,10 @@
 var searchData=
 [
-  ['kernel_5fmain_0',['kernel_main',['../main_8c.html#ac03e4a09009ca8d7814777f16a0767d5',1,'main.c']]]
+  ['console_2ec_0',['console.c',['../console_8c.html',1,'']]],
+  ['console_2eh_1',['console.h',['../console_8h.html',1,'']]],
+  ['console_5fclear_2',['console_clear',['../console_8c.html#aa458c825fb8701dc71639422d2a03385',1,'console_clear(void):&#160;console.c'],['../console_8h.html#aa458c825fb8701dc71639422d2a03385',1,'console_clear(void):&#160;console.c']]],
+  ['console_5fheight_3',['CONSOLE_HEIGHT',['../console_8c.html#a157ee137a3acabff3d7612bff73b448b',1,'console.c']]],
+  ['console_5fputs_4',['console_puts',['../console_8c.html#a871a10ba7d8015c42d4888874d3c6d07',1,'console_puts(const char *str):&#160;console.c'],['../console_8h.html#a871a10ba7d8015c42d4888874d3c6d07',1,'console_puts(const char *str):&#160;console.c']]],
+  ['console_5fset_5fcolor_5',['console_set_color',['../console_8c.html#a65dbadf15bbd7169caa609b82044d504',1,'console_set_color(enum vga_color fg, enum vga_color bg):&#160;console.c'],['../console_8h.html#a65dbadf15bbd7169caa609b82044d504',1,'console_set_color(enum vga_color fg, enum vga_color bg):&#160;console.c']]],
+  ['console_5fwidth_6',['CONSOLE_WIDTH',['../console_8c.html#ac8a565248bf80a622adcf61f4fe6dbc3',1,'console.c']]]
 ];

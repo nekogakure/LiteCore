@@ -1,4 +1,4 @@
 var searchData=
 [
-  ['multiboot_5fbootloader_5fmagic_0',['MULTIBOOT_BOOTLOADER_MAGIC',['../multiboot_8h.html#aacd617f4e3daafd6eab95fb6215ccae4',1,'multiboot.h']]]
+  ['gdt_5fentries_0',['GDT_ENTRIES',['../gdt_8c.html#a3bc5bc63a9978005c602b8e3f4cca2f5',1,'gdt.c']]]
 ];

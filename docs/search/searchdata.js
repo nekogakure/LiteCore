@@ -1,11 +1,15 @@
 var indexSectionsWithContent =
 {
-  0: "cikmsv",
-  1: "m",
-  2: "cms",
-  3: "ciks",
-  4: "v",
-  5: "cmv"
+  0: "abcdfghiklmprsv",
+  1: "gim",
+  2: "cgims",
+  3: "cdghikps",
+  4: "abfgilrs",
+  5: "i",
+  6: "gv",
+  7: "g",
+  8: "cgimv",
+  9: "ghim"
 };
 
 var indexSectionNames =
@@ -14,8 +18,12 @@ var indexSectionNames =
   1: "classes",
   2: "files",
   3: "functions",
-  4: "enums",
-  5: "defines"
+  4: "variables",
+  5: "typedefs",
+  6: "enums",
+  7: "enumvalues",
+  8: "defines",
+  9: "groups"
 };
 
 var indexSectionLabels =
@@ -24,7 +32,11 @@ var indexSectionLabels =
   1: "Classes",
   2: "Files",
   3: "Functions",
-  4: "Enumerations",
-  5: "Macros"
+  4: "Variables",
+  5: "Typedefs",
+  6: "Enumerations",
+  7: "Enumerator",
+  8: "Macros",
+  9: "Modules"
 };
 
