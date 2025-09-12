@@ -1,15 +1,19 @@
+OUTPUT_FORMAT("elf64-x86-64")
+OUTPUT_ARCH(i386:x86-64)
 ENTRY(_start)
 
 SECTIONS
 {
     . = 1M;
+    
+    .multiboot ALIGN(4K) : {
+        *(.multiboot)
+    }
 
     .text ALIGN(4K) : {
-        *(.multiboot)
-        . = ALIGN(8);
         *(.text)
         *(.text.*)
-        . = ALIGN(8);
+        . = ALIGN(4K);
     }
 
     .rodata ALIGN(4K) : {

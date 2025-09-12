@@ -27,11 +27,11 @@ void kernel_main(uint32_t magic, uintptr_t addr) {
     // Initialize console for early debug output
     init_console();
     
-    set_text_color(VGA_LIGHT_GREEN, VGA_BLACK);
+    console_set_color(VGA_LIGHT_GREEN, VGA_BLACK);
     
     printk("=== LiteCore kernel ===\n");
     printk("version %s\n", CONF_PROJECT_VERSION);
-    set_text_color(VGA_LIGHT_GREY, VGA_BLACK);
+    console_set_color(VGA_LIGHT_GREY, VGA_BLACK);
     
     // Verify multiboot magic number
     if (magic != MULTIBOOT_BOOTLOADER_MAGIC) {

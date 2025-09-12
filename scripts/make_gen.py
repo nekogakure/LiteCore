@@ -35,6 +35,8 @@ class MakefileGenerator:
         self.kernel_dir = "kernel"
         self.cflags = "-m64 -ffreestanding -fno-pic -mcmodel=large -mno-red-zone -mno-mmx -mno-sse -mno-sse2"
         self.debug_flags = "-g -O0"
+        self.asmflags = "-f elf64"
+        self.ldflags = "-m elf_x86_64"
         self.img = f"{self.build_dir}/litecore.img"
         self.boot_bin = f"{self.build_dir}/boot.bin"
         self.kernel_bin = f"{self.build_dir}/kernel.bin"

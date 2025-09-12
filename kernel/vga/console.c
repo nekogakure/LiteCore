@@ -45,10 +45,6 @@ void init_console(void) {
     console_clear();
 }
 
-void set_text_color(enum vga_color fg, enum vga_color bg) {
-    text_color = (bg << 4) | fg;
-}
-
 void console_putchar(char c) {
     uint16_t* buffer = (uint16_t*)VGA_BUFFER;
 

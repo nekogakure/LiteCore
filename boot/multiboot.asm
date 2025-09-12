@@ -1,53 +1,103 @@
+[BITS 64]
+
+MULTIBOOT2_MAGIC    equ 0xE85250D6
+MULTIBOOT2_ARCH     equ 0
+HEADER_LENGTH       equ header_end - multiboot_header
+CHECKSUM            equ -(MULTIBOOT2_MAGIC + MULTIBOOT2_ARCH + HEADER_LENGTH)
+
 section .multiboot
-align 8
+align 4096
 
 global multiboot_header
 multiboot_header:
-    dd 0xE85250D6        ; Magic number
-    dd 0                 ; Architecture (i386)
-    dd header_end - multiboot_header ; Header length
-    dd -(0xE85250D6 + 0 + (header_end - multiboot_header)) ; Checksum
+    dd MULTIBOOT2_MAGIC          ; magic
+    dd MULTIBOOT2_ARCH           ; architecture
+    dd HEADER_LENGTH             ; header length
+    dd CHECKSUM                  ; checksum
+
+    ; Address tag
+    align 8
+    dw 2                        ; type (address tag)
+    dw 0                        ; flags
+    dd 24                       ; size
+    dd multiboot_header         ; header_addr
+    dd _start                   ; load_addr
+    dd _edata                   ; load_end_addr
+    dd _end                     ; bss_end_addr
+
+    ; Entry point tag
+    align 8
+    dw 3                        ; type (entry tag)
+    dw 0                        ; flags
+    dd 12                       ; size
+    dd _start                   ; entry addr
 
     ; End tag
-    dw 0                ; Type
-    dw 0                ; Flags
-    dd 8                ; Size
+    align 8
+    dw 0                        ; type (end tag)
+    dw 0                        ; flags
+    dd 8                        ; size
 header_end:
 
-; Kernel entry point
 section .text
-global _start          ; Make entry point visible to linker
-extern kernel_main     ; Kernel main function is defined elsewhere
+align 4096                      ; Page align text section
+global _start                   ; Export entry point
+extern kernel_main             ; Kernel main function
 
 _start:
-    cli               ; Disable interrupts
-    mov esp, stack_top; Set up stack
-    push ebx          ; Multiboot info structure
-    push eax          ; Magic value
-    call kernel_main  ; Call kernel
+    ; Set up stack and data segments
+    cli                         ; Disable interrupts
+    cld                         ; Clear direction flag
     
-.hang:               ; Infinite loop if we return
+    ; Set up stack
+    mov esp, stack_top
+    
+    ; Reset EFLAGS
+    push dword 0
+    popfd
+    
+    ; Save multiboot information
+    push ebx                    ; Multiboot structure
+    push eax                    ; Magic number
+    
+    ; Clear BSS section
+    mov edi, _bss_start
+    mov ecx, _bss_size
+    xor eax, eax
+    rep stosb
+
+    ; Call kernel_main
+    call kernel_main
+
+    ; If we return, halt
+.halt:
+    cli
     hlt
-    jmp .hang
+    jmp .halt
 
-; Stack
+; Uninitialized data section (BSS)
 section .bss
-align 16
+align 4096
+global _bss_start
+_bss_start:
+
+; Stack space
 stack_bottom:
-    resb 16384       ; 16 KiB
+    resb 16384  ; 16 KB stack
 stack_top:
 
-    ; Required end tag
-    dw 0    ; Type
-    dw 0    ; Flags
-    dd 8    ; Size
-header_end:
+global _bss_size
+_bss_size equ $ - _bss_start
 
-section .bss
-align 16
-stack_bottom:
-    resb 16384         ; 16 KB for stack
-stack_top:
+section .data
+align 4096
+global _edata
+_edata:
+
+section .end
+align 4096
+global _end
+_end:
 
 section .text
 global _start
