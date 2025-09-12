@@ -225,14 +225,17 @@ kernel: $(KERNEL_BIN)
             makefile_content += "\tmkdir -p $(BUILD_DIR)\n"
             makefile_content += "\tgcc $(CFLAGS) -c $< -o $@\n\n"
         makefile_content += """
-$(KERNEL_BIN): $(KERNEL_OBJS)
+$(KERNEL_ELF): $(KERNEL_OBJS)
 \tld -m elf_x86_64 -T $(KERNEL_DIR)/linker.ld -o $(KERNEL_ELF) --build-id=none -g $^ -z noexecstack
-\tobjcopy -O binary $(KERNEL_ELF) $@
-\t@echo "\\033[0;32mKernel size: $$(wc -c < $@) bytes\\033[0m"
+\t@echo "\\033[0;32mKernel ELF size: $$(wc -c < $@) bytes\\033[0m"
 
-$(ISO): $(KERNEL_BIN)
+$(KERNEL_BIN): $(KERNEL_ELF)
+\tobjcopy -O binary $(KERNEL_ELF) $(KERNEL_BIN)
+\t@echo "\\033[0;32mKernel binary size: $$(wc -c < $@) bytes\\033[0m"
+
+$(ISO): $(KERNEL_ELF)
 \tmkdir -p $(BUILD_DIR)/iso/boot/grub
-\tcp $(KERNEL_BIN) $(BUILD_DIR)/iso/boot/
+\tcp $(KERNEL_ELF) $(BUILD_DIR)/iso/boot/
 \tcp grub/grub.cfg $(BUILD_DIR)/iso/boot/grub/
 \tgrub-mkrescue -o $(ISO) $(BUILD_DIR)/iso
 \t@echo "\\033[0;32mGRUB ISO created: $(ISO)\\033[0m"
