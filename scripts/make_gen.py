@@ -3,6 +3,30 @@ import glob
 import sys
 from typing import List, Dict, Set, Tuple, Optional
 
+def update_config_version(project_root: str):
+    version_file = os.path.join(project_root,"version.txt")
+    config_file = os.path.join(project_root, "include", "config.h")
+    try:
+        with open(version_file, "r") as vf:
+            version = vf.read().strip()
+    except Exception as e:
+        print(f"Warn: failed to read version.txt: {e}", file=sys.stderr)
+        return
+
+    try:
+        with open(config_file, "r") as cf:
+            lines = cf.readlines()
+        with open(config_file, "w") as cf:
+            for line in lines:
+                if line.strip().startswith("#define CONF_PROJECT_VERSION"):
+                    cf.write(f'#define CONF_PROJECT_VERSION "{version}"\n')
+                else:
+                    cf.write(line)
+    except Exception as e:
+        print(f"Warn: failed to update config.h: {e}", file=sys.stderr)
+
+update_config_version(os.getcwd())
+
 class MakefileGenerator:
     def __init__(self, project_root: str):
         self.project_root = project_root
@@ -16,9 +40,12 @@ class MakefileGenerator:
         self.kernel_bin = f"{self.build_dir}/kernel.bin"
         self.kernel_elf = f"{self.build_dir}/kernel.elf"
         self.asm_files = []
+        self.boot_files = []
         self.c_files = []
         self.h_files = []
+        self.lib_files = []
         self.include_dirs = set()
+        self.include_dirs.add("include")
 
     def find_files(self):
         for root, _, files in os.walk(self.project_root):
@@ -30,7 +57,10 @@ class MakefileGenerator:
                 rel_path = os.path.relpath(full_path, self.project_root)
                 
                 if file.endswith(".c"):
-                    self.c_files.append(rel_path)
+                    if "lib" in rel_path:
+                        self.lib_files.append(rel_path)
+                    else:
+                        self.c_files.append(rel_path)
                     # Add directory to include paths
                     dir_path = os.path.dirname(rel_path)
                     if dir_path:
@@ -42,13 +72,63 @@ class MakefileGenerator:
                     if dir_path:
                         self.include_dirs.add(dir_path)
                 elif file.endswith(".asm"):
-                    self.asm_files.append(rel_path)
+                    if "boot" in rel_path:
+                        self.boot_files.append(rel_path)
+                    else:
+                        self.asm_files.append(rel_path)
 
     def get_include_flags(self) -> str:
         if not self.include_dirs:
             return ""
         include_flags = " ".join([f"-I{dir}" for dir in sorted(self.include_dirs)])
         return include_flags
+
+    def write_kernel_rules(self, f):
+        # カーネルオブジェクトファイルのリスト生成
+        objects = []
+        
+        for source in sorted(self.lib_files + self.c_files):
+            obj = f"{self.build_dir}/{os.path.splitext(os.path.basename(source))[0]}.o"
+            objects.append(obj)
+            deps = self.get_dependencies(source)
+            deps_str = " ".join(deps)
+            
+            f.write(f"{obj}: {source} {deps_str}\n")
+            f.write(f"\tmkdir -p {self.build_dir}\n")
+            f.write(f"\t$(CC) $(CFLAGS) -c {source} -o {obj}\n\n")
+        
+        # アセンブリファイル
+        for source in sorted(self.asm_files):
+            obj = f"{self.build_dir}/{os.path.splitext(os.path.basename(source))[0]}.o"
+            objects.append(obj)
+            
+            f.write(f"{obj}: {source}\n")
+            f.write(f"\tmkdir -p {self.build_dir}\n")
+            f.write(f"\t$(ASM) $(ASMFLAGS) -o {obj} {source} -w-gnu-stack\n\n")
+        
+        # ブートローダーファイル
+        for source in sorted(self.boot_files):
+            obj = f"{self.build_dir}/{os.path.splitext(os.path.basename(source))[0]}.o"
+            objects.append(obj)
+            
+            f.write(f"{obj}: {source}\n")
+            f.write(f"\tmkdir -p {self.build_dir}\n")
+            f.write(f"\t$(ASM) $(ASMFLAGS) -o {obj} {source} -w-gnu-stack\n\n")
+        
+        # ブートローダーファイルのコンパイル
+        for source in sorted(self.boot_files):
+            obj = f"{self.build_dir}/{os.path.splitext(os.path.basename(source))[0]}_boot.o"
+            objects.append(obj)
+            
+            f.write(f"{obj}: {source}\n")
+            f.write(f"\tmkdir -p {self.build_dir}\n")
+            f.write(f"\t$(ASM) $(ASMFLAGS) -o {obj} {source}\n\n")
+
+        # カーネルのリンク
+        objects_str = " ".join(objects)
+        f.write(f"{self.kernel_elf}: {objects_str}\n")
+        f.write(f"\t$(LD) $(LDFLAGS) -o {self.kernel_elf} {objects_str} -z noexecstack\n")
+        f.write(f"\tobjcopy -O binary {self.kernel_elf} {self.kernel_bin}\n\n")
 
     def get_dependencies(self, c_file: str) -> List[str]:
         deps = []
@@ -83,7 +163,8 @@ class MakefileGenerator:
         # GRUB対応：start.asmは不要（C言語で_startを実装）
         other_asm_files = [f for f in self.asm_files 
                           if not f.startswith(self.loader_dir)]
-        kernel_c_srcs = [f for f in self.c_files if not f.startswith(self.loader_dir)]
+        kernel_c_srcs = [f for f in self.lib_files + self.c_files 
+                        if not f.startswith(self.loader_dir)]
         kernel_c_srcs_var = " ".join(kernel_c_srcs)
         
         # Build kernel objects list（C言語のみ）

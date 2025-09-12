@@ -4,30 +4,41 @@ SECTIONS
 {
     . = 1M;
 
-    .text : {
-        /* Multiboot header must be at the very beginning */
+    .text ALIGN(4K) : {
         *(.multiboot)
-        *(.text.boot)
+        . = ALIGN(8);
         *(.text)
+        *(.text.*)
+        . = ALIGN(8);
     }
-    . = ALIGN(8);
 
-    /* Read-only data */
-    .rodata :
-    {
+    .rodata ALIGN(4K) : {
         *(.rodata)
+        *(.rodata.*)
+        . = ALIGN(8);
     }
 
-    /* Read-write data (initialized) */
-    .data :
-    {
+    .data ALIGN(4K) : {
+        _data_start = .;
         *(.data)
+        *(.data.*)
+        . = ALIGN(8);
     }
 
-    /* Read-write data (uninitialized) and stack */
-    .bss :
-    {
-        *(COMMON)
+    .bss ALIGN(4K) : {
+        _bss_start = .;
         *(.bss)
+        *(.bss.*)
+        *(COMMON)
+        . = ALIGN(4K);
+        _bss_end = .;
+    }
+
+    _end = .;
+
+    /DISCARD/ : {
+        *(.comment)
+        *(.eh_frame)
+        *(.note.*)
     }
 }

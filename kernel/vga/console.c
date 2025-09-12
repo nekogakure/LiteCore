@@ -7,7 +7,7 @@
  */
 
 #include <stdarg.h>
-#include <string.h>
+#include "string.h"
 #include "vga/console.h"
 
 /** @brief VGA text buffer address */
@@ -106,10 +106,6 @@ void console_clear(void) {
     }
     
     cursor_x = cursor_y = 0;
-}
-    
-    cursor_x = 0;
-    cursor_y = 0;
 }
 
 void console_puts(const char *str) {

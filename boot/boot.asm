@@ -1,26 +1,23 @@
 [BITS 32]
 
-; Multiboot2 constants
-MAGIC    equ 0xE85250D6        ; Multiboot2 magic number
-ARCH     equ 0                 ; Protected mode i386
-LENGTH   equ (header_end - header_start)
-CHECKSUM equ -(MAGIC + ARCH + LENGTH)
+global boot_start
 
-section .multiboot progbits align=8 alloc exec
-global multiboot_header
-multiboot_header:
-header_start:
-    dd MAGIC                   ; Multiboot2 magic number (0xE85250D6)
-    dd ARCH                    ; Architecture (0 = i386 protected mode)
-    dd LENGTH                  ; Header length
-    dd CHECKSUM               ; Checksum
+boot_start:
+    ; Basic CPU initialization
+    cli                     ; Disable interrupts
+    cld                     ; Clear direction flag
 
-    ; Entry address tag
-    align 8
-    dw 3                      ; Type: entry address
-    dw 0                      ; Flags
-    dd 12                     ; Size
-    dd _start                 ; Entry point address
+    ; Set up segments
+    xor ax, ax
+    mov ds, ax
+    mov es, ax
+    mov fs, ax
+    mov gs, ax
+    mov ss, ax
+
+    ; Return to multiboot.asm entry point
+    extern _start
+    jmp _start
 
     ; Module alignment tag
     align 8

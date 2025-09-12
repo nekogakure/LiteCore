@@ -13,13 +13,6 @@
 #include <stdint.h>
 #include <stdarg.h>
 
-void init_console(void);
-void console_clear(void);
-void console_write(const char* str);
-void console_putchar(char c);
-void set_text_color(enum vga_color fg, enum vga_color bg);
-void printk(const char* fmt, ...);
-
 /** @brief VGA color codes */
 enum vga_color {
     VGA_BLACK = 0,
@@ -57,7 +50,8 @@ void console_puts(const char *str);
  * @param format Null-terminated string to write
  * @return Number of characters written
  */
-int printk(const char *format, ...);
+void printk(const char* fmt, ...);
+
 
 /**
  * @brief Set the console colors

@@ -1,53 +1,151 @@
-[BITS 32]
-
 section .multiboot
-global _start
-global multiboot_header
 align 8
 
-; Constants
-MB2_MAGIC    equ 0xE85250D6
-MB2_ARCH     equ 0
+global multiboot_header
+multiboot_header:
+    dd 0xE85250D6        ; Magic number
+    dd 0                 ; Architecture (i386)
+    dd header_end - multiboot_header ; Header length
+    dd -(0xE85250D6 + 0 + (header_end - multiboot_header)) ; Checksum
+
+    ; End tag
+    dw 0                ; Type
+    dw 0                ; Flags
+    dd 8                ; Size
+header_end:
+
+; Kernel entry point
+section .text
+global _start          ; Make entry point visible to linker
+extern kernel_main     ; Kernel main function is defined elsewhere
+
+_start:
+    cli               ; Disable interrupts
+    mov esp, stack_top; Set up stack
+    push ebx          ; Multiboot info structure
+    push eax          ; Magic value
+    call kernel_main  ; Call kernel
+    
+.hang:               ; Infinite loop if we return
+    hlt
+    jmp .hang
+
+; Stack
+section .bss
+align 16
+stack_bottom:
+    resb 16384       ; 16 KiB
+stack_top:
+
+    ; Required end tag
+    dw 0    ; Type
+    dw 0    ; Flags
+    dd 8    ; Size
+header_end:
+
+section .bss
+align 16
+stack_bottom:
+    resb 16384         ; 16 KB for stack
+stack_top:
+
+section .text
+global _start
+extern kernel_main
+
+_start:
+    ; Set up stack
+    mov esp, stack_top
+    
+    ; Save multiboot info
+    push ebx            ; Multiboot info structure pointer
+    push eax            ; Magic number
+    
+    ; Enter kernel
+    call kernel_main
+    
+    ; If we return from kernel_main, halt the system
+.halt:
+    cli                 ; Disable interrupts
+    hlt                 ; Halt the CPU
+    jmp .halt           ; Just in case
 MB2_LENGTH   equ (multiboot_header_end - multiboot_header_start)
 MB2_CHECKSUM equ -(MB2_MAGIC + MB2_ARCH + MB2_LENGTH)
 
 ; Multiboot2 header
+multiboot_header:
 multiboot_header_start:
-    dd MB2_MAGIC        ; Magic value
+    dd MB2_MAGIC        ; Magic number
     dd MB2_ARCH         ; Architecture
     dd MB2_LENGTH       ; Header length
     dd MB2_CHECKSUM     ; Checksum
 
+    ; Information request tag
+    align 8
+    dw 1                ; Type: information request
+    dw 0                ; Flags
+    dd 16               ; Size
+    dd 4                ; Request basic memory information
+    dd 6                ; Request memory map
+
     ; Address tag
     align 8
-    dw 2               ; Type: address
-    dw 0               ; Flags
-    dd 24              ; Size
-    dd multiboot_header_start  ; Header addr
-    dd _start          ; Load addr
-    dd _start          ; Load end addr
-    dd _start          ; BSS end addr
+    dw 2                ; Type: address
+    dw 0                ; Flags
+    dd 24               ; Size
+    dd multiboot_header ; Header addr
+    dd _start           ; Load addr
+    dd _end             ; Load end addr
+    dd _bss_end         ; BSS end addr
+
+    ; Entry tag
+    align 8
+    dw 3                ; Type: entry address
+    dw 0                ; Flags
+    dd 12               ; Size
+    dd _start           ; Entry point address
 
     ; Required end tag
     align 8
-    dw 0    ; Type
-    dw 0    ; Flags
-    dd 8    ; Size
+    dw 0                ; Type
+    dw 0                ; Flags
+    dd 8                ; Size
 multiboot_header_end:
-    align 8  ; Ensure proper alignment
+    align 8             ; Ensure proper alignment
 
-; Page table structures
-section .data
+section .bss nobits align=4096
+global _bss_start
+_bss_start:
+
+; Stack
+align 16
+stack_bottom:
+    resb 16384               ; 16 KiB
+stack_top:
+
+; Page tables
 align 4096
-; Level 4 page table (PML4)
-global pml4_table
-pml4_table:
+global page_table_l4
+page_table_l4:
     resb 4096
-; Level 3 page table (PDP)
-global pdp_table
-pdp_table:
+global page_table_l3
+page_table_l3:
     resb 4096
-; Level 2 page table (PD)
+global page_table_l2
+page_table_l2:
+    resb 4096
+
+global _bss_end
+_bss_end:
+
+section .data align=4096
+global _data_start
+_data_start:
+
+; End marker for loadable sections
+global _end
+_end:
+    dq 0
 global pd_table
 pd_table:
     resb 4096
