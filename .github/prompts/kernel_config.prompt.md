@@ -157,7 +157,7 @@ int function() {
     - /include: ヘッダファイル
 
 - アプリの扱い
-
+```
 apps/
 ├─ Memo.app/
 │   └─ Contents/
@@ -179,4 +179,6 @@ apps/
         ├─ bin
         ├─ Resources/
         └─ Info.txt
+```
+
     - .appにアクセスしたらカーネルはそのディレクトリ内のContents/binを実行する。
