@@ -2,4 +2,4 @@ bin/
 release/
 
 *.log
-Makefile
+./Makefile
