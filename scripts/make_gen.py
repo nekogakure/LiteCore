@@ -119,12 +119,12 @@ class MakefileGenerator:
         
         # ブートローダーファイルのコンパイル
         for source in sorted(self.boot_files):
-            obj = f"{self.build_dir}/{os.path.splitext(os.path.basename(source))[0]}_boot.o"
+            obj = f"{self.build_dir}/{os.path.splitext(os.path.basename(source))[0]}.o"
             objects.append(obj)
             
             f.write(f"{obj}: {source}\n")
             f.write(f"\tmkdir -p {self.build_dir}\n")
-            f.write(f"\t$(ASM) $(ASMFLAGS) -o {obj} {source}\n\n")
+            f.write(f"\t$(ASM) $(ASMFLAGS) -o {obj} {source} -w-gnu-stack\n\n")
 
         # カーネルのリンク
         objects_str = " ".join(objects)
@@ -162,7 +162,9 @@ class MakefileGenerator:
 
 
     def generate_makefile(self) -> str:
-        # GRUB対応：start.asmは不要（C言語で_startを実装）
+        # GRUB対応：multiboot.asmは明示的に追加する
+        boot_asm_files = [f for f in self.boot_files 
+                         if os.path.basename(f) == "multiboot.asm"]
         other_asm_files = [f for f in self.asm_files 
                           if not f.startswith(self.loader_dir)]
         kernel_c_srcs = [f for f in self.lib_files + self.c_files 
@@ -174,6 +176,13 @@ class MakefileGenerator:
         for src in kernel_c_srcs:
             obj_name = os.path.basename(src).replace(".c", ".o")
             kernel_objs.append(f"{self.build_dir}/{obj_name}")
+        
+        # ブートローダーファイル（multiboot.asm）を追加
+        for boot_file in boot_asm_files:
+            obj_name = os.path.basename(boot_file).replace(".asm", ".o")
+            obj_path = f"{self.build_dir}/{obj_name}"
+            if obj_path not in kernel_objs:
+                kernel_objs.append(obj_path)
         
         # その他のASMファイルがあれば追加
         for asm_file in other_asm_files:
@@ -224,7 +233,13 @@ kernel: $(KERNEL_BIN)
             makefile_content += f"{obj_path}: {c_file} {deps_str}\n"
             makefile_content += "\tmkdir -p $(BUILD_DIR)\n"
             makefile_content += "\tgcc $(CFLAGS) -c $< -o $@\n\n"
+        # multiboot.asmの明示的なコンパイルルール
         makefile_content += """
+# Multibootヘッダーの明示的なコンパイル
+$(BUILD_DIR)/multiboot.o: boot/multiboot.asm
+\tmkdir -p $(BUILD_DIR)
+\tnasm -f elf64 -g -o $@ $< -w-gnu-stack
+
 $(KERNEL_ELF): $(KERNEL_OBJS)
 \tld -m elf_x86_64 -T $(KERNEL_DIR)/linker.ld -o $(KERNEL_ELF) --build-id=none -g $^ -z noexecstack
 \t@echo "\\033[0;32mKernel ELF size: $$(wc -c < $@) bytes\\033[0m"

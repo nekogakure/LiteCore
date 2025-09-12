@@ -8,6 +8,6 @@
 #ifndef _CONFIG_H
 #define _CONFIG_H
 
-#define CONF_PROJECT_VERSION "0.1"
+#define CONF_PROJECT_VERSION "0.1."
 
 #endif /* _CONFIG_H */

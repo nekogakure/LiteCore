@@ -4,7 +4,7 @@ BUILD_DIR = bin
 
 KERNEL_C_SRCS = kernel/lib/string.c kernel/lib/stdio.c mem/memory.c kernel/main.c kernel/vga/console.c kernel/util/scheduler.c kernel/util/gdt/gdt.c kernel/util/idt/idt.c kernel/util/interrupt/interrupt_handler.c kernel/util/interrupt/interrupt.c
 OTHER_ASM_SRCS = kernel/util/gdt/gdt_asm.asm kernel/util/idt/idt_asm.asm kernel/util/interrupt/interrupt_asm.asm
-KERNEL_OBJS = bin/string.o bin/stdio.o bin/memory.o bin/main.o bin/console.o bin/scheduler.o bin/gdt.o bin/idt.o bin/interrupt_handler.o bin/interrupt.o bin/gdt_asm.o bin/idt_asm.o bin/interrupt_asm.o
+KERNEL_OBJS = bin/string.o bin/stdio.o bin/memory.o bin/main.o bin/console.o bin/scheduler.o bin/gdt.o bin/idt.o bin/interrupt_handler.o bin/interrupt.o bin/multiboot.o bin/gdt_asm.o bin/idt_asm.o bin/interrupt_asm.o
 
 KERNEL_BIN = $(BUILD_DIR)/kernel.bin
 KERNEL_ELF = $(BUILD_DIR)/kernel.elf
@@ -70,14 +70,22 @@ $(BUILD_DIR)/interrupt.o: kernel/util/interrupt/interrupt.c include/util/interru
 	gcc $(CFLAGS) -c $< -o $@
 
 
-$(KERNEL_BIN): $(KERNEL_OBJS)
-	ld -m elf_x86_64 -T $(KERNEL_DIR)/linker.ld -o $(KERNEL_ELF) --build-id=none -g $^ -z noexecstack
-	objcopy -O binary $(KERNEL_ELF) $@
-	@echo "\033[0;32mKernel size: $$(wc -c < $@) bytes\033[0m"
+# Multibootヘッダーの明示的なコンパイル
+$(BUILD_DIR)/multiboot.o: boot/multiboot.asm
+	mkdir -p $(BUILD_DIR)
+	nasm -f elf64 -g -o $@ $< -w-gnu-stack
 
-$(ISO): $(KERNEL_BIN)
+$(KERNEL_ELF): $(KERNEL_OBJS)
+	ld -m elf_x86_64 -T $(KERNEL_DIR)/linker.ld -o $(KERNEL_ELF) --build-id=none -g $^ -z noexecstack
+	@echo "\033[0;32mKernel ELF size: $$(wc -c < $@) bytes\033[0m"
+
+$(KERNEL_BIN): $(KERNEL_ELF)
+	objcopy -O binary $(KERNEL_ELF) $(KERNEL_BIN)
+	@echo "\033[0;32mKernel binary size: $$(wc -c < $@) bytes\033[0m"
+
+$(ISO): $(KERNEL_ELF)
 	mkdir -p $(BUILD_DIR)/iso/boot/grub
-	cp $(KERNEL_BIN) $(BUILD_DIR)/iso/boot/
+	cp $(KERNEL_ELF) $(BUILD_DIR)/iso/boot/
 	cp grub/grub.cfg $(BUILD_DIR)/iso/boot/grub/
 	grub-mkrescue -o $(ISO) $(BUILD_DIR)/iso
 	@echo "\033[0;32mGRUB ISO created: $(ISO)\033[0m"

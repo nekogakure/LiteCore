@@ -31,7 +31,7 @@ multiboot_header:
     dw 0                        ; Flags
     dd 24                       ; Size
     dd multiboot_header         ; Header address
-    dd _start                   ; Load address
+    dd multiboot_start          ; Load address
     dd _edata                   ; Load end address
     dd _end                     ; BSS end address
 
@@ -40,7 +40,7 @@ multiboot_header:
     dw 3                        ; Type: entry tag
     dw 0                        ; Flags
     dd 12                       ; Size
-    dd _start                   ; Entry address
+    dd multiboot_start          ; Entry address
 
     ; End tag
     align 8
@@ -52,10 +52,11 @@ header_end:
 ; Text section (code)
 section .text
 align 4096                      ; Page alignment
-global _start                   ; Entry point
+global multiboot_start
 extern kernel_main              ; C kernel main function
+extern _start
 
-_start:
+multiboot_start:
     ; Stack and interrupt setup
     cli                         ; Disable interrupts
     cld                         ; Clear direction flag
@@ -77,10 +78,10 @@ _start:
     xor eax, eax
     rep stosb
 
-    ; Call kernel main
+    ; Call kernel directly
     call kernel_main
-
-    ; If returned, infinite loop
+    
+    ; If we return, halt
 .halt:
     cli
     hlt
