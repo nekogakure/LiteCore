@@ -11,6 +11,7 @@
 #include <stddef.h>
 #include "multiboot.h"
 #include "console.h"
+#include "system.h"
 
 /**
  * @brief Kernel main entry point

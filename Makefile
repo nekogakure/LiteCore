@@ -2,22 +2,26 @@
 KERNEL_DIR = kernel
 BUILD_DIR = bin
 
-KERNEL_C_SRCS = kernel/main.c
+KERNEL_C_SRCS = kernel/main.c kernel/console.c
 OTHER_ASM_SRCS = 
-KERNEL_OBJS = bin/main.o
+KERNEL_OBJS = bin/main.o bin/console.o
 
 KERNEL_BIN = $(BUILD_DIR)/kernel.bin
 KERNEL_ELF = $(BUILD_DIR)/kernel.elf
 ISO = $(BUILD_DIR)/litecore.iso
 
 VERSION = $(shell cat version.txt 2>/dev/null || echo "dev")
-CFLAGS = -m64 -ffreestanding -fno-pic -mcmodel=large -mno-red-zone -mno-mmx -mno-sse -mno-sse2 -Ikernel -g -O0 -DKERNEL_VERSION=\"$(VERSION)\"
+CFLAGS = -m64 -ffreestanding -fno-pic -mcmodel=large -mno-red-zone -mno-mmx -mno-sse -mno-sse2 -Iinclude -Ikernel -g -O0 -DKERNEL_VERSION=\"$(VERSION)\"
 
 all: $(ISO)
 
 kernel: $(KERNEL_BIN)
 
-$(BUILD_DIR)/main.o: kernel/main.c 
+$(BUILD_DIR)/main.o: kernel/main.c include/multiboot.h include/console.h
+	mkdir -p $(BUILD_DIR)
+	gcc $(CFLAGS) -c $< -o $@
+
+$(BUILD_DIR)/console.o: kernel/console.c include/console.h
 	mkdir -p $(BUILD_DIR)
 	gcc $(CFLAGS) -c $< -o $@
 
