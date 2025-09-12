@@ -47,8 +47,6 @@ int function() {
     * @details
     * 用途や注意点、使用例などを記載します。
     * @author ...
-    * @version 1.0
-    * @date 2025-09-11
     */
     ```
 
