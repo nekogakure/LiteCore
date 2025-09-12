@@ -35,13 +35,7 @@ $ git clone https://github.com/nekogakure/LiteCore.git
 $ cd LiteCore
 ```
 
-2. ビルドツールに実行権限を付与します
-```sh
-$ chmod +x ./run.sh
-$ chmod +x ./make.sh
-$ chmod +x ./debug.sh
-```
-3. それぞれのスクリプトの役割
+2. それぞれのスクリプトの役割
     1. `run`: プロジェクトをビルドし、QEMUで実行します
     2. `make`: プロジェクトをビルドします
     3. `debug`: プロジェクトをビルドし、QEMUで実行して、ログをすべて`qemu.log`に出力します
