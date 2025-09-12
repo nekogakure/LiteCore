@@ -146,7 +146,7 @@ int function() {
     - できる限りかんたんなコードにする
 - OSのファイル構成
     - /boot: GRUB関連
-    - /kernel: カーネル本体
+    - /kernel: カーネル本体(全体の管理)
     - /lib: 共通ライブラリ
     - /apps: ユーザープログラム
     - /scripts: ビルドスクリプト
@@ -155,3 +155,28 @@ int function() {
     - /fs: ファイルシステム
     - /drivers: デバイスドライバ
     - /include: ヘッダファイル
+
+- アプリの扱い
+
+apps/
+├─ Memo.app/
+│   └─ Contents/
+│       ├─ bin
+│       ├─ Resources/
+│       └─ Info.txt
+├─ TextEditor.app/
+│   └─ Contents/
+│       ├─ bin
+│       ├─ Resources/
+│       └─ Info.txt
+├─ MiniGame.app/
+│   └─ Contents/
+│       ├─ bin
+│       ├─ Resources/
+│       └─ Info.txt
+└─ Calculator.app/
+    └─ Contents/
+        ├─ bin
+        ├─ Resources/
+        └─ Info.txt
+    - .appにアクセスしたらカーネルはそのディレクトリ内のContents/binを実行する。
