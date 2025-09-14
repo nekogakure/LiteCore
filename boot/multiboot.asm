@@ -53,13 +53,28 @@ header_end:
 section .text
 align 4096                      ; Page alignment
 global multiboot_start
-extern kernel_main              ; C kernel main function
-extern _start
+extern kernel_main
 
 multiboot_start:
+    ; Debug code - Early serial port output 
+    mov dx, 0x3F8               ; COM1 serial port
+    mov al, 'M'                 ; 'M' for Multiboot
+    out dx, al
+    
     ; Stack and interrupt setup
     cli                         ; Disable interrupts
     cld                         ; Clear direction flag
+    
+    ; Set up simple GDT for 32-bit protected mode
+    lgdt [gdt32_ptr]
+    
+    ; Reload segments
+    mov ax, 0x10
+    mov ds, ax
+    mov es, ax
+    mov fs, ax
+    mov gs, ax
+    mov ss, ax
     
     ; Set up stack
     mov esp, stack_top
@@ -77,8 +92,29 @@ multiboot_start:
     mov ecx, _bss_size
     xor eax, eax
     rep stosb
+    
+    ; Debug code - Before calling kernel_main
+    mov dx, 0x3F8               ; COM1 serial port
+    mov al, 'K'                 ; 'K' for Kernel main
+    out dx, al
 
-    ; Call kernel directly
+    mov dx, 0x3F8           ; COM1 base port
+    mov al, 'E'
+    out dx, al
+    mov al, 'R'
+    out dx, al
+    mov al, 'R'
+    out dx, al
+    mov al, 'O'
+    out dx, al
+    mov al, 'R'
+    out dx, al
+    mov al, ':'
+    out dx, al
+    mov al, ' '
+    out dx, al
+    
+    ; call kernel main (no call _start)
     call kernel_main
     
     ; If we return, halt
@@ -106,6 +142,33 @@ section .data
 align 4096
 global _edata
 _edata:
+
+; 32-bit protected mode GDT
+section .data
+align 8
+gdt32:
+    ; Null descriptor
+    dw 0, 0, 0, 0
+    
+    ; 32-bit code segment
+    dw 0xFFFF    ; Limit (bits 0-15)
+    dw 0         ; Base (bits 0-15)
+    db 0         ; Base (bits 16-23)
+    db 0x9A      ; Access byte - code segment, readable, present
+    db 0xCF      ; Flags and Limit (bits 16-19)
+    db 0         ; Base (bits 24-31)
+    
+    ; 32-bit data segment
+    dw 0xFFFF    ; Limit (bits 0-15)
+    dw 0         ; Base (bits 0-15)
+    db 0         ; Base (bits 16-23)
+    db 0x92      ; Access byte - data segment, writable, present
+    db 0xCF      ; Flags and Limit (bits 16-19)
+    db 0         ; Base (bits 24-31)
+    
+gdt32_ptr:
+    dw $ - gdt32 - 1    ; GDT size
+    dd gdt32            ; GDT address
 
 ; End marker
 section .end

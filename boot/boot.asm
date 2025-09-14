@@ -15,6 +15,11 @@ boot_start:
     mov gs, ax
     mov ss, ax
 
+    ; debug code
+    mov dx, 3F8h
+    mov al, 'A'
+    out dx, al
+
     ; Return to multiboot.asm entry point
     extern _start
     jmp _start
@@ -63,6 +68,11 @@ global _start
 extern kernel_main
 
 _start:
+    ; Debug code - Early serial port output 
+    mov dx, 0x3F8           ; COM1 serial port
+    mov al, '_'             ; '_' for _start entry
+    out dx, al
+    
     ; Setup stack
     mov esp, stack_top
 
@@ -70,6 +80,11 @@ _start:
     push ebx                ; Info structure pointer
     push eax                ; Magic value
 
+    ; Debug code - Before magic check
+    mov dx, 0x3F8           ; COM1 serial port
+    mov al, 'C'             ; 'C' for Check
+    out dx, al
+    
     ; Check Multiboot2 magic
     cmp eax, 0x36D76289
     jne .no_multiboot
@@ -164,11 +179,19 @@ _start:
     jmp error
 
 error:
-    ; Print "ERR: X" where X is the error code
-    mov dword [0xb8000], 0x4f524f45
-    mov dword [0xb8004], 0x4f3a4f52
-    mov dword [0xb8008], 0x4f204f20
-    mov byte  [0xb800a], al
+    ; Print "ERR: X" to serial port
+    mov dx, 0x3F8           ; COM1 serial port
+    mov al, 'E'
+    out dx, al
+    mov al, 'R'
+    out dx, al
+    mov al, 'R'
+    out dx, al
+    mov al, ':'
+    out dx, al
+    mov al, ' '
+    out dx, al
+    out dx, al              ; Output error code in AL
     hlt
 
 section .rodata
@@ -183,6 +206,14 @@ gdt64:
 
 [BITS 64]
 long_mode_start:
+    ; Debug code in 64-bit mode - Write directly to video memory
+    mov byte [0xb8000], 'L'      ; 'L' for Long mode
+    mov byte [0xb8001], 0x0F     ; White on black
+    mov byte [0xb8002], '6'      ; '6' for 64-bit
+    mov byte [0xb8003], 0x0F     ; White on black
+    mov byte [0xb8004], '4'      ; '4' for 64-bit
+    mov byte [0xb8005], 0x0F     ; White on black
+
     ; Initialize all segment registers
     mov ax, 0
     mov ss, ax
@@ -195,6 +226,11 @@ long_mode_start:
     pop rdi                ; Magic value
     pop rsi                ; Info structure pointer
 
+    ; Write to COM1 port in 64-bit mode
+    mov dx, 0x3F8          ; COM1 serial port
+    mov al, 'K'            ; 'K' for Kernel
+    out dx, al
+    
     ; Call kernel
     call kernel_main
 

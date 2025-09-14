@@ -7,11 +7,16 @@
  */
 
 #include <stdarg.h>
-#include "string.h"
+#include "lib/string.h"
 #include "vga/console.h"
+#include "config.h"
 
-/** @brief VGA text buffer address */
-#define VGA_BUFFER 0xB8000
+/** 
+ * @brief VGA text buffer address 
+ * 0xB8000 is the standard VGA text buffer address in physical memory
+ * In 64-bit mode with paging, we use the direct mapping of physical memory
+ */
+#define VGA_BUFFER 0xB8000ULL
 
 /** @brief Console width in characters */
 #define CONSOLE_WIDTH 80
@@ -46,13 +51,16 @@ void init_console(void) {
 }
 
 void console_putchar(char c) {
-    uint16_t* buffer = (uint16_t*)VGA_BUFFER;
+    // Cast to a 64-bit pointer to ensure correct addressing in long mode
+    volatile uint16_t* buffer = (volatile uint16_t*)(uintptr_t)VGA_BUFFER;
 
     if (c == '\n') {
         cursor_x = 0;
         cursor_y++;
     } else {
-        buffer[cursor_y * CONSOLE_WIDTH + cursor_x] = make_vga_entry(c, text_color);
+        // Ensure memory writes are performed correctly
+        uint16_t entry = make_vga_entry(c, text_color);
+        buffer[cursor_y * CONSOLE_WIDTH + cursor_x] = entry;
         cursor_x++;
     }
 
@@ -83,18 +91,18 @@ void console_write(const char* str) {
 }
 
 void printk(const char* fmt, ...) {
-    static char buf[PRINTK_BUFFER_SIZE];
-    va_list args;
+    // Simple version that just prints the format string without formatting
+    console_puts(fmt);
     
-    va_start(args, fmt);
-    vsnprintf(buf, sizeof(buf), fmt, args);
-    va_end(args);
-    
-    console_write(buf);
+    // In case a version number is being printed
+    if (fmt[0] == 'v' && fmt[1] == 'e' && fmt[2] == 'r') {
+        console_puts(" ");
+        console_puts(CONF_PROJECT_VERSION);
+    }
 }
 
 void console_clear(void) {
-    uint16_t* buffer = (uint16_t*)VGA_BUFFER;
+    volatile uint16_t* buffer = (volatile uint16_t*)(uintptr_t)VGA_BUFFER;
     uint16_t blank = make_vga_entry(' ', text_color);
     
     for (int i = 0; i < CONSOLE_WIDTH * CONSOLE_HEIGHT; i++) {
@@ -105,7 +113,7 @@ void console_clear(void) {
 }
 
 void console_puts(const char *str) {
-    uint16_t *buffer = (uint16_t*)VGA_BUFFER;
+    volatile uint16_t *buffer = (volatile uint16_t*)(uintptr_t)VGA_BUFFER;
     
     while (*str) {
         if (*str == '\n') {

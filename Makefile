@@ -2,9 +2,9 @@
 KERNEL_DIR = kernel
 BUILD_DIR = bin
 
-KERNEL_C_SRCS = kernel/lib/string.c kernel/lib/stdio.c mem/memory.c kernel/main.c kernel/vga/console.c kernel/util/scheduler.c kernel/util/gdt/gdt.c kernel/util/idt/idt.c kernel/util/interrupt/interrupt_handler.c kernel/util/interrupt/interrupt.c
+KERNEL_C_SRCS = kernel/lib/string.c kernel/lib/serial.c kernel/lib/debug.c kernel/lib/stdio.c mem/memory.c kernel/main.c kernel/vga/console.c kernel/util/scheduler.c kernel/util/gdt/gdt.c kernel/util/idt/idt.c kernel/util/interrupt/interrupt_handler.c kernel/util/interrupt/interrupt.c
 OTHER_ASM_SRCS = kernel/util/gdt/gdt_asm.asm kernel/util/idt/idt_asm.asm kernel/util/interrupt/interrupt_asm.asm
-KERNEL_OBJS = bin/string.o bin/stdio.o bin/memory.o bin/main.o bin/console.o bin/scheduler.o bin/gdt.o bin/idt.o bin/interrupt_handler.o bin/interrupt.o bin/multiboot.o bin/gdt_asm.o bin/idt_asm.o bin/interrupt_asm.o
+KERNEL_OBJS = bin/string.o bin/serial.o bin/debug.o bin/stdio.o bin/memory.o bin/main.o bin/console.o bin/scheduler.o bin/gdt.o bin/idt.o bin/interrupt_handler.o bin/interrupt.o bin/multiboot.o bin/gdt_asm.o bin/idt_asm.o bin/interrupt_asm.o
 
 KERNEL_BIN = $(BUILD_DIR)/kernel.bin
 KERNEL_ELF = $(BUILD_DIR)/kernel.elf
@@ -33,6 +33,14 @@ $(BUILD_DIR)/string.o: kernel/lib/string.c include/lib/string.h
 	mkdir -p $(BUILD_DIR)
 	gcc $(CFLAGS) -c $< -o $@
 
+$(BUILD_DIR)/serial.o: kernel/lib/serial.c include/lib/serial.h
+	mkdir -p $(BUILD_DIR)
+	gcc $(CFLAGS) -c $< -o $@
+
+$(BUILD_DIR)/debug.o: kernel/lib/debug.c include/lib/debug.h
+	mkdir -p $(BUILD_DIR)
+	gcc $(CFLAGS) -c $< -o $@
+
 $(BUILD_DIR)/stdio.o: kernel/lib/stdio.c 
 	mkdir -p $(BUILD_DIR)
 	gcc $(CFLAGS) -c $< -o $@
@@ -41,11 +49,11 @@ $(BUILD_DIR)/memory.o: mem/memory.c include/memory.h include/vga/console.h
 	mkdir -p $(BUILD_DIR)
 	gcc $(CFLAGS) -c $< -o $@
 
-$(BUILD_DIR)/main.o: kernel/main.c include/multiboot.h include/vga/console.h include/system.h include/memory.h include/scheduler.h include/config.h
+$(BUILD_DIR)/main.o: kernel/main.c include/multiboot.h include/vga/console.h include/system.h include/memory.h include/scheduler.h include/config.h include/lib/serial.h include/lib/debug.h include/lib/early_debug.h
 	mkdir -p $(BUILD_DIR)
 	gcc $(CFLAGS) -c $< -o $@
 
-$(BUILD_DIR)/console.o: kernel/vga/console.c include/lib/string.h include/vga/console.h
+$(BUILD_DIR)/console.o: kernel/vga/console.c include/lib/string.h include/vga/console.h include/config.h
 	mkdir -p $(BUILD_DIR)
 	gcc $(CFLAGS) -c $< -o $@
 
@@ -94,7 +102,7 @@ run: $(ISO)
 	qemu-system-x86_64 -cdrom $(ISO) -monitor stdio -cpu qemu64 -no-reboot -no-shutdown
 
 run-debug: $(ISO)
-	qemu-system-x86_64 -cdrom $(ISO) -monitor stdio -cpu qemu64 -no-reboot -no-shutdown -d int,cpu_reset,exec,in_asm,page -D qemu.log
+	qemu-system-x86_64 -cdrom $(ISO) -monitor stdio -cpu qemu64 -no-reboot -no-shutdown -d int,guest_errors -D qemu.log
 
 debug: $(ISO) clean-qemu
 	@echo "Starting QEMU with GDB server on port 1234..."

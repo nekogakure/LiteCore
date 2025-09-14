@@ -259,7 +259,7 @@ run: $(ISO)
 \tqemu-system-x86_64 -cdrom $(ISO) -monitor stdio -cpu qemu64 -no-reboot -no-shutdown
 
 run-debug: $(ISO)
-\tqemu-system-x86_64 -cdrom $(ISO) -monitor stdio -cpu qemu64 -no-reboot -no-shutdown -d int,cpu_reset,exec,in_asm,page -D qemu.log
+\tqemu-system-x86_64 -cdrom $(ISO) -monitor stdio -cpu qemu64 -no-reboot -no-shutdown -d int,guest_errors -D qemu.log
 
 debug: $(ISO) clean-qemu
 \t@echo "Starting QEMU with GDB server on port 1234..."

@@ -40,15 +40,27 @@ enum vga_color {
 void init_console(void);
 
 /**
+ * @brief Write a single character to the console
+ * @param c Character to write
+ */
+void console_putchar(char c);
+
+/**
  * @brief Write a string to the console
  * @param str Null-terminated string to write
  */
 void console_puts(const char *str);
 
 /**
+ * @brief Write a string to the console (alternative implementation)
+ * @param str Null-terminated string to write
+ */
+void console_write(const char* str);
+
+/**
  * @brief print to the console. Like printf but without formatting.
  * @param format Null-terminated string to write
- * @return Number of characters written
+ * @param ... Variable arguments
  */
 void printk(const char* fmt, ...);
 
