@@ -33,10 +33,10 @@ class MakefileGenerator:
         self.build_dir = "bin"
         self.loader_dir = "boot"
         self.kernel_dir = "kernel"
-        self.cflags = "-m64 -ffreestanding -fno-pic -mcmodel=large -mno-red-zone -mno-mmx -mno-sse -mno-sse2"
+        self.cflags = "-m32 -ffreestanding -fno-pic -mno-red-zone -mno-mmx -mno-sse -mno-sse2"
         self.debug_flags = "-g -O0"
-        self.asmflags = "-f elf64"
-        self.ldflags = "-m elf_x86_64"
+        self.asmflags = "-f elf32"
+        self.ldflags = "-m elf_i386"
         self.img = f"{self.build_dir}/litecore.img"
         self.boot_bin = f"{self.build_dir}/boot.bin"
         self.kernel_bin = f"{self.build_dir}/kernel.bin"
@@ -222,7 +222,7 @@ kernel: $(KERNEL_BIN)
             obj_path = f"$(BUILD_DIR)/{obj_name}"
             makefile_content += f"{obj_path}: {asm_file}\n"
             makefile_content += "\tmkdir -p $(BUILD_DIR)\n"
-            makefile_content += "\tnasm -f elf64 -g -F dwarf -o $@ $< -w-gnu-stack\n\n"
+            makefile_content += "\tnasm -f elf32 -g -F dwarf -o $@ $< -w-gnu-stack\n\n"
             
         # C言語ファイルのコンパイル
         for c_file in kernel_c_srcs:
@@ -238,10 +238,10 @@ kernel: $(KERNEL_BIN)
 # Multibootヘッダーの明示的なコンパイル
 $(BUILD_DIR)/multiboot.o: boot/multiboot.asm
 \tmkdir -p $(BUILD_DIR)
-\tnasm -f elf64 -g -o $@ $< -w-gnu-stack
+\tnasm -f elf32 -g -o $@ $< -w-gnu-stack
 
 $(KERNEL_ELF): $(KERNEL_OBJS)
-\tld -m elf_x86_64 -T $(KERNEL_DIR)/linker.ld -o $(KERNEL_ELF) --build-id=none -g $^ -z noexecstack
+\tld -m elf_i386 -T $(KERNEL_DIR)/linker.ld -o $(KERNEL_ELF) --build-id=none -g $^ -z noexecstack
 \t@echo "\\033[0;32mKernel ELF size: $$(wc -c < $@) bytes\\033[0m"
 
 $(KERNEL_BIN): $(KERNEL_ELF)
@@ -258,8 +258,14 @@ $(ISO): $(KERNEL_ELF)
 run: $(ISO)
 \tqemu-system-x86_64 -cdrom $(ISO) -monitor stdio -cpu qemu64 -no-reboot -no-shutdown
 
+run-serial: $(ISO)
+\tqemu-system-x86_64 -cdrom $(ISO) -serial stdio -cpu qemu64 -no-reboot -no-shutdown
+
 run-debug: $(ISO)
 \tqemu-system-x86_64 -cdrom $(ISO) -monitor stdio -cpu qemu64 -no-reboot -no-shutdown -d int,guest_errors -D qemu.log
+
+run-debug-serial: $(ISO)
+\tqemu-system-x86_64 -cdrom $(ISO) -serial stdio -cpu qemu64 -no-reboot -no-shutdown -d int,guest_errors -D qemu.log
 
 debug: $(ISO) clean-qemu
 \t@echo "Starting QEMU with GDB server on port 1234..."
@@ -287,7 +293,7 @@ memory-map: $(KERNEL_ELF)
 \t@echo "\\n======== Disassembly of start ========"
 \t@objdump -d -j .text.boot $(KERNEL_ELF)
 
-.PHONY: all kernel run run-debug debug clean clean-qemu memory-map
+.PHONY: all kernel run run-serial run-debug debug clean clean-qemu memory-map
 """
         return makefile_content
 

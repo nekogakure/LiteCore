@@ -71,7 +71,7 @@ static int is_transmit_empty(void) {
  */
 void serial_write_char(char c) {
     // Wait for the transmit buffer to be empty
-    while (is_transmit_empty() == 0);
+    while (!is_transmit_empty());
     
     // Send the character
     outb(SERIAL_PORT_COM1, c);

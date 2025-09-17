@@ -11,7 +11,7 @@ KERNEL_ELF = $(BUILD_DIR)/kernel.elf
 ISO = $(BUILD_DIR)/litecore.iso
 
 VERSION = $(shell cat version.txt 2>/dev/null || echo "dev")
-CFLAGS = -m64 -ffreestanding -fno-pic -mcmodel=large -mno-red-zone -mno-mmx -mno-sse -mno-sse2 -Iinclude -Iinclude/lib -Iinclude/util -Iinclude/vga -Ikernel -Ikernel/lib -Ikernel/util -Ikernel/util/gdt -Ikernel/util/idt -Ikernel/util/interrupt -Ikernel/vga -Imem -g -O0 -DKERNEL_VERSION=\"$(VERSION)\"
+CFLAGS = -m32 -ffreestanding -fno-pic -mno-red-zone -mno-mmx -mno-sse -mno-sse2 -Iinclude -Iinclude/lib -Iinclude/util -Iinclude/vga -Ikernel -Ikernel/lib -Ikernel/util -Ikernel/util/gdt -Ikernel/util/idt -Ikernel/util/interrupt -Ikernel/vga -Imem -g -O0 -DKERNEL_VERSION=\"$(VERSION)\"
 
 all: $(ISO)
 
@@ -19,15 +19,15 @@ kernel: $(KERNEL_BIN)
 
 $(BUILD_DIR)/gdt_asm.o: kernel/util/gdt/gdt_asm.asm
 	mkdir -p $(BUILD_DIR)
-	nasm -f elf64 -g -F dwarf -o $@ $< -w-gnu-stack
+	nasm -f elf32 -g -F dwarf -o $@ $< -w-gnu-stack
 
 $(BUILD_DIR)/idt_asm.o: kernel/util/idt/idt_asm.asm
 	mkdir -p $(BUILD_DIR)
-	nasm -f elf64 -g -F dwarf -o $@ $< -w-gnu-stack
+	nasm -f elf32 -g -F dwarf -o $@ $< -w-gnu-stack
 
 $(BUILD_DIR)/interrupt_asm.o: kernel/util/interrupt/interrupt_asm.asm
 	mkdir -p $(BUILD_DIR)
-	nasm -f elf64 -g -F dwarf -o $@ $< -w-gnu-stack
+	nasm -f elf32 -g -F dwarf -o $@ $< -w-gnu-stack
 
 $(BUILD_DIR)/string.o: kernel/lib/string.c include/lib/string.h
 	mkdir -p $(BUILD_DIR)
@@ -81,10 +81,10 @@ $(BUILD_DIR)/interrupt.o: kernel/util/interrupt/interrupt.c include/util/interru
 # Multibootヘッダーの明示的なコンパイル
 $(BUILD_DIR)/multiboot.o: boot/multiboot.asm
 	mkdir -p $(BUILD_DIR)
-	nasm -f elf64 -g -o $@ $< -w-gnu-stack
+	nasm -f elf32 -g -o $@ $< -w-gnu-stack
 
 $(KERNEL_ELF): $(KERNEL_OBJS)
-	ld -m elf_x86_64 -T $(KERNEL_DIR)/linker.ld -o $(KERNEL_ELF) --build-id=none -g $^ -z noexecstack
+	ld -m elf_i386 -T $(KERNEL_DIR)/linker.ld -o $(KERNEL_ELF) --build-id=none -g $^ -z noexecstack
 	@echo "\033[0;32mKernel ELF size: $$(wc -c < $@) bytes\033[0m"
 
 $(KERNEL_BIN): $(KERNEL_ELF)
@@ -101,8 +101,14 @@ $(ISO): $(KERNEL_ELF)
 run: $(ISO)
 	qemu-system-x86_64 -cdrom $(ISO) -monitor stdio -cpu qemu64 -no-reboot -no-shutdown
 
+run-serial: $(ISO)
+	qemu-system-x86_64 -cdrom $(ISO) -serial stdio -cpu qemu64 -no-reboot -no-shutdown
+
 run-debug: $(ISO)
 	qemu-system-x86_64 -cdrom $(ISO) -monitor stdio -cpu qemu64 -no-reboot -no-shutdown -d int,guest_errors -D qemu.log
+
+run-debug-serial: $(ISO)
+	qemu-system-x86_64 -cdrom $(ISO) -serial stdio -cpu qemu64 -no-reboot -no-shutdown -d int,guest_errors -D qemu.log
 
 debug: $(ISO) clean-qemu
 	@echo "Starting QEMU with GDB server on port 1234..."
@@ -130,4 +136,4 @@ memory-map: $(KERNEL_ELF)
 	@echo "\n======== Disassembly of start ========"
 	@objdump -d -j .text.boot $(KERNEL_ELF)
 
-.PHONY: all kernel run run-debug debug clean clean-qemu memory-map
+.PHONY: all kernel run run-serial run-debug debug clean clean-qemu memory-map

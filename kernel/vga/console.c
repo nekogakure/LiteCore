@@ -14,9 +14,8 @@
 /** 
  * @brief VGA text buffer address 
  * 0xB8000 is the standard VGA text buffer address in physical memory
- * In 64-bit mode with paging, we use the direct mapping of physical memory
  */
-#define VGA_BUFFER 0xB8000ULL
+#define VGA_BUFFER 0xB8000
 
 /** @brief Console width in characters */
 #define CONSOLE_WIDTH 80
@@ -36,6 +35,9 @@ static int cursor_y = 0;
 /** @brief Current text color */
 static uint8_t text_color = 0x0F; // White on black
 
+/** @brief Console initialization flag */
+static int console_initialized = 0;
+
 /**
  * @brief Create a VGA entry from character and color
  * @param c Character to display
@@ -47,12 +49,31 @@ static uint16_t make_vga_entry(char c, uint8_t color) {
 }
 
 void init_console(void) {
-    console_clear();
+    // Force reset all static variables to known values
+    cursor_x = 0;
+    cursor_y = 0;
+    text_color = 0x0F; // White on black
+    console_initialized = 1;
+    
+    // Clear the entire VGA buffer to be sure
+    volatile uint16_t* buffer = (volatile uint16_t*)VGA_BUFFER;
+    for (int i = 0; i < CONSOLE_WIDTH * CONSOLE_HEIGHT; i++) {
+        buffer[i] = 0x0F20; // White space on black
+    }
 }
 
 void console_putchar(char c) {
-    // Cast to a 64-bit pointer to ensure correct addressing in long mode
-    volatile uint16_t* buffer = (volatile uint16_t*)(uintptr_t)VGA_BUFFER;
+    // Check if console is initialized
+    if (!console_initialized) {
+        init_console();
+    }
+    
+    // Cast to a 32-bit pointer for 32-bit mode
+    volatile uint16_t* buffer = (volatile uint16_t*)VGA_BUFFER;
+
+    // Aggressive safety bounds check
+    if (cursor_x < 0 || cursor_x >= CONSOLE_WIDTH) cursor_x = 0;
+    if (cursor_y < 0 || cursor_y >= CONSOLE_HEIGHT) cursor_y = 0;
 
     if (c == '\n') {
         cursor_x = 0;
@@ -60,7 +81,17 @@ void console_putchar(char c) {
     } else {
         // Ensure memory writes are performed correctly
         uint16_t entry = make_vga_entry(c, text_color);
-        buffer[cursor_y * CONSOLE_WIDTH + cursor_x] = entry;
+        int index = cursor_y * CONSOLE_WIDTH + cursor_x;
+
+        // Double check the index
+        if (index >= 0 && index < CONSOLE_WIDTH * CONSOLE_HEIGHT) {
+            buffer[index] = entry;
+        } else {
+            // Emergency reset if index is out of bounds
+            cursor_x = cursor_y = 0;
+            index = 0;
+            buffer[index] = entry;
+        }
         cursor_x++;
     }
 
@@ -91,18 +122,73 @@ void console_write(const char* str) {
 }
 
 void printk(const char* fmt, ...) {
-    // Simple version that just prints the format string without formatting
-    console_puts(fmt);
+    va_list args;
+    va_start(args, fmt);
     
-    // In case a version number is being printed
-    if (fmt[0] == 'v' && fmt[1] == 'e' && fmt[2] == 'r') {
-        console_puts(" ");
-        console_puts(CONF_PROJECT_VERSION);
+    const char* p = fmt;
+    while (*p) {
+        if (*p == '%' && *(p + 1)) {
+            p++;
+            switch (*p) {
+                case 's': {
+                    const char* str = va_arg(args, const char*);
+                    if (str) {
+                        console_puts(str);
+                    } else {
+                        console_puts("(null)");
+                    }
+                    break;
+                }
+                case 'd': {
+                    int num = va_arg(args, int);
+                    // Simple integer to string conversion
+                    if (num == 0) {
+                        console_putchar('0');
+                    } else {
+                        char buffer[12]; // enough for 32-bit int
+                        int i = 0;
+                        int is_negative = 0;
+                        
+                        if (num < 0) {
+                            is_negative = 1;
+                            num = -num;
+                        }
+                        
+                        while (num > 0) {
+                            buffer[i++] = '0' + (num % 10);
+                            num /= 10;
+                        }
+                        
+                        if (is_negative) {
+                            console_putchar('-');
+                        }
+                        
+                        // Print digits in reverse order
+                        for (int j = i - 1; j >= 0; j--) {
+                            console_putchar(buffer[j]);
+                        }
+                    }
+                    break;
+                }
+                case '%':
+                    console_putchar('%');
+                    break;
+                default:
+                    console_putchar('%');
+                    console_putchar(*p);
+                    break;
+            }
+        } else {
+            console_putchar(*p);
+        }
+        p++;
     }
+    
+    va_end(args);
 }
 
 void console_clear(void) {
-    volatile uint16_t* buffer = (volatile uint16_t*)(uintptr_t)VGA_BUFFER;
+    volatile uint16_t* buffer = (volatile uint16_t*)VGA_BUFFER;
     uint16_t blank = make_vga_entry(' ', text_color);
     
     for (int i = 0; i < CONSOLE_WIDTH * CONSOLE_HEIGHT; i++) {
@@ -113,15 +199,22 @@ void console_clear(void) {
 }
 
 void console_puts(const char *str) {
-    volatile uint16_t *buffer = (volatile uint16_t*)(uintptr_t)VGA_BUFFER;
+    volatile uint16_t *buffer = (volatile uint16_t*)VGA_BUFFER;
     
     while (*str) {
+        if (cursor_x < 0) cursor_x = 0;
+        if (cursor_y < 0) cursor_y = 0;
+        if (cursor_x >= CONSOLE_WIDTH) cursor_x = CONSOLE_WIDTH - 1;
+        if (cursor_y >= CONSOLE_HEIGHT) cursor_y = CONSOLE_HEIGHT - 1;
+        
         if (*str == '\n') {
             cursor_x = 0;
             cursor_y++;
         } else {
             const int index = cursor_y * CONSOLE_WIDTH + cursor_x;
-            buffer[index] = make_vga_entry(*str, text_color);
+            if (index >= 0 && index < CONSOLE_WIDTH * CONSOLE_HEIGHT) {
+                buffer[index] = make_vga_entry(*str, text_color);
+            }
             cursor_x++;
         }
         

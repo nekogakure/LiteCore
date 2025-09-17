@@ -19,16 +19,14 @@
  */
 
 /**
- * @brief IDT entry structure
+ * @brief IDT entry structure (32-bit)
  */
 struct idt_entry {
     uint16_t base_low;     /**< Handler address bits 0-15 */
     uint16_t selector;     /**< Code segment selector */
     uint8_t  ist;          /**< Interrupt Stack Table (lower 3 bits used) */
     uint8_t  flags;        /**< Type and attribute flags */
-    uint16_t base_mid;     /**< Handler address bits 16-31 */
-    uint32_t base_high;    /**< Handler address bits 32-63 */
-    uint32_t reserved;     /**< Reserved */
+    uint16_t base_high;    /**< Handler address bits 16-31 */
 } __attribute__((packed));
 
 /**
@@ -36,7 +34,7 @@ struct idt_entry {
  */
 struct idt_ptr {
     uint16_t limit;        /**< Size of IDT - 1 */
-    uint64_t base;         /**< Base address of IDT */
+    uint32_t base;         /**< Base address of IDT */
 } __attribute__((packed));
 
 /**

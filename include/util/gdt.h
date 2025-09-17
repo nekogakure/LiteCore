@@ -36,7 +36,7 @@ struct gdt_entry {
  */
 struct gdt_ptr {
     uint16_t limit;        /**< Size of GDT - 1 */
-    uint64_t base;         /**< Base address of GDT */
+    uint32_t base;         /**< Base address of GDT */
 } __attribute__((packed));
 
 /**
@@ -58,7 +58,7 @@ enum gdt_access_flags {
 enum gdt_granularity_flags {
     GDT_GRANULARITY = 0x80, /**< 4KB block granularity */
     GDT_32BIT       = 0x40, /**< 32-bit segment */
-    GDT_64BIT       = 0x20  /**< 64-bit segment */
+    GDT_64BIT       = 0x20  /**< 64-bit segment (not used in 32-bit mode) */
 };
 
 /** @} */ /* end of gdt group */

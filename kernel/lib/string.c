@@ -6,6 +6,7 @@
  */
 
 #include "string.h"
+#include <stdarg.h>
 
 /**
  * @brief Converts a value to a hexadecimal string
@@ -14,7 +15,7 @@
  * @param is_upper Whether to use uppercase letters
  * @return Number of characters written
  */
-static int to_hex(unsigned long long value, char *str, int is_upper) {
+static int to_hex(unsigned long value, char *str, int is_upper) {
     const char *digits = is_upper ? "0123456789ABCDEF" : "0123456789abcdef";
     char tmp[32];
     char *p = tmp;
@@ -40,7 +41,7 @@ static int to_hex(unsigned long long value, char *str, int is_upper) {
  * @param is_signed Whether to treat as a signed integer
  * @return Number of characters written
  */
-static int to_decimal(long long value, char *str, int is_signed) {
+static int to_decimal(long value, char *str, int is_signed) {
     char tmp[32];
     char *p = tmp;
     int len = 0;
@@ -116,7 +117,7 @@ int vsnprintf(char *str, size_t size, const char *fmt, va_list args) {
                 void *value = va_arg(args, void*);
                 *str++ = '0';
                 *str++ = 'x';
-                str += to_hex((unsigned long long)value, str, 0);
+                str += to_hex((unsigned long)value, str, 0);
                 break;
             }
             case '%':

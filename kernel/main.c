@@ -31,7 +31,7 @@ void kernel_main(uint32_t magic, uint32_t addr) {
     DEBUG_MARKER('0', 0); // Mark kernel entry point
     
     // Direct screen write to verify we reached the kernel
-    volatile uint16_t* vga = (volatile uint16_t*)(uintptr_t)0xB8000;
+    volatile uint16_t* vga = (volatile uint16_t*)0xB8000;
     const char *msg = "K-MAIN";
     for (int i = 0; msg[i]; i++) {
         vga[20 + i] = 0x0F00 | msg[i]; // White on black
@@ -64,11 +64,22 @@ void kernel_main(uint32_t magic, uint32_t addr) {
     
     serial_write_string("Console initialized\n");
     
+    // Test safe VGA write first
+    serial_write_string("Testing VGA output...\n");
+    console_putchar('T');
+    console_putchar('E');
+    console_putchar('S');
+    console_putchar('T');
+    console_putchar('\n');
+    serial_write_string("VGA test completed\n");
+    
     // Now try VGA console output
     DEBUG_MARKER('6', 6); // Mark before first printk
+    serial_write_string("Calling printk...\n");
     printk("=== LiteCore kernel ===\n");
     
     DEBUG_MARKER('7', 7); // Mark after first printk
+    serial_write_string("First printk completed\n");
     printk("version %s\n", CONF_PROJECT_VERSION);
     
     DEBUG_MARKER('8', 8); // Mark after second printk

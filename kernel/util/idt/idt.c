@@ -32,16 +32,14 @@ extern void idt_flush(uint64_t);
  * @param handler Address of the handler function
  */
 void idt_set_gate(uint8_t n, interrupt_handler_t handler) {
-    uint64_t handler_addr = (uint64_t)handler;
+    uint32_t handler_addr = (uint32_t)handler;
     
     idt[n].base_low = handler_addr & 0xFFFF;
-    idt[n].base_mid = (handler_addr >> 16) & 0xFFFF;
-    idt[n].base_high = (handler_addr >> 32) & 0xFFFFFFFF;
+    idt[n].base_high = (handler_addr >> 16) & 0xFFFF;
     
     idt[n].selector = 0x08; // Kernel code segment
     idt[n].ist = 0;
     idt[n].flags = 0x8E;    // Present, Ring0, Interrupt Gate
-    idt[n].reserved = 0;
 }
 
 /**
@@ -52,7 +50,7 @@ void idt_set_gate(uint8_t n, interrupt_handler_t handler) {
  */
 void init_idt(void) {
     idt_pointer.limit = (sizeof(struct idt_entry) * IDT_ENTRIES) - 1;
-    idt_pointer.base = (uint64_t)&idt;
+    idt_pointer.base = (uint32_t)&idt;
 
     // Clear all entries
     for (int i = 0; i < IDT_ENTRIES; i++) {
@@ -65,5 +63,5 @@ void init_idt(void) {
     idt_set_gate(14, &page_fault_handler);
 
     // Load the IDT
-    idt_flush((uint64_t)&idt_pointer);
+    idt_flush((uint32_t)&idt_pointer);
 }

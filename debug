@@ -1,5 +1,10 @@
-#/bin/bash
+#!/bin/bash
 
 python3 ./scripts/make_gen.py
 make clean
-make run-debug
+
+if [[ "$1" == "-s" ]]; then
+    make run-debug-serial
+else
+    make run-debug
+fi

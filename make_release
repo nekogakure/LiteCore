@@ -19,7 +19,7 @@ if [ $GENERATE_KEY -eq 1 ]; then
 Key-Type: RSA
 Key-Length: 4096
 Name-Real: LiteCore Developer
-Name-Email: litecore@example.com
+Name-Email: litecore@arciris.org
 Expire-Date: 0
 %no-protection
 %commit

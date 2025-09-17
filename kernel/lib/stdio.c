@@ -13,7 +13,7 @@ static void reverse(char* str, int length) {
     }
 }
 
-static int itoa(long long num, char* str, int base) {
+static int itoa(long num, char* str, int base) {
     int i = 0;
     int is_negative = 0;
 

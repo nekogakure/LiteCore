@@ -44,7 +44,7 @@ static void gdt_set_gate(int num, uint32_t base, uint32_t limit, uint8_t access,
  * @brief Load the GDT
  * @details Calls an assembly function to set the GDTR register
  */
-extern void gdt_flush(uint64_t);
+extern void gdt_flush(uint32_t);
 
 /**
  * @brief Initialize the GDT
@@ -58,7 +58,7 @@ extern void gdt_flush(uint64_t);
  */
 void init_gdt(void) {
     gdt_pointer.limit = (sizeof(struct gdt_entry) * GDT_ENTRIES) - 1;
-    gdt_pointer.base = (uint64_t)&gdt;
+    gdt_pointer.base = (uint32_t)&gdt;
 
     // NULL segment
     gdt_set_gate(0, 0, 0, 0, 0);
@@ -66,23 +66,23 @@ void init_gdt(void) {
     // Kernel code segment
     gdt_set_gate(1, 0, 0xFFFFFFFF,
                  GDT_PRESENT | GDT_RING0 | GDT_SYSTEM | GDT_EXECUTABLE | GDT_RW,
-                 GDT_GRANULARITY | GDT_64BIT);
+                 GDT_GRANULARITY | GDT_32BIT);
 
     // Kernel data segment
     gdt_set_gate(2, 0, 0xFFFFFFFF,
                  GDT_PRESENT | GDT_RING0 | GDT_SYSTEM | GDT_RW,
-                 GDT_GRANULARITY | GDT_64BIT);
+                 GDT_GRANULARITY | GDT_32BIT);
 
     // User code segment
     gdt_set_gate(3, 0, 0xFFFFFFFF,
                  GDT_PRESENT | GDT_RING3 | GDT_SYSTEM | GDT_EXECUTABLE | GDT_RW,
-                 GDT_GRANULARITY | GDT_64BIT);
+                 GDT_GRANULARITY | GDT_32BIT);
 
     // User data segment
     gdt_set_gate(4, 0, 0xFFFFFFFF,
                  GDT_PRESENT | GDT_RING3 | GDT_SYSTEM | GDT_RW,
-                 GDT_GRANULARITY | GDT_64BIT);
+                 GDT_GRANULARITY | GDT_32BIT);
 
     // Load the GDT
-    gdt_flush((uint64_t)&gdt_pointer);
+    gdt_flush((uint32_t)&gdt_pointer);
 }
