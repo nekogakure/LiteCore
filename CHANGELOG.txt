@@ -1,1 +1,1 @@
-LiteCore kernel     version: 0.0.1
+LiteCore kernel     version: 0.1

@@ -11,7 +11,6 @@ done
 
 MAJOR=$1
 MINOR=$2
-PATCH=$3
 
 if [ $GENERATE_KEY -eq 1 ]; then
   echo "generate GPG key..."
@@ -29,7 +28,7 @@ EOF
   echo "GPG鍵の生成が完了しました"
 fi
 
-if [ -z "$MAJOR" ] || [ -z "$MINOR" ] || [ -z "$PATCH" ]; then
+if [ -z "$MAJOR" ] || [ -z "$MINOR" ]; then
   if [ -f "version.txt" ]; then
     CURRENT_VERSION=$(cat version.txt)
     IFS='.' read -r MAJOR MINOR PATCH <<< "$CURRENT_VERSION"
@@ -37,15 +36,14 @@ if [ -z "$MAJOR" ] || [ -z "$MINOR" ] || [ -z "$PATCH" ]; then
   else
     MAJOR=255
     MINOR=255
-    PATCH=255
-    echo "No version specified and no version.txt found. Using default: $MAJOR.$MINOR.$PATCH"
+    echo "No version specified and no version.txt found. Using default: $MAJOR.$MINOR"
   fi
 fi
 
-VERSION="$MAJOR.$MINOR.$PATCH"
-RELEASE_NAME="litecore-$VERSION"
+VERSION="${MAJOR}.${MINOR}"
+RELEASE_NAME="litecore-${VERSION}"
 RELEASE_DIR="release"
-RELEASE_FILE="$RELEASE_NAME.tar.xz"
+RELEASE_FILE="${RELEASE_NAME}.tar.xz"
 
 # バージョン情報をversion.txtに書き込み
 echo "$VERSION" > version.txt
