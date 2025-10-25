@@ -10,6 +10,7 @@ void kmain() {
         printk("Welcome to Litecore kernel!");
 
         while(1) {
-                kstop();
+                __asm__ volatile ("cli");
+                __asm__ volatile ("hlt");
         }
 }

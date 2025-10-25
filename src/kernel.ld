@@ -2,7 +2,7 @@ ENTRY(kernel_entry)
 OUTPUT_ARCH(i386)
 
 SECTIONS {
-        . = 0x100000;           /* カーネルのアドレス */
+        . = 0x10000;           /* カーネルのアドレス */
 
         .text : {
                 KEEP(*(.text.kernel_entry))
