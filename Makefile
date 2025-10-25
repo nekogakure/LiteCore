@@ -7,14 +7,15 @@ OBJCOPY    = objcopy
 SRC_DIR    = src
 SRC_BOOT   = $(SRC_DIR)/boot
 SRC_KERNEL = $(SRC_DIR)/kernel
+INCLUDE    = $(SRC_DIR)/include
 OUT_DIR    = bin
 
-CFLAGS     = -ffreestanding -m32 -c -Wall -Wextra
+CFLAGS     = -ffreestanding -m32 -c -Wall -Wextra -I$(INCLUDE)
 LDFLAGS    = -m elf_i386
 NFLAGS     = -f bin
 QEMU_FLAGS = -monitor stdio
 
-SOURCES    = $(wildcard $(SRC_KERNEL)/*.c)
+SOURCES    = $(shell find $(SRC_KERNEL) -name "*.c")
 OBJECTS    = $(patsubst $(SRC_KERNEL)/%.c, $(OUT_DIR)/%.o, $(SOURCES))
 
 BOOT       = $(OUT_DIR)/boot.bin
@@ -38,7 +39,9 @@ $(KERNEL): $(KERNEL_ELF)
 	$(OBJCOPY) -O binary $< $@
 
 $(OUT_DIR)/%.o: $(SRC_KERNEL)/%.c
-	$(CC) $(CFLAGS) $< -o $@
+	mkdir -p $(dir $@)
+	$(CC) $(CFLAGS) -c $< -o $@
+
 
 $(BOOT): $(SRC_BOOT)/boot.asm
 	$(NASM) $(NFLAGS) $< -o $@
