@@ -1,6 +1,6 @@
 #include <config.h>
 #include <console.h>
-#include <pci.h>
+#include <device/pci.h>
 
 #include <stdint.h>
 
