@@ -2,10 +2,11 @@
 #include <console.h>
 #include <device/pci.h>
 #include <device/keyboard.h>
+#include <util/io.h>
 
 /**
  * @fn kmain
- * @brief LiteCoreのメイン関数
+ * @brief LiteCoreのメイン関数（kernel_entryより）
  */
 void kmain() {
         console_init();
@@ -15,14 +16,9 @@ void kmain() {
         new_line();
 
         pci_enumerate();
-
         keyboard_init();
 
-        // Kernel main loop
         while(1) {
                 keyboard_poll();
-                for (volatile int i = 0; i < 10000; ++i) {
-                        __asm__ volatile ("nop");
-                }
         }
 }
