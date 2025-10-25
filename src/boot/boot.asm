@@ -1,12 +1,8 @@
 [ORG 0x7C00]                    ; Boot sector start address
 [BITS 16]
 
-; define const
-KERNEL_OFFSET EQU 0x1000        ; カーネルをロードするアドレス
-SECTOR_COUNT  EQU 1             ; 読み込むセクタの数
-START_SECTOR  EQU 2             ; 開始するセクタ番号
-CYLINDER_NUM  EQU 0             ; シリンダ番号
-HEAD_NUM      EQU 0             ; ヘッド番号
+; define consts
+%include "src/boot/config.inc"
 
 ; entry
 start:
@@ -29,8 +25,7 @@ start:
         mov dh, HEAD_NUM
         mov dl, [boot_drive]
 
-        int 0x13                ; BIOS割り込みでディスクを読み込む
-        jc disk_error           ; エラーのフラグ（キャリーフラグ？というらしい）が立っていたらエラー処理へ移行
+        call read_disk          ; ディスクから読み込み
 
         ; カーネル起動準備
         cli                     ; 割り込みを無効にする
@@ -41,39 +36,15 @@ start:
 
         jmp KERNEL_OFFSET       ; カーネルへジャンプ
 
-; ディスク読み込み失敗時の処理
-disk_error: 
-        mov si, disk_err_msg    ; エラーメッセージのアドレス
-        call print_string       ; 文字列表示を呼び出し
-        jmp halt                ; 止める
-
-; ブート（A20）失敗時の処理
 boot_error: 
         mov si, boot_err_msg     ; エラーメッセージのアドレス
         call print_string       ; 文字列表示を呼び出し
         jmp halt                ; 止める
 
-; 文字列表示
-print_string:
-        mov ah, 0x0E            ; テレタイプモード
-.loop:
-        lodsb                   ; SI 1byte -> AL -> SI++
-        cmp al, 0               ; NULL終端チェック
-        je .done                ; 終端なら終了
-        int 0x10                ; BIOS割り込みで表示
-        jmp .loop               ; 次の文字へ
-.done:
-        ret                     ; 呼び出しもとへ戻る
-
-; システム停止
-halt:
-        cli
-        hlt
-        jmp halt
+%include "src/boot/utils.inc"
 
 ; DATA
 boot_drive      db 0            ; ブートドライブ番号
-disk_err_msg    db "Disk read error! :("
 boot_err_msg    db "Boot failed! (A20 enable failed) :("
 
 times 510-($-$$) db 0
