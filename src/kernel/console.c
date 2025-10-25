@@ -109,7 +109,7 @@ int printk(const char* fmt, ...) {
         while (fmt[i] && j < (int)sizeof(buffer) - 1) {
                 if (fmt[i] == '%' && fmt[i+1]) {
                         i++;
-                        /* width とパディングの簡易サポート（例: 02） */
+                        // widthとパディングの簡易サポート
                         int width = 0;
                         int pad_zero = 0;
                         if (fmt[i] == '0') {
