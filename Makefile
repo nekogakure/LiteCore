@@ -17,7 +17,8 @@ QEMU_FLAGS = -monitor stdio
 CONSOLE    = -display curses
 
 SOURCES    = $(shell find $(SRC_KERNEL) -name "*.c")
-OBJECTS    = $(patsubst $(SRC_KERNEL)/%.c, $(OUT_DIR)/%.o, $(SOURCES))
+ASM_SOURCES = $(shell find $(SRC_KERNEL) -name "*.asm")
+OBJECTS    = $(shell printf "%s\n" $(patsubst $(SRC_KERNEL)/%.c, $(OUT_DIR)/%.o, $(SOURCES)) $(patsubst $(SRC_KERNEL)/%.asm, $(OUT_DIR)/%.o, $(ASM_SOURCES)) | sort -u)
 
 BOOT       = $(OUT_DIR)/boot.bin
 KERNEL_ELF = $(OUT_DIR)/kernel.elf
@@ -42,6 +43,11 @@ $(KERNEL): $(KERNEL_ELF)
 $(OUT_DIR)/%.o: $(SRC_KERNEL)/%.c
 	mkdir -p $(dir $@)
 	$(CC) $(CFLAGS) -c $< -o $@
+
+
+$(OUT_DIR)/%.o: $(SRC_KERNEL)/%.asm
+	mkdir -p $(dir $@)
+	$(NASM) -f elf32 $< -o $@
 
 
 $(BOOT): $(SRC_BOOT)/boot.asm
