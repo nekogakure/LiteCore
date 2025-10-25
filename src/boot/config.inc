@@ -1,4 +1,4 @@
-KERNEL_OFFSET EQU 0x1000        ; カーネルをロードするアドレス
+KERNEL_OFFSET EQU 0x10000       ; カーネルをロードするアドレス
 SECTOR_COUNT  EQU 1             ; 読み込むセクタの数
 START_SECTOR  EQU 2             ; 開始するセクタ番号
 CYLINDER_NUM  EQU 0             ; シリンダ番号
