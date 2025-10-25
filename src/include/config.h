@@ -1,6 +1,10 @@
 #ifndef _CONFIG_H
 #define _CONFIG_H
 
+#ifndef NULL
+#define NULL ((void*)0)
+#endif
+
 /**
  * @def VIDEO_MEMORY
  * @brief VGAの開始アドレス
@@ -18,5 +22,11 @@
  * @brief 8ビット符号なし整数型
  */
 typedef unsigned char uint8_t;
+
+/**
+ * @typedef uint32_t
+ * @brief 32bit符号なし整数型
+ */
+typedef unsigned int uint32_t;
 
 #endif /* _CONFIG_H */
