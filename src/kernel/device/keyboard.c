@@ -32,7 +32,7 @@ static const char scancode_map[128] = {
  */
 void keyboard_init(void) {
         /* 必要であれば、ここでPICのIRQ1を有効化できます。現状では何もしてません */
-        printk("Keyboard initialize success");
+        printk("Keyboard initialize success\n");
 }
 
 /**
@@ -40,14 +40,18 @@ void keyboard_init(void) {
  * @brief キーボードからの入力をポーリングし、押されたキーを処理
  */
 void keyboard_poll(void) {
-        // 0x64からステータスを読み取り、出力バッファがフルか確認したほうがいいかもしれないがとりあえず放置
+        // ステータスポート(0x64)のビット0を確認し、データがある時だけ0x60から読み取る
+        uint8_t status = inb(0x64);
+        if ((status & 0x01) == 0) {
+                return; // データ無し 
+        }
+
         uint8_t sc = inb(KBD_DATA_PORT);
         if (sc == 0) return;
 
-        // ブレークの処理
+        // ブレーク（リリース）コードは上位ビットが1になる (set1)
         if (sc & 0x80) {
-                // キーリリースは今は無視する
-                return;
+                return; // リリースは無視
         }
 
         if (sc < sizeof(scancode_map) && scancode_map[sc]) {
