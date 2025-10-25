@@ -24,12 +24,20 @@
 */
 var NAVTREE =
 [
-  [ "LiteCore", "index.html", ]
+  [ "LiteCore", "index.html", [
+    [ "Files", "files.html", [
+      [ "ドキュメント", "index.html#autotoc_md1", null ],
+      [ "ライセンス", "index.html#autotoc_md2", null ],
+      [ "貢献", "index.html#autotoc_md3", null ],
+      [ "免責事項", "index.html#autotoc_md4", null ],
+      [ "File List", "files.html", "files_dup" ]
+    ] ]
+  ] ]
 ];
 
 var NAVTREEINDEX =
 [
-"index.html"
+"config_8h_source.html"
 ];
 
 var SYNCONMSG = 'click to disable panel synchronization';
