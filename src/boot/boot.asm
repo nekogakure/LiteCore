@@ -19,7 +19,9 @@ start:
 
         ; 定数をすべて読み込む
         mov al, SECTOR_COUNT
-        mov bx, KERNEL_OFFSET
+        mov bx, KERNEL_OFFSET>>4
+        mov es, bx              ; seg
+        mov bx, bx              ; オフセット
         mov ch, CYLINDER_NUM
         mov cl, START_SECTOR
         mov dh, HEAD_NUM
