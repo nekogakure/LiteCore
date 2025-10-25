@@ -75,7 +75,7 @@ void pci_enumerate(void) {
                                 uint32_t header = pci_read_config_dword((uint8_t)bus, device, func, 0x0C);
                                 uint8_t header_type = (header >> 16) & 0x7F;
 
-                                printk("PCI device found: bus=%d dev=%d func=%d vendor=0x%04x device=0x%04x class=0x%02x subclass=0x%02x prog-if=0x%02x rev=0x%02x hdr=0x%02x\n",
+                                printk("PCI device found: bus=%d dev=%d func=%d vendor=0x%04x device=0x%04x class=0x%02x subclass=0x%02x prog-if=0x%02x rev=0x%02x hdr=0x%02x\n\n",
                                        bus, device, func, vendor, device_id, base_class, sub_class, prog_if, revision, header_type);
 
                                 // マルチファンクションデバイスでなければ funcループを抜ける

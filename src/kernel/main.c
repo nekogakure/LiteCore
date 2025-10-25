@@ -10,7 +10,9 @@ void kmain() {
         console_init();
 
         printk("Welcome to Litecore kernel!\n");
-        printk("printk test: %d", 123456);
+        printk("printk test: %d\n", 123456);
+
+        new_line();
 
         pci_enumerate();
 
