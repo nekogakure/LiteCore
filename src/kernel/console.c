@@ -35,7 +35,7 @@ void console_init() {
 }
 
 /**
- * @fn new_line()
+ * @fn new_line
  * @brief 改行を行い、スクロールが必要ならスクロールする
  */
 void new_line() {
@@ -65,7 +65,7 @@ void new_line() {
 }
 
 /**
- * @fn console_putc()
+ * @fn console_putc
  * @brief 位置文字表示
  */
 static void console_putc(char ch) {
@@ -87,7 +87,7 @@ static void console_putc(char ch) {
 }
 
 /**
- * @fn console_write()
+ * @fn console_write
  * @brief 文字列を書き込む
  */
 static void console_write(const char* s) {
@@ -97,7 +97,7 @@ static void console_write(const char* s) {
 }
 
 /**
- * @fn printk()
+ * @fn printk
  * @brief printfのようにVGAに出力（返り値: 出力した文字数）
  */
 int printk(const char* fmt, ...) {
@@ -109,30 +109,87 @@ int printk(const char* fmt, ...) {
         while (fmt[i] && j < (int)sizeof(buffer) - 1) {
                 if (fmt[i] == '%' && fmt[i+1]) {
                         i++;
-                        if (fmt[i] == 'd') {
+                        /* width とパディングの簡易サポート（例: 02） */
+                        int width = 0;
+                        int pad_zero = 0;
+                        if (fmt[i] == '0') {
+                                pad_zero = 1;
+                                i++;
+                                while (fmt[i] >= '0' && fmt[i] <= '9') {
+                                        width = width * 10 + (fmt[i] - '0');
+                                        i++;
+                                }
+                        } else {
+                                while (fmt[i] >= '0' && fmt[i] <= '9') {
+                                        width = width * 10 + (fmt[i] - '0');
+                                        i++;
+                                }
+                        }
+
+                        char spec = fmt[i];
+                        if (spec == 'd') {
                                 int val = va_arg(args, int);
                                 char numbuf[32];
                                 int n = 0, k = 0;
+                                unsigned int uval;
                                 if (val < 0) {
                                         buffer[j++] = '-';
-                                        val = -val;
+                                        uval = (unsigned int)(-val);
+                                } else {
+                                        uval = (unsigned int)val;
                                 }
+                                do {
+                                        numbuf[n++] = '0' + (uval % 10);
+                                        uval /= 10;
+                                } while (uval && n < (int)sizeof(numbuf));
+                                if (width > n) {
+                                        int pad = width - n;
+                                        while (pad-- > 0 && j < (int)sizeof(buffer) - 1)
+                                                buffer[j++] = pad_zero ? '0' : ' ';
+                                }
+                                for (k = n - 1; k >= 0 && j < (int)sizeof(buffer) - 1; k--)
+                                        buffer[j++] = numbuf[k];
+                        } else if (spec == 'u') {
+                                unsigned int val = va_arg(args, unsigned int);
+                                char numbuf[32];
+                                int n = 0, k = 0;
                                 do {
                                         numbuf[n++] = '0' + (val % 10);
                                         val /= 10;
                                 } while (val && n < (int)sizeof(numbuf));
+                                if (width > n) {
+                                        int pad = width - n;
+                                        while (pad-- > 0 && j < (int)sizeof(buffer) - 1)
+                                                buffer[j++] = pad_zero ? '0' : ' ';
+                                }
                                 for (k = n - 1; k >= 0 && j < (int)sizeof(buffer) - 1; k--)
                                         buffer[j++] = numbuf[k];
-                        } else if (fmt[i] == 's') {
+                        } else if (spec == 'x' || spec == 'X') {
+                                unsigned int val = va_arg(args, unsigned int);
+                                char numbuf[32];
+                                int n = 0, k = 0;
+                                const char* hex = (spec == 'x') ? "0123456789abcdef" : "0123456789ABCDEF";
+                                do {
+                                        numbuf[n++] = hex[val & 0xF];
+                                        val >>= 4;
+                                } while (val && n < (int)sizeof(numbuf));
+                                if (width > n) {
+                                        int pad = width - n;
+                                        while (pad-- > 0 && j < (int)sizeof(buffer) - 1)
+                                                buffer[j++] = pad_zero ? '0' : ' ';
+                                }
+                                for (k = n - 1; k >= 0 && j < (int)sizeof(buffer) - 1; k--)
+                                        buffer[j++] = numbuf[k];
+                        } else if (spec == 's') {
                                 const char* s = va_arg(args, const char*);
                                 while (*s && j < (int)sizeof(buffer) - 1)
                                         buffer[j++] = *s++;
-                        } else if (fmt[i] == 'c') {
+                        } else if (spec == 'c') {
                                 char c = (char)va_arg(args, int);
                                 buffer[j++] = c;
                         } else {
                                 buffer[j++] = '%';
-                                buffer[j++] = fmt[i];
+                                buffer[j++] = spec;
                         }
                 } else if (fmt[i] == '\\' && fmt[i+1] == 'n') {
                         buffer[j++] = '\n';

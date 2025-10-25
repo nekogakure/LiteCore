@@ -14,6 +14,7 @@ CFLAGS     = -ffreestanding -m32 -c -Wall -Wextra -I$(INCLUDE)
 LDFLAGS    = -m elf_i386
 NFLAGS     = -f bin
 QEMU_FLAGS = -monitor stdio
+CONSOLE    = -display curses
 
 SOURCES    = $(shell find $(SRC_KERNEL) -name "*.c")
 OBJECTS    = $(patsubst $(SRC_KERNEL)/%.c, $(OUT_DIR)/%.o, $(SOURCES))
@@ -50,6 +51,11 @@ run: $(IMG)
 	make clean
 	make all
 	$(QEMU) $(QEMU_FLAGS) -fda $<
+
+run-console: $(IMG)
+	make clean
+	make all
+	$(QEMU) $(CONSOLE) -fda $< 
 
 clean:
 	rm -rf $(OUT_DIR)

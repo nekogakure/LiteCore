@@ -1,7 +1,7 @@
 #include <config.h>
 
 /**
- * @fn _write()
+ * @fn _write
  * @brief 文字列を表示します
  * @param string 表示する文字列
  */
@@ -19,7 +19,7 @@ void _write(const char* string) {
 
 
 /**
- * @fn clear_screen()
+ * @fn clear_screen
  * @brief VGAのスクリーンをすべてスペースで埋め尽くします
  */
 void clear_screen() {
