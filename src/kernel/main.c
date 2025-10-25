@@ -49,6 +49,8 @@ void kmain() {
         uint32_t heap_end = heap_start + 0x10000; // 64KB
         mem_init(heap_start, heap_end);
 
+        memmap_reserve(heap_start, heap_end);
+
         mem_test();
 
         new_line();

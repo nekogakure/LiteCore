@@ -122,3 +122,27 @@ void free_frame(void* addr) {
 uint32_t frame_count(void) {
         return managed_frames;
 }
+
+/**
+ * @fn memmap_reserve
+ * @brief 指定した範囲のフレームを予約（使用不可に）する
+ * @param start 予約開始アドレス（物理アドレス）
+ * @param end 予約終了アドレス（物理アドレス、end-1まで予約）
+ */
+void memmap_reserve(uint32_t start, uint32_t end) {
+        if (managed_frames == 0) return;
+
+        uint32_t start_frame = start / FRAME_SIZE;
+        uint32_t end_frame = (end + FRAME_SIZE - 1) / FRAME_SIZE;
+
+        // 範囲を管理領域の相対インデックスに変換
+        if (end_frame <= managed_start_frame) return;
+        if (start_frame >= managed_start_frame + managed_frames) return;
+
+        uint32_t s = (start_frame < managed_start_frame) ? 0 : (start_frame - managed_start_frame);
+        uint32_t e = (end_frame > managed_start_frame + managed_frames) ? managed_frames : (end_frame - managed_start_frame);
+
+        for (uint32_t i = s; i < e; ++i) {
+                bitmap_set(i);
+        }
+}
