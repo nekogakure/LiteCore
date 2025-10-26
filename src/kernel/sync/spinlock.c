@@ -14,9 +14,6 @@ static inline uint32_t xchg_u32(volatile uint32_t *ptr, uint32_t newval) {
  * @brief スピンロックを取得します。
  * @param lock 取得対象のspinlock_t構造体へのポインタ
  */
-/**
- * @fn spin_lock
- */
 void spin_lock(spinlock_t *lock) {
     while (xchg_u32(&lock->lock, 1) != 0) {
         /* busy wait */
