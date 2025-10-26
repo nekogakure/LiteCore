@@ -56,10 +56,21 @@ static const int CONSOLE_COLS = 80;
  */
 static const int CONSOLE_ROWS = 25;
 
+/**
+ * @def N_HISTORY
+ * @brief コンソールの最大保存容量
+ */
+#define N_HISTORY 100
+static char history[N_HISTORY][80];
+static int history_lines = 0;
+static int history_offset = 0;
+
 void console_init() {
         clear_screen();
         cursor_row = 0;
         cursor_col = 0;
+        history_lines = 0;
+        history_offset = 0;
 }
 
 /**
@@ -72,7 +83,22 @@ void new_line() {
         if (cursor_row >= CONSOLE_ROWS) {
                 // スクロール処理
                 uint8_t* video = (uint8_t*)VIDEO_MEMORY;
-                uint8_t attr = COLOR;
+                int last = (CONSOLE_ROWS - 1) * CONSOLE_COLS;
+                char linebuf[CONSOLE_COLS];
+                for (int c = 0; c < CONSOLE_COLS; c++) {
+                        linebuf[c] = (char)video[(last + c) * 2];
+                }
+
+                if (history_lines < N_HISTORY) {
+                        for (int i = 0; i < CONSOLE_COLS; ++i) history[history_lines][i] = linebuf[i];
+                        history_lines++;
+                } else {
+                        for (int i = 0; i < N_HISTORY - 1; ++i) {
+                                for (int c = 0; c < CONSOLE_COLS; ++c) history[i][c] = history[i+1][c];
+                        }
+                        for (int c = 0; c < CONSOLE_COLS; ++c) history[N_HISTORY-1][c] = linebuf[c];
+                }
+
                 for (int r = 0; r < CONSOLE_ROWS - 1; r++) {
                         for (int c = 0; c < CONSOLE_COLS; c++) {
                                 int dst = (r * CONSOLE_COLS + c) * 2;
@@ -81,14 +107,14 @@ void new_line() {
                                 video[dst + 1] = video[src + 1];
                         }
                 }
-                
-                // 一番下の行をスペースでクリア
-                int last = (CONSOLE_ROWS - 1) * CONSOLE_COLS;
+
+                uint8_t attr = COLOR;
                 for (int c = 0; c < CONSOLE_COLS; c++) {
                         video[(last + c) * 2] = ' ';
                         video[(last + c) * 2 + 1] = attr;
                 }
                 cursor_row = CONSOLE_ROWS - 1;
+                history_offset = (history_lines > CONSOLE_ROWS) ? history_lines - CONSOLE_ROWS : 0;
         }
 }
 
@@ -114,6 +140,46 @@ static void console_putc(char ch) {
             if (cursor_col >= CONSOLE_COLS) {
                         new_line();
                 }
+}
+
+/* history_offsetからコンソールを再描画 */
+static void redraw_from_history(void) {
+        uint8_t* video = (uint8_t*)VIDEO_MEMORY;
+        /* clear screen */
+        uint8_t attr = COLOR;
+        for (int r = 0; r < CONSOLE_ROWS; ++r) {
+                for (int c = 0; c < CONSOLE_COLS; ++c) {
+                        int pos = (r * CONSOLE_COLS + c) * 2;
+                        video[pos] = ' ';
+                        video[pos+1] = attr;
+                }
+        }
+
+        int start = history_offset;
+        for (int r = 0; r < CONSOLE_ROWS; ++r) {
+                int idx = start + r;
+                if (idx < 0 || idx >= history_lines) continue;
+                for (int c = 0; c < CONSOLE_COLS; ++c) {
+                        int pos = (r * CONSOLE_COLS + c) * 2;
+                        video[pos] = (uint8_t)history[idx][c];
+                        video[pos+1] = attr;
+                }
+        }
+}
+
+void console_scroll_page_up(void) {
+        if (history_lines <= CONSOLE_ROWS) return;
+        history_offset -= CONSOLE_ROWS;
+        if (history_offset < 0) history_offset = 0;
+        redraw_from_history();
+}
+
+void console_scroll_page_down(void) {
+        if (history_lines <= CONSOLE_ROWS) return;
+        int max_offset = history_lines - CONSOLE_ROWS;
+        history_offset += CONSOLE_ROWS;
+        if (history_offset > max_offset) history_offset = max_offset;
+        redraw_from_history();
 }
 
 /**

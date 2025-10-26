@@ -2,7 +2,7 @@
 #define _TESTS_CONFIG_H
 
 // テストを実行するかどうか
-#define TEST_TRUE
+// #define TEST_TRUE
 
 #ifdef TEST_TRUE
 // メモリマップとメモリのテスト

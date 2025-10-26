@@ -29,6 +29,7 @@ void kmain() {
         memory_init();
         printk("ok\n");
 
+        new_line();
         printk("> INTERRUPT INIT\n");
         interrupt_init();
         printk("ok\n");

@@ -1,5 +1,6 @@
 #include <config.h>
 #include <util/io.h>
+#include <console.h>
 #include <stdint.h>
 #include <stdbool.h>
 #include <interrupt/irq.h>
@@ -88,6 +89,17 @@ static void kbd_process(uint32_t sc_payload, void* ctx) {
                 if (alt_down) { char s[4] = {'[', out, ']', '\0'}; printk("%s", s); return; }
                 char s[2] = {out, '\0'}; printk("%s", s);
         } else {
+                /*
+                if (sc == 0x49) { // PGUP
+                        console_scroll_page_up();
+                        return;
+                }
+                if (sc == 0x51) { // PGDN
+                        console_scroll_page_down();
+                        return;
+                }
+                */
+               
                 printk("[0x%x]", (unsigned)sc);
         }
 }
