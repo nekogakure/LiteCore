@@ -1,6 +1,7 @@
 #include <config.h>
 #include <mem/manager.h>
 #include <util/io.h>
+#include <mem/map.h>
 
 // ブロックヘッダは8バイト境界
 typedef struct block_header {
@@ -149,4 +150,49 @@ void kfree(void* ptr) {
                         cur = cur->next;
                 }
         }
+}
+
+/**
+ * @fn mem_has_space
+ * @brief 指定したメモリタイプでsizeバイト分の空きがあるか判定する
+ *
+ * - MEM_TYPE_HEAP: 連続するsizeバイトを割当可能なフリーブロックが存在するか
+ * - MEM_TYPE_FRAME: 連続するceil(size/FRAME_SIZE)フレームが存在するか
+ */
+int mem_has_space(mem_type_t type, uint32_t size) {
+        if (type == MEM_TYPE_HEAP) {
+                // 連続領域が必要なので、フリーリスト上にsizeバイト以上のブロックがあるか探す
+                uint32_t wanted = align_up(size);
+                block_header_t* cur = free_list;
+                while (cur) {
+                        if (cur->size >= wanted + sizeof(block_header_t)) {
+                                return 1;
+                        }
+                        cur = cur->next;
+                }
+                return 0;
+        } else if (type == MEM_TYPE_FRAME) {
+                // 必要なフレーム数を計算し、memmapのビットマップ上で連続する空きフレームを探す
+                const memmap_t* mm = memmap_get();
+                if (!mm || mm->frames == 0) return 0;
+
+                uint32_t need_frames = (size + FRAME_SIZE - 1) / FRAME_SIZE;
+                if (need_frames == 0) need_frames = 1;
+
+                uint32_t consecutive = 0;
+                for (uint32_t i = 0; i < mm->frames; ++i) {
+                        // ビットが0なら空き
+                        uint32_t word = mm->bitmap[i / 32];
+                        uint32_t bit = (word >> (i % 32)) & 1u;
+                        if (bit == 0) {
+                                consecutive++;
+                                if (consecutive >= need_frames) return 1;
+                        } else {
+                                consecutive = 0;
+                        }
+                }
+                return 0;
+        }
+
+        return 0; // なんやこれ知らんぞ用
 }

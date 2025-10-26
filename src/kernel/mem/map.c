@@ -14,19 +14,19 @@
 
 static uint32_t bitmap[(MAX_FRAMES + 31) / 32];
 
-static uint32_t managed_frames = 0;
-static uint32_t managed_start_frame = 0;
+// 管理情報をまとめた構造体
+static memmap_t memmap = {0};
 
 static inline void bitmap_set(uint32_t idx) {
-        bitmap[idx / 32] |= (1u << (idx % 32));
+        memmap.bitmap[idx / 32] |= (1u << (idx % 32));
 }
 
 static inline void bitmap_clear(uint32_t idx) {
-        bitmap[idx / 32] &= ~(1u << (idx % 32));
+        memmap.bitmap[idx / 32] &= ~(1u << (idx % 32));
 }
 
 static inline int bitmap_test(uint32_t idx) {
-        return (bitmap[idx / 32] >> (idx % 32)) & 1u;
+        return (memmap.bitmap[idx / 32] >> (idx % 32)) & 1u;
 }
 
 /**
@@ -51,15 +51,20 @@ void memmap_init(uint32_t start, uint32_t end) {
                 count = MAX_FRAMES;
         }
 
-        managed_frames = count;
-        managed_start_frame = start_frame;
+        // memmap構造体へ設定
+        memmap.start_addr = start;
+        memmap.end_addr = end;
+        memmap.start_frame = start_frame;
+        memmap.frames = count;
+        memmap.max_frames = MAX_FRAMES;
+        memmap.bitmap = bitmap;
 
         // ビットマップをクリア（0 = free）
-        for (uint32_t i = 0; i < (managed_frames + 31) / 32; ++i) {
-                bitmap[i] = 0;
+        for (uint32_t i = 0; i < (memmap.frames + 31) / 32; ++i) {
+                memmap.bitmap[i] = 0;
         }
 
-        printk("memmap_init: frames=%d start_frame=%d\n", managed_frames, managed_start_frame);
+        printk("memmap_init: frames=%d start_frame=%d\n", memmap.frames, memmap.start_frame);
 }
 
 /**
@@ -68,14 +73,14 @@ void memmap_init(uint32_t start, uint32_t end) {
  * @return 割り当てたフレームのアドレス。空きがなければNULL
  */
 void* alloc_frame(void) {
-        if (managed_frames == 0) {
+        if (memmap.frames == 0) {
                 return NULL;
         }
 
-        for (uint32_t i = 0; i < managed_frames; ++i) {
+        for (uint32_t i = 0; i < memmap.frames; ++i) {
                 if (!bitmap_test(i)) {
                         bitmap_set(i);
-                        uint32_t frame_no = managed_start_frame + i;
+                        uint32_t frame_no = memmap.start_frame + i;
                         void* addr = (void*)(frame_no * FRAME_SIZE);
                         return addr;
                 }
@@ -102,12 +107,12 @@ void free_frame(void* addr) {
         }
 
         uint32_t frame_no = a / FRAME_SIZE;
-        if (frame_no < managed_start_frame) {
+        if (frame_no < memmap.start_frame) {
                 return;
         }
 
-        uint32_t idx = frame_no - managed_start_frame;
-        if (idx >= managed_frames) {
+        uint32_t idx = frame_no - memmap.start_frame;
+        if (idx >= memmap.frames) {
                 return;
         }
 
@@ -120,29 +125,38 @@ void free_frame(void* addr) {
  * @return 管理しているフレーム数
  */
 uint32_t frame_count(void) {
-        return managed_frames;
+        return memmap.frames;
 }
+
 
 /**
  * @fn memmap_reserve
- * @brief 指定した範囲のフレームを予約（使用不可に）する
- * @param start 予約開始アドレス（物理アドレス）
- * @param end 予約終了アドレス（物理アドレス、end-1まで予約）
+ * @brief メモリ領域を予約する
+ * @param start 予約する領域の開始地点
+ * @param end 予約する領域の終了地点
  */
 void memmap_reserve(uint32_t start, uint32_t end) {
-        if (managed_frames == 0) return;
+        if (memmap.frames == 0) return;
 
         uint32_t start_frame = start / FRAME_SIZE;
         uint32_t end_frame = (end + FRAME_SIZE - 1) / FRAME_SIZE;
 
         // 範囲を管理領域の相対インデックスに変換
-        if (end_frame <= managed_start_frame) return;
-        if (start_frame >= managed_start_frame + managed_frames) return;
+        if (end_frame <= memmap.start_frame) return;
+        if (start_frame >= memmap.start_frame + memmap.frames) return;
 
-        uint32_t s = (start_frame < managed_start_frame) ? 0 : (start_frame - managed_start_frame);
-        uint32_t e = (end_frame > managed_start_frame + managed_frames) ? managed_frames : (end_frame - managed_start_frame);
+        uint32_t s = (start_frame < memmap.start_frame) ? 0 : (start_frame - memmap.start_frame);
+        uint32_t e = (end_frame > memmap.start_frame + memmap.frames) ? memmap.frames : (end_frame - memmap.start_frame);
 
         for (uint32_t i = s; i < e; ++i) {
                 bitmap_set(i);
         }
+}
+
+/**
+ * @fn memmap_get
+ * @brief メモリマップ構造体を返す（だけ）
+ */
+const memmap_t* memmap_get(void) {
+        return &memmap;
 }

@@ -98,7 +98,7 @@ static void console_write(const char* s) {
 
 /**
  * @fn printk
- * @brief printfのようにVGAに出力（返り値: 出力した文字数）
+ * @brief printfのようにVGAに出力
  */
 int printk(const char* fmt, ...) {
         char buffer[1024];
