@@ -17,5 +17,6 @@ void mem_init(uint32_t st, uint32_t end);
 void* kmalloc(uint32_t size);
 void kfree(void* ptr);
 int mem_has_space(mem_type_t type, uint32_t size);
+void memory_init();
 
 #endif /* _MEM_MANAGER_H */
