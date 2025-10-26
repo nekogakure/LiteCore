@@ -1,6 +1,33 @@
 #include <config.h>
 #include <util/io.h>
 #include <stdarg.h>
+#include <stdint.h>
+#include <interrupt/irq.h>
+
+
+static inline void outb(uint16_t port, uint8_t val) {
+        __asm__ volatile ("outb %0, %1" : : "a"(val), "Nd"(port));
+}
+static inline uint8_t inb(uint16_t port) {
+        uint8_t ret;
+        __asm__ volatile ("inb %1, %0" : "=a"(ret) : "Nd"(port));
+        return ret;
+}
+
+static void serial_init(void) {
+        outb(0x3f8 + 1, 0x00); // すべての割り込みを無効化
+        outb(0x3f8 + 3, 0x80); // DLABを有効化
+        outb(0x3f8 + 0, 0x03); // 分周値下位バイト (38400ボーレート)
+        outb(0x3f8 + 1, 0x00); // 分周値上位バイト
+        outb(0x3f8 + 3, 0x03); // 8ビット、パリティなし、ストップビット1
+        outb(0x3f8 + 2, 0xC7); // FIFO有効化
+        outb(0x3f8 + 4, 0x0B); // IRQ有効化、RTS/DSRセット
+}
+
+static void serial_putc(char c) {
+        while ((inb(0x3f8 + 5) & 0x20) == 0) {}
+        outb(0x3f8, (uint8_t)c);
+}
 
 
 /** 
@@ -73,17 +100,19 @@ static void console_putc(char ch) {
         uint8_t attr = COLOR;
 
         if (ch == '\n') {
-                new_line();
-                return;
+                        new_line();
+                        serial_putc('\n');
+                        return;
         }
 
         int pos = (cursor_row * CONSOLE_COLS + cursor_col) * 2;
         video[pos] = (uint8_t)ch;
         video[pos + 1] = attr;
         cursor_col++;
-        if (cursor_col >= CONSOLE_COLS) {
-                new_line();
-        }
+            serial_putc(ch);
+            if (cursor_col >= CONSOLE_COLS) {
+                        new_line();
+                }
 }
 
 /**
@@ -204,6 +233,8 @@ int printk(const char* fmt, ...) {
         buffer[j] = '\0';
         va_end(args);
 
+        uint32_t _irq_flags = irq_save();
         console_write(buffer);
+        irq_restore(_irq_flags);
         return j;
 }

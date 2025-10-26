@@ -241,3 +241,31 @@ void memory_init() {
         mem_init(heap_start, heap_end);
         memmap_reserve(heap_start, heap_end);
 }
+
+/**
+ * @fn stack_alloc
+ * @brief 下方向に伸びるカーネルスタック領域を確保する
+ * @param size 要求サイズ（バイト）。内部で ALIGN に丸められる。
+ * @return スタックのトップ（高位アドレス）。失敗時はNULL。
+ */
+void* stack_alloc(uint32_t size) {
+        if (size == 0) return NULL;
+        uint32_t wanted = align_up(size);
+        void* p = kmalloc(wanted);
+        if (!p) return NULL;
+        return (void*)((uint32_t)p + wanted);
+}
+
+/**
+ * @fn stack_free
+ * @brief stack_alloc で確保したスタックを解放する
+ * @param top stack_alloc が返したトップアドレス
+ * @param size 元の要求サイズ
+ */
+void stack_free(void* top, uint32_t size) {
+        if (!top || size == 0) return;
+        uint32_t wanted = align_up(size);
+        /* top は p + wanted なので p = top - wanted */
+        uint32_t p = (uint32_t)top - wanted;
+        kfree((void*)p);
+}
