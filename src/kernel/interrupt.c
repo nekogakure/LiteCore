@@ -78,8 +78,17 @@ int interrupt_unregister(uint32_t irq) {
  * @brief 割り込みイベントを FIFO に入れる（割り込みハンドラから呼べる）
  */
 int interrupt_raise(uint32_t event) {
-    /* 割り込み中でも呼べるようにロックは使わない（非ブロッキング） */
-        return fifo_push(&irq_fifo, event);
+        // 割り込み中でも呼べるように短時間だけ割り込みを無効化してpush
+        uint32_t flags = irq_save();
+        int res = fifo_push(&irq_fifo, event);
+        irq_restore(flags);
+
+        if (!res) {
+                // FIFOが満杯でイベントが入らなかった。ログできるなら通知する。
+                printk("interrupt raise: fifo full, dropping event irq=%u payload=%u\n",
+                           (unsigned)((event >> 16) & 0xFFFF), (unsigned)(event & 0xFFFF));
+        }
+        return res;
 }
 
 /**
@@ -88,7 +97,13 @@ int interrupt_raise(uint32_t event) {
  */
 int interrupt_dispatch_one(void) {
         uint32_t evt;
-        if (!fifo_pop(&irq_fifo, &evt)) return 0;
+        // popはディスパッチ側（通常同期コンテキスト）で短時間割り込みを無効化して行う
+        uint32_t flags = irq_save();
+        if (!fifo_pop(&irq_fifo, &evt)) {
+                irq_restore(flags);
+                return 0;
+        }
+        irq_restore(flags);
 
         /* evt のレイアウト: 上位16bit = irq番号, 下位16bit = payload */
         uint32_t irq = (evt >> 16) & 0xFFFF;
