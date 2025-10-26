@@ -3,6 +3,7 @@
 #include <device/pci.h>
 #include <device/keyboard.h>
 #include <interrupt/irq.h>
+#include <interrupt/idt.h>
 #include <mem/map.h>
 #include <mem/manager.h>
 
@@ -31,6 +32,7 @@ void kmain() {
 
         new_line();
         printk("> INTERRUPT INIT\n");
+        idt_init();
         interrupt_init();
         printk("ok\n");
 

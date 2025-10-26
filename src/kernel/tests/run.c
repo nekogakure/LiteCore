@@ -12,4 +12,8 @@ void run_test() {
         printk("> INTERRUPT TEST\n");
         interrupt_test();
         #endif
+        #ifdef INTERRUPT_VECTOR_TEST
+        printk("> INTERRUPT VECTOR TEST\n");
+        interrupt_vector_test();
+        #endif
 }
