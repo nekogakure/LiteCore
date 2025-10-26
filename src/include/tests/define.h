@@ -11,6 +11,8 @@
 #define INTERRUPT_TEST
 // 割り込みベクタのテスト
 #define INTERRUPT_VECTOR_TEST
+// 割り込みハンドラでメモリのテスト
+#define ALLOC_IRQ_TEST
 
 /* -------- 宣言 -------- */
 #ifdef MEM_TEST
@@ -24,6 +26,10 @@ void interrupt_test();
 #ifdef INTERRUPT_VECTOR_TEST
 void interrupt_vector_test();
 #endif /* INTERRUPT_VECTOR_TEST */
+
+#ifdef ALLOC_IRQ_TEST
+void alloc_irq_test();
+#endif /* ALLOC_IRQ_TEST */
 
 #endif /* TEST_TRUE */
 

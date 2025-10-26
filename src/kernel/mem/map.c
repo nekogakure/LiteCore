@@ -14,6 +14,11 @@
 
 static uint32_t bitmap[(MAX_FRAMES + 31) / 32];
 
+/* protect bitmap operations */
+static volatile uint32_t memmap_lock_storage = 0;
+// reuse existing spinlock type via pointer cast to avoid header include cycles
+// we'll wrap with helper functions below
+
 // 管理情報をまとめた構造体
 static memmap_t memmap = {0};
 
@@ -60,8 +65,15 @@ void memmap_init(uint32_t start, uint32_t end) {
         memmap.bitmap = bitmap;
 
         // ビットマップをクリア（0 = free）
-        for (uint32_t i = 0; i < (memmap.frames + 31) / 32; ++i) {
-                memmap.bitmap[i] = 0;
+        {
+                uint32_t flags = 0;
+                extern void spin_lock_irqsave(volatile uint32_t *lock, uint32_t *flagsptr);
+                extern void spin_unlock_irqrestore(volatile uint32_t *lock, uint32_t flags);
+                spin_lock_irqsave(&memmap_lock_storage, &flags);
+                for (uint32_t i = 0; i < (memmap.frames + 31) / 32; ++i) {
+                        memmap.bitmap[i] = 0;
+                }
+                spin_unlock_irqrestore(&memmap_lock_storage, flags);
         }
 
         printk("MemoryMap initialized: frames=%u start_frame=%u\n", (unsigned int)memmap.frames, (unsigned int)memmap.start_frame);
@@ -77,14 +89,20 @@ void* alloc_frame(void) {
                 return NULL;
         }
 
+        uint32_t flags = 0;
+        extern void spin_lock_irqsave(volatile uint32_t *lock, uint32_t *flagsptr);
+        extern void spin_unlock_irqrestore(volatile uint32_t *lock, uint32_t flags);
+        spin_lock_irqsave(&memmap_lock_storage, &flags);
         for (uint32_t i = 0; i < memmap.frames; ++i) {
                 if (!bitmap_test(i)) {
                         bitmap_set(i);
                         uint32_t frame_no = memmap.start_frame + i;
                         void* addr = (void*)(frame_no * FRAME_SIZE);
+                        spin_unlock_irqrestore(&memmap_lock_storage, flags);
                         return addr;
                 }
         }
+        spin_unlock_irqrestore(&memmap_lock_storage, flags);
 
         return NULL; // 空き無し
 }
@@ -116,7 +134,14 @@ void free_frame(void* addr) {
                 return;
         }
 
-        bitmap_clear(idx);
+        {
+                uint32_t flags = 0;
+                extern void spin_lock_irqsave(volatile uint32_t *lock, uint32_t *flagsptr);
+                extern void spin_unlock_irqrestore(volatile uint32_t *lock, uint32_t flags);
+                spin_lock_irqsave(&memmap_lock_storage, &flags);
+                bitmap_clear(idx);
+                spin_unlock_irqrestore(&memmap_lock_storage, flags);
+        }
 }
 
 /**
@@ -125,7 +150,14 @@ void free_frame(void* addr) {
  * @return 管理しているフレーム数
  */
 uint32_t frame_count(void) {
-        return memmap.frames;
+        uint32_t f = 0;
+        uint32_t flags = 0;
+        extern void spin_lock_irqsave(volatile uint32_t *lock, uint32_t *flagsptr);
+        extern void spin_unlock_irqrestore(volatile uint32_t *lock, uint32_t flags);
+        spin_lock_irqsave(&memmap_lock_storage, &flags);
+        f = memmap.frames;
+        spin_unlock_irqrestore(&memmap_lock_storage, flags);
+        return f;
 }
 
 
@@ -148,8 +180,15 @@ void memmap_reserve(uint32_t start, uint32_t end) {
         uint32_t s = (start_frame < memmap.start_frame) ? 0 : (start_frame - memmap.start_frame);
         uint32_t e = (end_frame > memmap.start_frame + memmap.frames) ? memmap.frames : (end_frame - memmap.start_frame);
 
-        for (uint32_t i = s; i < e; ++i) {
-                bitmap_set(i);
+        {
+                uint32_t flags = 0;
+                extern void spin_lock_irqsave(volatile uint32_t *lock, uint32_t *flagsptr);
+                extern void spin_unlock_irqrestore(volatile uint32_t *lock, uint32_t flags);
+                spin_lock_irqsave(&memmap_lock_storage, &flags);
+                for (uint32_t i = s; i < e; ++i) {
+                        bitmap_set(i);
+                }
+                spin_unlock_irqrestore(&memmap_lock_storage, flags);
         }
 }
 
