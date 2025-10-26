@@ -23,9 +23,9 @@ void kmain() {
 
 
         new_line();
-
         printk("=== MEMORY INIT ===\n");
         memory_init();
+
         new_line();
         printk("=== DEVICE INIT ===\n");
         keyboard_init();
@@ -36,6 +36,7 @@ void kmain() {
         run_test();
         #endif /* TEST_TRUE */
 
+        new_line();
         printk("Startup process complete");
 
         while(1) {
