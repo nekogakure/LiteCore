@@ -26,6 +26,12 @@
 typedef unsigned char uint8_t;
 
 /**
+ * @typedef uint16_t
+ * @brief 16ビット符号なし整数型
+ */
+typedef unsigned short uint16_t;
+
+/**
  * @typedef uint32_t
  * @brief 32bit符号なし整数型
  */

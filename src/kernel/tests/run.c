@@ -28,4 +28,10 @@ void run_test() {
         printk("> ALOOC IRQ TEST\n");
         alloc_irq_test();
         #endif
+
+        new_line();
+
+        #ifdef GDT_TEST
+        gdt_test();
+        #endif
 }

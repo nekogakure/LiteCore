@@ -13,6 +13,8 @@
 #define INTERRUPT_VECTOR_TEST
 // 割り込みハンドラでメモリのテスト
 #define ALLOC_IRQ_TEST
+// GDT（セグメント）再構築テスト
+#define GDT_TEST
 
 /* -------- 宣言 -------- */
 #ifdef MEM_TEST
@@ -30,6 +32,10 @@ void interrupt_vector_test();
 #ifdef ALLOC_IRQ_TEST
 void alloc_irq_test();
 #endif /* ALLOC_IRQ_TEST */
+
+#ifdef GDT_TEST
+void gdt_test();
+#endif /* GDT_TEST */
 
 #endif /* TEST_TRUE */
 

@@ -6,6 +6,7 @@
 #include <interrupt/idt.h>
 #include <mem/map.h>
 #include <mem/manager.h>
+#include <mem/segment.h>
 
 #include <tests/define.h>
 #include <tests/run.h>
@@ -18,6 +19,7 @@ void kloop();
  */
 void kmain() {
         console_init();
+        gdt_install();
 
         printk("Welcome to Litecore kernel!\n");
         printk("    Version: %s\n", VERSION);
