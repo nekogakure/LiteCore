@@ -15,7 +15,7 @@ void mem_test() {
         // メモリマップの表示
         const memmap_t* mm = memmap_get();
         if (mm) {
-                printk("memmap: start=%x end=%x frames=%d start_frame=%d\n",
+                printk("memmap: start=%x end=%x frames=%u start_frame=%u\n",
                        (unsigned int)mm->start_addr, (unsigned int)mm->end_addr,
                        (unsigned int)mm->frames, (unsigned int)mm->start_frame);
         }

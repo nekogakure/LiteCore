@@ -64,7 +64,7 @@ void memmap_init(uint32_t start, uint32_t end) {
                 memmap.bitmap[i] = 0;
         }
 
-        printk("memmap_init: frames=%d start_frame=%d\n", memmap.frames, memmap.start_frame);
+        printk("MemoryMap initialized: frames=%u start_frame=%u\n", (unsigned int)memmap.frames, (unsigned int)memmap.start_frame);
 }
 
 /**

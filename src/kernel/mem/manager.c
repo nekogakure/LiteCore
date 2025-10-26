@@ -2,6 +2,7 @@
 #include <mem/manager.h>
 #include <util/io.h>
 #include <mem/map.h>
+#include <console.h>
 
 // ブロックヘッダは8バイト境界
 typedef struct block_header {
@@ -41,7 +42,7 @@ void mem_init(uint32_t start, uint32_t end) {
         free_list->size = end - start;
         free_list->next = NULL;
 
-        printk("Memory initialized: heap %x - %x (size=%d)\n", start, end, end - start);
+        printk("Memory initialized: heap %x - %x (size=%u)\n", (unsigned int)start, (unsigned int)end, (unsigned int)(end - start));
 }
 
 /**

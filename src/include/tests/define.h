@@ -1,5 +1,5 @@
-#ifndef _TEST_CONFIG_H
-#define _TEST_CONFIG_H
+#ifndef _TESTS_CONFIG_H
+#define _TESTS_CONFIG_H
 
 // メモリマップとメモリのテスト
 #define MEM_TEST
@@ -10,4 +10,4 @@
 void mem_test();
 #endif
 
-#endif
+#endif /* _TESTS_CONFIG_H */
