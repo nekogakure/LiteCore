@@ -2,35 +2,10 @@
 #include <console.h>
 #include <device/pci.h>
 #include <device/keyboard.h>
-#include <util/io.h>
 #include <mem/map.h>
 #include <mem/manager.h>
 
-/**
- * @fn mem_test
- * @brief メモリのテスト
- */
-void mem_test() {
-        void* frame = alloc_frame();
-        if (frame) {
-                printk("alloc_frame: %x\n", (unsigned int)frame);
-                free_frame(frame);
-                printk("free_frame called\n");
-        } else {
-                printk("alloc_frame failed\n");
-        }
-
-        void* p = kmalloc(128);
-        if (p) {
-                printk("kmalloc returned: %x\n", (unsigned int)p);
-                kfree(p);
-                printk("kfree called\n");
-        } else {
-                printk("kmalloc failed\n");
-        }
-
-        return;
-}
+#include <tests/define.h>
 
 /**
  * @fn kmain
@@ -51,7 +26,9 @@ void kmain() {
 
         memmap_reserve(heap_start, heap_end);
 
+        #ifdef MEM_TEST
         mem_test();
+        #endif
 
         new_line();
 
