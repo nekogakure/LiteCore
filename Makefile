@@ -13,7 +13,7 @@ OUT_DIR    = bin
 CFLAGS     = -Wimplicit-function-declaration -ffreestanding -m32 -c -Wall -Wextra -I$(INCLUDE)
 LDFLAGS    = -m elf_i386
 NFLAGS     = -f bin
-QEMU_FLAGS = -monitor stdio
+QEMU_FLAGS = -monitor stdio -no-reboot
 CONSOLE    = -display curses
 
 SOURCES    = $(shell find $(SRC_KERNEL) -name "*.c")
@@ -25,6 +25,15 @@ KERNEL_ELF = $(OUT_DIR)/kernel.elf
 KERNEL     = $(OUT_DIR)/kernel.bin
 IMG        = $(OUT_DIR)/disk.img
 LINKER     = $(SRC_DIR)/kernel.ld
+
+CALC_SCRIPT = $(SRC_BOOT)/config.inc
+
+.PHONY: calculate-sectors
+calculate-sectors: $(KERNEL)
+	@echo "Generating $(SRC_BOOT)/config.inc (based on $(KERNEL) size)"
+	@size=$$(wc -c < $(KERNEL)); sectors=$$(( (size + 511) / 512 )); \
+	printf "KERNEL_OFFSET EQU 0x10000       ; カーネルをロードするアドレス\nSECTOR_COUNT  EQU %s            ; 読み込むセクタの数\nSTART_SECTOR  EQU 2             ; 開始するセクタ番号\nCYLINDER_NUM  EQU 0             ; シリンダ番号\nHEAD_NUM      EQU 0             ; ヘッド番号\nCODE_SEGMENT  EQU 0x08          ; コードセグメント\nDATA_SEGMENT  EQU 0x10          ; データセメント\n" "$$sectors" > $(SRC_BOOT)/config.inc
+
 
 all: $(OUT_DIR) $(IMG)
 
@@ -50,7 +59,7 @@ $(OUT_DIR)/%.o: $(SRC_KERNEL)/%.asm
 	$(NASM) -f elf32 $< -o $@
 
 
-$(BOOT): $(SRC_BOOT)/boot.asm
+$(BOOT): $(SRC_BOOT)/boot.asm calculate-sectors
 	$(NASM) $(NFLAGS) $< -o $@
 
 run: $(IMG)
