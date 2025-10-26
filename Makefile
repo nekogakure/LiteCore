@@ -10,7 +10,7 @@ SRC_KERNEL = $(SRC_DIR)/kernel
 INCLUDE    = $(SRC_DIR)/include
 OUT_DIR    = bin
 
-CFLAGS     = -ffreestanding -m32 -c -Wall -Wextra -I$(INCLUDE)
+CFLAGS     = -Wimplicit-function-declaration -ffreestanding -m32 -c -Wall -Wextra -I$(INCLUDE)
 LDFLAGS    = -m elf_i386
 NFLAGS     = -f bin
 QEMU_FLAGS = -monitor stdio
