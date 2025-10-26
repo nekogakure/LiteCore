@@ -46,7 +46,9 @@ void kmain() {
         memory_init();
         keyboard_init();
 
+        new_line();
         run_test();
+        new_line();
 
         while(1) {
                 kloop();
