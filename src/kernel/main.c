@@ -36,6 +36,8 @@ void kmain() {
         run_test();
         #endif /* TEST_TRUE */
 
+        printk("Startup process complete");
+
         while(1) {
                 kloop();
         }
