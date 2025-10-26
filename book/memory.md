@@ -61,6 +61,8 @@ API（主要なもの）:
 
 API（主要なもの）:
 
+- `memory_init()`
+        - ヒープを初期化します。`mem_init`やその他諸々をいい感じに呼び出します。
 - `mem_init(uint32_t start, uint32_t end)`
 	- ヒープ領域を初期化します（`start` と `end` は仮想/物理の設計に従う）。
 - `void *kmalloc(uint32_t size)`
