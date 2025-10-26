@@ -1,6 +1,8 @@
 #ifndef _CONFIG_H
 #define _CONFIG_H
 
+#define VERSION "0.1"
+
 #ifndef NULL
 #define NULL ((void*)0)
 #endif

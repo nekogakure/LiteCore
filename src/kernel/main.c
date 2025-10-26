@@ -17,14 +17,24 @@ void kloop();
 void kmain() {
         console_init();
 
-        printk("Welcome to Litecore kernel!\n\n");
+        printk("Welcome to Litecore kernel!\n");
+        printk("    Version: %s\n", VERSION);
+        printk("    Author : nekogakure\n");
 
+
+        new_line();
+
+        printk("=== MEMORY INIT ===\n");
         memory_init();
+        new_line();
+        printk("=== DEVICE INIT ===\n");
         keyboard_init();
 
+        #ifdef TEST_TRUE
         new_line();
+        printk("====== TESTS ======\n");
         run_test();
-        new_line();
+        #endif /* TEST_TRUE */
 
         while(1) {
                 kloop();

@@ -3,6 +3,8 @@
 #include <util/io.h>
 #include <mem/map.h>
 #include <console.h>
+#include <interrupt/irq.h>
+#include <sync/spinlock.h>
 
 // ブロックヘッダは8バイト境界
 typedef struct block_header {
@@ -14,6 +16,7 @@ typedef struct block_header {
 static block_header_t* free_list = NULL;
 static uint32_t heap_start_addr = 0;
 static uint32_t heap_end_addr = 0;
+static spinlock_t heap_lock = {0};
 
 #define ALIGN 8
 
@@ -57,6 +60,9 @@ void* kmalloc(uint32_t size) {
                 return NULL;
         }
 
+        uint32_t flags = 0;
+        spin_lock_irqsave(&heap_lock, &flags);
+
         uint32_t wanted = align_up(size);
 
         // ブロック全体の必要サイズ
@@ -93,6 +99,7 @@ void* kmalloc(uint32_t size) {
 
                         // ユーザ領域はヘッダの直後
                         void* user_ptr = (void*)((uint32_t)cur + sizeof(block_header_t));
+                        spin_unlock_irqrestore(&heap_lock, flags);
                         return user_ptr;
                 }
 
@@ -101,6 +108,7 @@ void* kmalloc(uint32_t size) {
         }
 
         // 見つからなかった
+        spin_unlock_irqrestore(&heap_lock, flags);
         return NULL;
 }
 
@@ -115,6 +123,9 @@ void kfree(void* ptr) {
                 return;
         }
 
+        uint32_t flags = 0;
+        spin_lock_irqsave(&heap_lock, &flags);
+
         // ヘッダはユーザポインタの前にある
         block_header_t* hdr = (block_header_t*)((uint32_t)ptr - sizeof(block_header_t));
 
@@ -122,6 +133,7 @@ void kfree(void* ptr) {
         uint32_t hdr_addr = (uint32_t)hdr;
         if (hdr_addr < heap_start_addr || hdr_addr + hdr->size > heap_end_addr) {
                 // 範囲外のポインタは無視
+                spin_unlock_irqrestore(&heap_lock, flags);
                 return;
         }
 
@@ -151,6 +163,8 @@ void kfree(void* ptr) {
                         cur = cur->next;
                 }
         }
+
+        spin_unlock_irqrestore(&heap_lock, flags);
 }
 
 /**
@@ -163,14 +177,18 @@ void kfree(void* ptr) {
 int mem_has_space(mem_type_t type, uint32_t size) {
         if (type == MEM_TYPE_HEAP) {
                 // 連続領域が必要なので、フリーリスト上にsizeバイト以上のブロックがあるか探す
+                uint32_t flags = 0;
+                spin_lock_irqsave(&heap_lock, &flags);
                 uint32_t wanted = align_up(size);
                 block_header_t* cur = free_list;
                 while (cur) {
                         if (cur->size >= wanted + sizeof(block_header_t)) {
+                                spin_unlock_irqrestore(&heap_lock, flags);
                                 return 1;
                         }
                         cur = cur->next;
                 }
+                spin_unlock_irqrestore(&heap_lock, flags);
                 return 0;
         } else if (type == MEM_TYPE_FRAME) {
                 // 必要なフレーム数を計算し、memmapのビットマップ上で連続する空きフレームを探す
