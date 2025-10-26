@@ -14,6 +14,7 @@ static inline uint8_t inb(uint16_t port) {
         return ret;
 }
 
+/* unused function lol
 static void serial_init(void) {
         outb(0x3f8 + 1, 0x00); // すべての割り込みを無効化
         outb(0x3f8 + 3, 0x80); // DLABを有効化
@@ -23,7 +24,7 @@ static void serial_init(void) {
         outb(0x3f8 + 2, 0xC7); // FIFO有効化
         outb(0x3f8 + 4, 0x0B); // IRQ有効化、RTS/DSRセット
 }
-
+*/
 static void serial_putc(char c) {
         while ((inb(0x3f8 + 5) & 0x20) == 0) {}
         outb(0x3f8, (uint8_t)c);

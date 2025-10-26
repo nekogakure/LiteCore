@@ -12,7 +12,6 @@ static void test_handler(uint32_t payload, void* ctx) {
 }
 
 void interrupt_test() {
-        interrupt_init();
         /* register handler for irq 1 */
         interrupt_register(1, test_handler, NULL);
 

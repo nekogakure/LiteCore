@@ -2,6 +2,7 @@
 #include <console.h>
 #include <device/pci.h>
 #include <device/keyboard.h>
+#include <interrupt/irq.h>
 #include <mem/map.h>
 #include <mem/manager.h>
 
@@ -23,12 +24,19 @@ void kmain() {
 
 
         new_line();
-        printk("=== MEMORY INIT ===\n");
+        printk("=== KERNEL INIT ===\n");
+        printk("> MEMORY INIT\n");
         memory_init();
+        printk("ok\n");
+
+        printk("> INTERRUPT INIT\n");
+        interrupt_init();
+        printk("ok\n");
 
         new_line();
-        printk("=== DEVICE INIT ===\n");
+        printk("> DEVICE INIT\n");
         keyboard_init();
+        printk("ok\n");
 
         #ifdef TEST_TRUE
         new_line();
@@ -51,5 +59,8 @@ void kmain() {
  * @brief kmainの処理が終了した後常に動き続ける処理
  */
 void kloop() {
+        /* ポーリングによるフォールバック: キーボードの scancode を回収 */
         keyboard_poll();
+        /* FIFO に入ったイベントを処理 */
+        interrupt_dispatch_all();
 }

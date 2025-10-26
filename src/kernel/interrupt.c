@@ -4,11 +4,14 @@
 
 typedef void (*irq_handler_t)(uint32_t irq, void* ctx);
 
-/* 最大IRQハンドラ数（シンプルに16個にしてみる） */
+/* 最大IRQ数 */
 #define MAX_IRQS 16
+/* 1 IRQ に登録できるハンドラ数（簡易実装） */
+#define MAX_HANDLERS_PER_IRQ 4
 
-static irq_handler_t irq_table[MAX_IRQS] = {0};
-static void* irq_ctx[MAX_IRQS] = {0};
+static irq_handler_t irq_table[MAX_IRQS][MAX_HANDLERS_PER_IRQ];
+static void* irq_ctx[MAX_IRQS][MAX_HANDLERS_PER_IRQ];
+static uint8_t irq_count[MAX_IRQS] = {0};
 
 /* FIFO */
 #define FIFO_CAPACITY 64
@@ -55,8 +58,20 @@ static inline int fifo_pop(fifo_t* f, uint32_t* out) {
 int interrupt_register(uint32_t irq, irq_handler_t handler, void* ctx) {
         if (irq >= MAX_IRQS) return -1;
         uint32_t flags = irq_save();
-        irq_table[irq] = handler;
-        irq_ctx[irq] = ctx;
+        // 重複登録を防ぎ、空きスロットに追加
+        for (uint32_t i = 0; i < irq_count[irq]; ++i) {
+                if (irq_table[irq][i] == handler && irq_ctx[irq][i] == ctx) {
+                        irq_restore(flags);
+                        return 0; // 既に登録済
+                }
+        }
+        if (irq_count[irq] >= MAX_HANDLERS_PER_IRQ) {
+                irq_restore(flags);
+                return -1; // 空きねぇよﾊｯ
+        }
+        irq_table[irq][irq_count[irq]] = handler;
+        irq_ctx[irq][irq_count[irq]] = ctx;
+        irq_count[irq]++;
         irq_restore(flags);
         return 0;
 }
@@ -67,8 +82,12 @@ int interrupt_register(uint32_t irq, irq_handler_t handler, void* ctx) {
 int interrupt_unregister(uint32_t irq) {
         if (irq >= MAX_IRQS) return -1;
         uint32_t flags = irq_save();
-        irq_table[irq] = NULL;
-        irq_ctx[irq] = NULL;
+        /* 全ハンドラを解除 */
+        for (uint32_t i = 0; i < irq_count[irq]; ++i) {
+                irq_table[irq][i] = NULL;
+                irq_ctx[irq][i] = NULL;
+        }
+        irq_count[irq] = 0;
         irq_restore(flags);
         return 0;
 }
@@ -109,8 +128,12 @@ int interrupt_dispatch_one(void) {
         uint32_t irq = (evt >> 16) & 0xFFFF;
         uint32_t payload = evt & 0xFFFF;
 
-        if (irq < MAX_IRQS && irq_table[irq]) {
-                irq_table[irq](payload, irq_ctx[irq]);
+        if (irq < MAX_IRQS && irq_count[irq] > 0) {
+                for (uint32_t i = 0; i < irq_count[irq]; ++i) {
+                        if (irq_table[irq][i]) {
+                                irq_table[irq][i](payload, irq_ctx[irq][i]);
+                        }
+                }
         } else {
                 printk("Unhandled IRQ event: irq=%u payload=%u\n", (unsigned)irq, (unsigned)payload);
         }
@@ -132,7 +155,10 @@ void interrupt_dispatch_all(void) {
 void interrupt_init(void) {
         fifo_init(&irq_fifo);
         for (uint32_t i = 0; i < MAX_IRQS; ++i) {
-                irq_table[i] = NULL;
-                irq_ctx[i] = NULL;
+                irq_count[i] = 0;
+                for (uint32_t j = 0; j < MAX_HANDLERS_PER_IRQ; ++j) {
+                        irq_table[i][j] = NULL;
+                        irq_ctx[i][j] = NULL;
+                }
         }
 }
