@@ -55,6 +55,7 @@ struct idt_ptr {
 } __attribute__((packed));
 
 extern void isr_stub_table(void); /* assembly stubs */
+extern void isr14(void);
 
 #define IDT_ENTRIES 256
 static struct idt_entry idt[IDT_ENTRIES];
@@ -78,6 +79,18 @@ void irq_handler_c(uint32_t vec) {
                 interrupt_raise((irq << 16) | 0u);
                 if (irq >= 8) outb(PIC2_COMMAND, 0x20);
                 outb(PIC1_COMMAND, 0x20);
+        }
+}
+
+extern void page_fault_handler(uint32_t vec);
+
+void irq_exception_c(uint32_t vec) {
+        if (vec == 14) {
+                page_fault_handler(vec);
+        } else {
+                /* other exceptions: just spin */
+                printk("exception vec=%u\n", (unsigned)vec);
+                while (1) {}
         }
 }
 
@@ -106,6 +119,7 @@ void idt_init(void) {
         extern void isr46(void);
         extern void isr47(void);
 
+        idt_set_gate(14, (uint32_t)isr14); /* page fault */
         idt_set_gate(32, (uint32_t)isr32);
         idt_set_gate(33, (uint32_t)isr33);
         idt_set_gate(34, (uint32_t)isr34);

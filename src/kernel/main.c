@@ -19,7 +19,8 @@ void kloop();
  */
 void kmain() {
         console_init();
-        gdt_install();
+        gdt_build();
+        gdt_install_lgdt();
 
         printk("Welcome to Litecore kernel!\n");
         printk("    Version: %s\n", VERSION);

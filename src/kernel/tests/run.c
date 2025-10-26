@@ -34,4 +34,11 @@ void run_test() {
         #ifdef GDT_TEST
         gdt_test();
         #endif
+
+        new_line();
+
+        #ifdef PAGING_TEST
+        printk("> PAGING TEST\n");
+        paging_test();
+        #endif
 }

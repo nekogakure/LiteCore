@@ -4,9 +4,19 @@ global isr_stub_table
 isr_stub_table:
 
 extern irq_handler_c
+extern irq_exception_c
 
 global isr32
 isr32:
+global isr14
+isr14:
+        pusha
+        push dword 14
+        call irq_exception_c
+        add esp, 4
+        popa
+        iretd
+
         pusha
         push dword 32
         call irq_handler_c

@@ -13,7 +13,7 @@ OUT_DIR    = bin
 CFLAGS     = -Wimplicit-function-declaration -ffreestanding -m32 -c -Wall -Wextra -I$(INCLUDE)
 LDFLAGS    = -m elf_i386
 NFLAGS     = -f bin
-QEMU_FLAGS = -monitor stdio -no-reboot
+QEMU_FLAGS = -monitor stdio -no-reboot -d int,guest_errors -D kernel.log
 CONSOLE    = -display curses
 
 SOURCES    = $(shell find $(SRC_KERNEL) -name "*.c")
