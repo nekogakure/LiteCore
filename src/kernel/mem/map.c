@@ -8,16 +8,13 @@
 #include <console.h>
 #include <util/io.h>
 
-// ビットマップは1ビットで1フレームを表す。安全のため最大フレーム数を定義する。
-// この値は必要に応じて調整してください。
-#define MAX_FRAMES 8192 // 8192 * 4KB = 32MB 管理可能
+// ビットマップは1ビットで1フレームを表す。安全のための最大フレーム数
+#define MAX_FRAMES 8192 // 8192 * 4KB = 32MB
 
 static uint32_t bitmap[(MAX_FRAMES + 31) / 32];
 
 /* protect bitmap operations */
 static volatile uint32_t memmap_lock_storage = 0;
-// reuse existing spinlock type via pointer cast to avoid header include cycles
-// we'll wrap with helper functions below
 
 // 管理情報をまとめた構造体
 static memmap_t memmap = {0};
