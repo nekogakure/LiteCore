@@ -3,6 +3,17 @@
 #include <mem/paging.h>
 #include <mem/map.h>
 #include <stddef.h>
+
+/* helpers: in current identity-map boot situation, phys==virt, so these are identity
+ * conversions. If kernel later runs with higher-half mapping, update these helpers
+ * to translate between physical and kernel virtual addresses accordingly.
+ */
+static inline void *phys_to_virt(uint32_t phys) {
+        return (void *)phys;
+}
+static inline uint32_t virt_to_phys(void *virt) {
+        return (uint32_t)virt;
+}
 #include <console.h>
 #include <interrupt/irq.h>
 
@@ -64,20 +75,43 @@ int unmap_page(uint32_t virt) {
 
 // 指定されたMB数分のメモリを同一マッピングで初期化する
 void paging_init_identity(uint32_t map_mb) {
+        /* map_mb MB (rounded up to full pages) as identity mapping */
         uint32_t pages = ((map_mb * 1024u * 1024u) + 0xFFF) / 0x1000;
+        uint32_t pages_remaining = pages;
 
-        // 最初のテーブル: 最初の4MBを同一マッピング（1024エントリ）
-        for (uint32_t i = 0; i < 1024; ++i) {
-                first_table[i] = (i * 0x1000) | 3u; // present + rw
+        /* number of page tables needed (1024 entries per table -> 4MB each) */
+        uint32_t needed_pt = (pages + 1023) / 1024;
+
+        /* initialize page directory to not present */
+        for (uint32_t i = 0; i < 1024; ++i) page_directory[i] = 0x00000000;
+
+        for (uint32_t pt_index = 0; pt_index < needed_pt; ++pt_index) {
+                /* use first_table for pt_index==0 for static allocation */
+                uint32_t *pt = NULL;
+                if (pt_index == 0) {
+                        pt = first_table;
+                } else {
+                        void *alloc = alloc_page_table();
+                        if (!alloc) {
+                                printk("paging: failed to alloc page table for pt_index=%u\n", (unsigned)pt_index);
+                                break;
+                        }
+                        pt = (uint32_t *)alloc;
+                }
+
+                /* fill table entries for this PT */
+                for (uint32_t i = 0; i < 1024 && pages_remaining > 0; ++i, --pages_remaining) {
+                        uint32_t phys = (pt_index * 1024u + i) * 0x1000u;
+                        pt[i] = (phys & 0xFFFFF000u) | (PAGING_PRESENT | PAGING_RW);
+                }
+
+                /* write PDE: PDE must contain physical address of pt */
+                uint32_t pt_phys = virt_to_phys((void *)pt);
+                page_directory[pt_index] = (pt_phys & 0xFFFFF000u) | (PAGING_PRESENT | PAGING_RW);
         }
 
-        // ディレクトリエントリ0はfirst_tableを指す
-        page_directory[0] = ((uint32_t)first_table) | 3u;
-
-        // 残りのPDEをnot presentにする
-        for (uint32_t i = 1; i < 1024; ++i) page_directory[i] = 0x00000000;
-
-        printk("paging: identity map initialized for %u MB (pages=%u)\n", (unsigned)map_mb, (unsigned)pages);
+        printk("paging: identity map initialized for %u MB (pages=%u, tables=%u)\n",
+               (unsigned)map_mb, (unsigned)pages, (unsigned)needed_pt);
 }
 
 // ページング機能を有効化する
