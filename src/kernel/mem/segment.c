@@ -1,5 +1,6 @@
 #include <config.h>
 #include <stdint.h>
+#include <stddef.h>
 #include <mem/segment.h>
 
 /* GDTエントリ構造体 */
@@ -51,7 +52,7 @@ void gdt_dump(void) {
         for (int i = 0; i < 3; i++) {
                 unsigned char *b = (unsigned char *)&gdt_entries[i];
                 printk("gdt[%d]: ", i);
-                for (int j = 0; j < sizeof(struct gdt_entry); j++) {
+                for (size_t j = 0; j < sizeof(struct gdt_entry); j++) {
                         printk("%02x", b[j]);
                         if (j != sizeof(struct gdt_entry)-1) printk(":");
                 }

@@ -65,8 +65,8 @@ void kmain() {
  * @brief kmainの処理が終了した後常に動き続ける処理
  */
 void kloop() {
-        /* ポーリングによるフォールバック: キーボードの scancode を回収 */
+        /* ポーリングによるフォールバック: キーボードのscancodeを回収 */
         keyboard_poll();
-        /* FIFO に入ったイベントを処理 */
+        /* FIFOに入ったイベントを処理 */
         interrupt_dispatch_all();
 }
