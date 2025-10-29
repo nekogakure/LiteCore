@@ -83,6 +83,7 @@ void memmap_init(uint32_t start, uint32_t end) {
  */
 void* alloc_frame(void) {
         if (memmap.frames == 0) {
+                printk("alloc_frame: memmap not initialized\n");
                 return NULL;
         }
 
@@ -95,6 +96,11 @@ void* alloc_frame(void) {
                         bitmap_set(i);
                         uint32_t frame_no = memmap.start_frame + i;
                         void* addr = (void*)(frame_no * FRAME_SIZE);
+                        if (addr == NULL) {
+                                printk("alloc_frame: computed addr is NULL frame_no=%u\n", (unsigned)frame_no);
+                                spin_unlock_irqrestore(&memmap_lock_storage, flags);
+                                return NULL;
+                        }
                         spin_unlock_irqrestore(&memmap_lock_storage, flags);
                         return addr;
                 }
