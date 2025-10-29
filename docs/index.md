@@ -1,2 +1,3 @@
-# LiteCore docs
 LiteCoreカーネルのドキュメント
+
+- [メモリ管理](./memory)
