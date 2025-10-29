@@ -84,6 +84,7 @@ void irq_handler_c(uint32_t vec) {
 }
 
 extern void page_fault_handler(uint32_t vec);
+extern void page_fault_handler_ex(uint32_t vec, uint32_t error_code, uint32_t eip);
 
 void irq_exception_c(uint32_t vec) {
         if (vec == 14) {
@@ -91,6 +92,20 @@ void irq_exception_c(uint32_t vec) {
         } else {
                 /* other exceptions: just spin */
                 printk("exception vec=%u\n", (unsigned)vec);
+                while (1) {}
+        }
+}
+
+/**
+ * @fn irq_exception_ex
+ * @brief 例外発生時の拡張ハンドラ
+ */
+void irq_exception_ex(uint32_t vec, uint32_t error_code) {
+        if (vec == 14) {
+                // C言語からEIPを正確に取得するのは難しいため、ここでは0を渡す
+                page_fault_handler_ex(vec, error_code, 0);
+        } else {
+                printk("exception ex vec=%u err=0x%x\n", (unsigned)vec, (unsigned)error_code);
                 while (1) {}
         }
 }

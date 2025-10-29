@@ -68,6 +68,18 @@ int unmap_page(uint32_t virt) {
         if ((pt[pt_idx] & PAGING_PRESENT) == 0) return -1;
         pt[pt_idx] = 0;
         invlpg((void *)virt);
+
+        /* check if the page table became empty -> free it and clear PDE */
+        int empty = 1;
+        for (int i = 0; i < 1024; ++i) {
+                if (pt[i] & PAGING_PRESENT) { empty = 0; break; }
+        }
+        if (empty) {
+                uint32_t pt_phys = (uint32_t)pt; /* current identity mapping */
+                page_directory[pd_idx] = 0x00000000;
+                free_frame((void *)pt_phys);
+        }
+
         return 0;
 }
 
@@ -91,6 +103,28 @@ void paging_init_identity(uint32_t map_mb) {
         for (uint32_t i = 1; i < 1024; ++i) page_directory[i] = 0x00000000;
 
         printk("paging: identity map initialized for %u MB (pages=%u)\n", (unsigned)map_mb, (unsigned)pages);
+}
+
+/**
+ * @fn map_range
+ * @brief 指定範囲を連続ページとしてマップする
+ */
+int map_range(uint32_t phys_start, uint32_t virt_start, size_t size, uint32_t flags) {
+        if (phys_start % 0x1000 || virt_start % 0x1000) return -1;
+        uint32_t pages = (size + 0xFFF) / 0x1000;
+        for (uint32_t i = 0; i < pages; ++i) {
+                if (map_page(phys_start + i * 0x1000, virt_start + i * 0x1000, flags) != 0) {
+                        return -1;
+                }
+        }
+        return 0;
+}
+
+void page_fault_handler_ex(uint32_t vec, uint32_t error_code, uint32_t eip) {
+        uint32_t fault_addr;
+        asm volatile ("mov %%cr2, %0" : "=r" (fault_addr));
+        printk("PAGE FAULT: vec=%u err=0x%x eip=0x%x cr2=0x%x\n", (unsigned)vec, (unsigned)error_code, (unsigned)eip, (unsigned)fault_addr);
+        while (1) {}
 }
 
 /**

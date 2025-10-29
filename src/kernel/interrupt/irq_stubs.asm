@@ -5,18 +5,24 @@ isr_stub_table:
 
 extern irq_handler_c
 extern irq_exception_c
+extern irq_exception_ex
 
-global isr32
-isr32:
+; Exception with error code: isr14
 global isr14
 isr14:
         pusha
-        push dword 14
-        call irq_exception_c
-        add esp, 4
+        ; error code is located just above the pushed registers (pusha pushes 8 regs = 32 bytes)
+        mov eax, [esp + 32]
+        push eax               ; push error_code
+        push dword 14          ; push vector
+        call irq_exception_ex
+        add esp, 8
         popa
         iretd
 
+; IRQ handlers 32-47
+global isr32
+isr32:
         pusha
         push dword 32
         call irq_handler_c
