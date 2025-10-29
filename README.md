@@ -2,7 +2,7 @@
 x86_64で動作するシンプルなカーネル
 
 ### ドキュメント
-[こちら](https://core.nekogakure.jp)にあります。Doxygen感謝！
+[こちら](https://core.nekogakure.jp)にあります
 
 ### ライセンス
 [ライセンスファイル](https://github.com/nekogakure/LiteCore/blob/main/LICENSE)を参照してください
