@@ -17,6 +17,8 @@
 #define GDT_TEST
 // ページングのテスト
 #define PAGING_TEST
+// 仮想メモリのテスト
+#define VMEM_TEST
 
 /* -------- 宣言 -------- */
 #ifdef MEM_TEST
@@ -42,6 +44,10 @@ void gdt_test();
 #ifdef PAGING_TEST
 void paging_test();
 #endif /* PAGING_TEST */
+
+#ifdef VMEM_TEST
+void vmem_test();
+#endif /* VMEM_TEST */
 
 #endif /* TEST_TRUE */
 

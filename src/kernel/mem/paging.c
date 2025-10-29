@@ -2,6 +2,7 @@
 #include <stdint.h>
 #include <mem/paging.h>
 #include <mem/map.h>
+#include <mem/vmem.h>
 #include <stddef.h>
 #include <console.h>
 #include <interrupt/irq.h>
@@ -20,10 +21,15 @@ static inline void invlpg(void *addr) {
 void *alloc_page_table(void) {
         void *frame = alloc_frame();
         if (!frame) return NULL;
-        // ページテーブルをゼロクリア
-        uint32_t *tbl = (uint32_t *)frame;
+        // alloc_frame() は物理フレームの物理アドレスを返す実装の可能性がある。
+        // 実行環境によらず仮想ポインタを得るため vmem_phys_to_virt を用いる。
+        uint32_t phys = (uint32_t)(uintptr_t)frame;
+        uint32_t virt = vmem_phys_to_virt(phys);
+        if (virt == 0) return NULL;
+        uint32_t *tbl = (uint32_t *) (uintptr_t) virt;
         for (size_t i = 0; i < 1024; ++i) tbl[i] = 0;
-        return frame;
+        // return the virtual pointer for convenience to callers
+        return (void *)(uintptr_t)virt;
 }
 
 /**
@@ -39,12 +45,15 @@ int map_page(uint32_t phys, uint32_t virt, uint32_t flags) {
         uint32_t pde = page_directory[pd_idx];
         uint32_t *pt;
         if ((pde & PAGING_PRESENT) == 0) {
-                void *new_pt = alloc_page_table();
-                if (!new_pt) return -1;
-                page_directory[pd_idx] = ((uint32_t)new_pt) | (PAGING_PRESENT | PAGING_RW);
-                pt = (uint32_t *)new_pt;
+                void *new_pt_virt = alloc_page_table();
+                if (!new_pt_virt) return -1;
+                uint32_t new_pt_phys = vmem_virt_to_phys((uint32_t)(uintptr_t)new_pt_virt);
+                page_directory[pd_idx] = (new_pt_phys & 0xFFFFF000) | (PAGING_PRESENT | PAGING_RW);
+                pt = (uint32_t *)new_pt_virt;
         } else {
-                pt = (uint32_t *)(pde & 0xFFFFF000);
+                uint32_t pt_phys = pde & 0xFFFFF000;
+                uint32_t pt_virt = vmem_phys_to_virt(pt_phys);
+                pt = (uint32_t *)(uintptr_t)pt_virt;
         }
 
         pt[pt_idx] = (phys & 0xFFFFF000) | (flags & 0xFFF);
@@ -64,7 +73,9 @@ int unmap_page(uint32_t virt) {
 
         uint32_t pde = page_directory[pd_idx];
         if ((pde & PAGING_PRESENT) == 0) return -1;
-        uint32_t *pt = (uint32_t *)(pde & 0xFFFFF000);
+        uint32_t pt_phys = pde & 0xFFFFF000;
+        uint32_t pt_virt = vmem_phys_to_virt(pt_phys);
+        uint32_t *pt = (uint32_t *)(uintptr_t)pt_virt;
         if ((pt[pt_idx] & PAGING_PRESENT) == 0) return -1;
         pt[pt_idx] = 0;
         invlpg((void *)virt);
@@ -75,9 +86,9 @@ int unmap_page(uint32_t virt) {
                 if (pt[i] & PAGING_PRESENT) { empty = 0; break; }
         }
         if (empty) {
-                uint32_t pt_phys = (uint32_t)pt; /* current identity mapping */
+                uint32_t pt_phys = vmem_virt_to_phys((uint32_t)(uintptr_t)pt);
                 page_directory[pd_idx] = 0x00000000;
-                free_frame((void *)pt_phys);
+                free_frame((void *)(uintptr_t)pt_phys);
         }
 
         return 0;
@@ -96,8 +107,9 @@ void paging_init_identity(uint32_t map_mb) {
                 first_table[i] = (i * 0x1000) | 3u; // present + rw
         }
 
-        // ディレクトリエントリ0はfirst_tableを指す
-        page_directory[0] = ((uint32_t)first_table) | 3u;
+        // ディレクトリエントリ0はfirst_tableを指す。first_tableは静的で既に仮想アドレスとしてアクセス可能だが、PDEには物理アドレスを置く必要がある。
+        uint32_t first_table_phys = vmem_virt_to_phys((uint32_t)(uintptr_t)first_table);
+        page_directory[0] = (first_table_phys & 0xFFFFF000) | 3u;
 
         // 残りのPDEをnot presentにする
         for (uint32_t i = 1; i < 1024; ++i) page_directory[i] = 0x00000000;
@@ -133,7 +145,8 @@ void page_fault_handler_ex(uint32_t vec, uint32_t error_code, uint32_t eip) {
  */
 void paging_enable(void) {
         // CR3をロード
-        asm volatile("mov %%eax, %%cr3" :: "a"((uint32_t)page_directory));
+        uint32_t pd_phys = vmem_virt_to_phys((uint32_t)(uintptr_t)page_directory);
+        asm volatile("mov %%eax, %%cr3" :: "a"(pd_phys));
         // CR0のPGビットを有効化
         uint32_t cr0;
         asm volatile("mov %%cr0, %%eax" : "=a" (cr0));

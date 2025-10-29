@@ -41,4 +41,9 @@ void run_test() {
         printk("> PAGING TEST\n");
         paging_test();
         #endif
+
+        #ifdef VMEM_TEST
+        printk("> VMEM TEST\n");
+        vmem_test();
+        #endif
 }
