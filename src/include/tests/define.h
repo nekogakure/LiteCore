@@ -6,17 +6,17 @@
 
 #ifdef TEST_TRUE
 // メモリマップとメモリのテスト
-#define MEM_TEST
+//#define MEM_TEST
 // 割り込みのテスト
-#define INTERRUPT_TEST
+//#define INTERRUPT_TEST
 // 割り込みベクタのテスト
-#define INTERRUPT_VECTOR_TEST
+//#define INTERRUPT_VECTOR_TEST
 // 割り込みハンドラでメモリのテスト
-#define ALLOC_IRQ_TEST
+//#define ALLOC_IRQ_TEST
 // GDT（セグメント）再構築テスト
-#define GDT_TEST
+//#define GDT_TEST
 // ページングのテスト
-#define PAGING_TEST
+//#define PAGING_TEST
 // 仮想メモリのテスト
 #define VMEM_TEST
 
