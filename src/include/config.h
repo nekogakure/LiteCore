@@ -4,20 +4,20 @@
 #define VERSION "0.1"
 
 #ifndef NULL
-#define NULL ((void*)0)
+#define NULL ((void *)0)
 #endif
 
 /**
  * @def VIDEO_MEMORY
  * @brief VGAの開始アドレス
  */
-#define VIDEO_MEMORY    (0xB8000)
+#define VIDEO_MEMORY (0xB8000)
 
 /**
  * @def COLOR
  * @brief 色属性（黒背景・白文字）
  */
-#define COLOR           (0x07)
+#define COLOR (0x07)
 
 /**
  * @typedef uint8_t

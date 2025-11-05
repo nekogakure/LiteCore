@@ -5,7 +5,7 @@
 #include <stdint.h>
 
 typedef struct spinlock {
-    volatile uint32_t lock;
+	volatile uint32_t lock;
 } spinlock_t;
 
 void spin_lock_irqsave(spinlock_t *lock, uint32_t *flags);

@@ -22,7 +22,6 @@
 // FAT12 test
 #define FAT12_TEST
 
-
 /* -------- 宣言 -------- */
 #ifdef MEM_TEST
 void mem_test();
