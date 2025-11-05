@@ -147,6 +147,8 @@ static void kbd_process(uint32_t sc_payload, void *ctx) {
 		buffer_put(out);
 		// 画面には表示しない（シェルが表示する）
 	} else {
+		// 未知のスキャンコードは無視（ログ出力しない）
+		// 特定のキー（PgUp、PgDnなど）が必要な場合はここで処理
 		/*
                 if (sc == 0x49) { // PGUP
                         console_scroll_page_up();
@@ -157,8 +159,6 @@ static void kbd_process(uint32_t sc_payload, void *ctx) {
                         return;
                 }
                 */
-
-		printk("[0x%x]", (unsigned)sc);
 	}
 }
 

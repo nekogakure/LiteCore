@@ -6,6 +6,7 @@
 #include <interrupt/idt.h>
 #include <util/shell.h>
 #include <util/shell_integration.h>
+#include <util/io.h>
 #include <mem/map.h>
 #include <mem/manager.h>
 #include <mem/segment.h>
@@ -15,6 +16,7 @@
 
 void kloop();
 static int shell_started = 0;
+
 
 /**
  * @fn kmain
@@ -40,11 +42,18 @@ void kmain() {
 	idt_init();
 	interrupt_init();
 	printk("ok\n");
+	
+	// タイマー割り込み（IRQ 0）を登録
+	interrupt_register(0, timer_handler, NULL);
 
 	new_line();
 	printk("> DEVICE INIT\n");
 	keyboard_init();
 	printk("ok\n");
+	
+	// 割り込みを有効化
+	__asm__ volatile("sti");
+	printk("> Interrupts enabled\n");
 
 #ifdef TEST_TRUE
 	new_line();
@@ -68,19 +77,38 @@ void kmain() {
  * @brief kmainの処理が終了した後常に動き続ける処理
  */
 void kloop() {
+	int activity = 0;  // このループで何か処理したかフラグ
+	
 	/* ポーリングによるフォールバック: キーボードのscancodeを回収 */
 	keyboard_poll();
-	/* FIFOに入ったイベントを処理 */
-	interrupt_dispatch_all();
 	
+	/* FIFOに入ったイベントを処理 */
+	int event_count = 0;
+	while (interrupt_dispatch_one()) {
+		activity = 1;
+		event_count++;
+	}
+	
+	/* シェルが開始されていない場合は、キー入力待ち */
 	if (!shell_started) {
 		char c = keyboard_getchar_poll();
 		if (c != 0) {
+			/* 何かキーが押されたらシェルを開始 */
 			shell_started = 1;
 			printk("\n");
 			init_full_shell();
+			activity = 1;
 		}
 	} else {
-		shell_readline_and_execute();
+		/* シェル実行中 */
+		int processed = shell_readline_and_execute();
+		if (processed != 0) {
+			activity = 1;
+		}
+	}
+	
+	/* 何も処理しなかった場合はCPUを休止（次の割り込みまで） */
+	if (!activity) {
+		cpu_halt();
 	}
 }

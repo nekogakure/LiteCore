@@ -58,7 +58,7 @@ static int cmd_ver(int argc, char **argv) {
 	(void)argv;
 	
 	printk("LiteCore Operating System\n");
-	printk("Version: 0.1.0 (Development)\n");
+	printk("Version: %s\n", VERSION);
 	printk("Build: %s %s\n", __DATE__, __TIME__);
 	
 	return 0;
