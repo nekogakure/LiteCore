@@ -26,8 +26,9 @@
    │  ├─ console.c   # コンソール
    │  ├─ entry.c     # カーネルエントリ（内部でmainを読み出しているだけ）
    │  └─ main.c      # カーネルメイン
-   └─ include/       # ヘッダ
-      └─ ...         # kernel/と同じ
+   ├─ include/       # ヘッダ
+   │  └─ ...         # kernel/と同じ
+   └─ boot/          # ブートローダー（LBoot）
 ```
 <!--
 /
@@ -54,6 +55,7 @@
    main.c      # カーネルメイン
   include/       # ヘッダ
    ...         # kernel/と同じ
+  boot/          # LBoot（ブートローダー）
 -->
 
 ## 起動時の構成

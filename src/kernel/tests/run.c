@@ -46,7 +46,7 @@ void run_test() {
 #endif
 
 #ifdef FAT12_TEST
-	printk("> FAT12 TEST");
+	printk("> FAT12 TEST\n");
 	fat12_test();
 	new_line();
 #endif

@@ -41,14 +41,17 @@ all: $(OUT_DIR) $(IMG)
 $(OUT_DIR):
 	mkdir -p $(OUT_DIR)
 
-$(IMG): $(BOOT) $(KERNEL)
-	cat $^ > $@
-
 $(KERNEL_ELF): $(OBJECTS) $(IMG_OBJS) $(LINKER)
 	$(LD) $(LDFLAGS) -T $(LINKER) $(OBJECTS) $(IMG_OBJS) -o $@
 
 $(KERNEL): $(KERNEL_ELF)
 	$(OBJCOPY) -O binary $< $@
+
+$(BOOT): $(SRC_BOOT)/boot.asm calculate-sectors
+	$(NASM) $(NFLAGS) $< -o $@
+
+$(IMG): $(BOOT) $(KERNEL)
+	cat $^ > $@
 
 $(OUT_DIR)/%.o: $(SRC_KERNEL)/%.c
 	mkdir -p $(dir $@)
@@ -64,10 +67,6 @@ $(OUT_DIR)/src_file_img.o: src/file.img | $(OUT_DIR)
 	$(OBJCOPY) -I binary -O elf32-i386 -B i386 \
 		--rename-section .data=.rodata,alloc,load,readonly,data,contents \
 		$< $@
-
-
-$(BOOT): $(SRC_BOOT)/boot.asm calculate-sectors
-	$(NASM) $(NFLAGS) $< -o $@
 
 run: $(IMG)
 	make clean

@@ -32,4 +32,4 @@ halt:
         hlt
         jmp halt
 
-disk_err_msg: db "Disk read error! :(", 0
+disk_err_msg: db "LBoot: Disk read error! :(", 0

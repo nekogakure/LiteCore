@@ -14,20 +14,37 @@ start:
 
         mov [boot_drive], dl    ; ブートドライブ番号の保存
 
-        ; ディスクからカーネルをKERNEL_OFFSETに読みこむ
-        mov ah, 0x02            ; BIOSのディスクの読み込み機能を選択
+        ; BIOS拡張読み込み(LBA)のサポートをチェック
+        mov ah, 0x41
+        mov bx, 0x55AA
+        mov dl, [boot_drive]
+        int 0x13
+        jc .use_chs             ; 拡張機能非対応ならCHSモードへ
+        cmp bx, 0xAA55
+        jne .use_chs
 
-        ; 定数をすべて読み込む
-        mov al, SECTOR_COUNT
+        ; LBAモードで読み込み
+        mov si, dap             ; Disk Address Packetのアドレス
+        mov ah, 0x42
+        mov dl, [boot_drive]
+        int 0x13
+        jc disk_error
+        jmp .boot_continue
+
+.use_chs:
         mov bx, KERNEL_OFFSET>>4
-        mov es, bx              ; seg
-        mov bx, bx              ; オフセット
+        mov es, bx
+        xor bx, bx
+        mov ah, 0x02
+        mov al, SECTOR_COUNT    ; 63以下を想定
         mov ch, CYLINDER_NUM
         mov cl, START_SECTOR
         mov dh, HEAD_NUM
         mov dl, [boot_drive]
+        int 0x13
+        jc disk_error
 
-        call read_disk          ; ディスクから読み込み
+.boot_continue:
 
         ; プロテクトモードへの移行準備
         cli                     ; 割り込みを無効にする
@@ -40,6 +57,11 @@ start:
         mov cr0, eax            ; 保護モードの有効化
 
         jmp CODE_SEGMENT:pm_start       ; 保護モードへジャンプ
+
+disk_error:
+        mov si, disk_err_msg
+        call print_string
+        jmp halt
 
 boot_error: 
         mov si, boot_err_msg    ; エラーメッセージのアドレス
@@ -89,7 +111,18 @@ gdt_descriptor:
 
 ; DATA
 boot_drive      db 0            ; ブートドライブ番号
-boot_err_msg    db "Boot failed! (A20 enable failed) :("
+boot_err_msg    db "LBoot: Boot failed! (A20 enable failed) :("
+
+; Disk Address Packet (DAP) for LBA mode
+align 4
+dap:
+        db 0x10                 ; DAP size (16 bytes)
+        db 0                    ; Reserved
+        dw SECTOR_COUNT         ; Number of sectors to read
+        dw KERNEL_OFFSET        ; Offset
+        dw 0                    ; Segment (0x0000 = absolute address)
+        dd 1                    ; LBA start (sector 1 = after boot sector)
+        dd 0                    ; Upper 32 bits of LBA (0 for <2TB disks)
 
 times 510-($-$$) db 0
 dw 0xAA55
