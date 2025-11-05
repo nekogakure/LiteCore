@@ -5,7 +5,7 @@ LiteCoreのテスト用FAT12イメージジェネレーター
 Cヘッダーを生成する場合:
         python3 tools/mk_fat12_image.py --c out.h file:NAME
 
-made by GPT-5 mini
+made by GPT-5 mini, Calude Sonnet 4.5 thanks you! :D
 """
 import sys
 import os
@@ -14,8 +14,13 @@ import struct
 SECTOR_SIZE = 512
 
 def make_simple_fdimg(files):
-    # fixed layout similar to fdimg.h we used: 5 sectors
-    img = bytearray(SECTOR_SIZE * 5)
+    # Calculate total sectors needed
+    # Boot(1) + FAT1(1) + FAT2(1) + Root(1) + Data
+    total_file_size = sum(len(data) for _, data in files)
+    data_sectors = (total_file_size + SECTOR_SIZE - 1) // SECTOR_SIZE
+    total_sectors = 4 + data_sectors  # boot + fat1 + fat2 + root + data
+    
+    img = bytearray(SECTOR_SIZE * total_sectors)
     # boot sector header
     img[0:3] = b"\xEB\x3C\x90"
     img[3:11] = b"MSDOS5.0"
@@ -24,7 +29,7 @@ def make_simple_fdimg(files):
     struct.pack_into('<H', img, 14, 1) # reserved
     img[16] = 2
     struct.pack_into('<H', img, 17, 16) # max root
-    struct.pack_into('<H', img, 19, 5) # total sectors
+    struct.pack_into('<H', img, 19, total_sectors) # total sectors
     img[21] = 0xF0
     struct.pack_into('<H', img, 22, 1) # FAT size
     img[510] = 0x55
@@ -43,9 +48,11 @@ def make_simple_fdimg(files):
 
     # root dir sector at sector 3
     root_off = SECTOR_SIZE * 3
-    data_off = SECTOR_SIZE * 4
+    data_start = SECTOR_SIZE * 4
     entry_index = 0
     cluster = 2
+    current_offset = data_start
+    
     for name, data in files:
         # build 8.3 name
         parts = name.split('.')
@@ -57,9 +64,30 @@ def make_simple_fdimg(files):
         img[ent_off+11] = 0x20 # archive
         struct.pack_into('<H', img, ent_off+26, cluster)
         struct.pack_into('<I', img, ent_off+28, len(data))
-        # write data to data sector (only cluster 2 supported)
-        img[data_off:data_off+len(data)] = data
+        
+        # write data to current offset in data area
+        img[current_offset:current_offset+len(data)] = data
+        
+        # Update FAT chain (mark cluster as EOF)
+        fat_offset = fat1_off + (cluster * 3) // 2
+        if cluster % 2 == 0:
+            # even cluster: 12 bits in [offset] and [offset+1] lower 4 bits
+            img[fat_offset] = 0xFF
+            img[fat_offset + 1] = (img[fat_offset + 1] & 0xF0) | 0x0F
+        else:
+            # odd cluster: 12 bits in [offset] upper 4 bits and [offset+1]
+            img[fat_offset] = (img[fat_offset] & 0x0F) | 0xF0
+            img[fat_offset + 1] = 0xFF
+        # Copy to FAT2
+        img[fat2_off + (cluster * 3) // 2] = img[fat_offset]
+        img[fat2_off + (cluster * 3) // 2 + 1] = img[fat_offset + 1]
+        
+        # Move to next cluster
+        clusters_needed = (len(data) + SECTOR_SIZE - 1) // SECTOR_SIZE
+        current_offset += clusters_needed * SECTOR_SIZE
+        cluster += clusters_needed
         entry_index += 1
+    
     return img
 
 if __name__ == '__main__':
