@@ -1,5 +1,5 @@
 #include <config.h>
-#include <console.h>
+#include <util/console.h>
 #include <device/pci.h>
 #include <device/keyboard.h>
 #include <interrupt/irq.h>

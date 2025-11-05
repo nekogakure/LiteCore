@@ -4,7 +4,7 @@
 #include <mem/map.h>
 #include <mem/vmem.h>
 #include <stddef.h>
-#include <console.h>
+#include <util/console.h>
 #include <interrupt/irq.h>
 
 // ページディレクトリ（4KBアライン）

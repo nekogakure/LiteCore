@@ -5,7 +5,7 @@
 #include <config.h>
 #include <mem/manager.h>
 #include <mem/map.h>
-#include <console.h>
+#include <util/console.h>
 
 /**
  * @fn mem_test

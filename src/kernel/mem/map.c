@@ -5,7 +5,7 @@
 
 #include <config.h>
 #include <mem/map.h>
-#include <console.h>
+#include <util/console.h>
 #include <util/io.h>
 
 // ビットマップは1ビットで1フレームを表す。安全のための最大フレーム数

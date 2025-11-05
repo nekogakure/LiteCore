@@ -18,7 +18,10 @@
 // ページングのテスト
 //#define PAGING_TEST
 // 仮想メモリのテスト
-#define VMEM_TEST
+//#define VMEM_TEST
+// FAT12 test
+#define FAT12_TEST
+
 
 /* -------- 宣言 -------- */
 #ifdef MEM_TEST
@@ -48,6 +51,10 @@ void paging_test();
 #ifdef VMEM_TEST
 void vmem_test();
 #endif /* VMEM_TEST */
+
+#ifdef FAT12_TEST
+void fat12_test();
+#endif
 
 #endif /* TEST_TRUE */
 

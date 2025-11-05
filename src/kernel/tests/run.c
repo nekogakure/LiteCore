@@ -1,4 +1,4 @@
-#include <console.h>
+#include <util/console.h>
 #include <config.h>
 #include <tests/define.h>
 
@@ -42,6 +42,12 @@ void run_test() {
         #ifdef VMEM_TEST
         printk("> VMEM TEST\n");
         vmem_test();
+        new_line();
+        #endif
+
+        #ifdef FAT12_TEST
+        printk("> FAT12 TEST");
+        fat12_test();
         new_line();
         #endif
 }

@@ -19,6 +19,7 @@ CONSOLE    = -display curses
 SOURCES    = $(shell find $(SRC_KERNEL) -name "*.c")
 ASM_SOURCES = $(shell find $(SRC_KERNEL) -name "*.asm")
 OBJECTS    = $(shell printf "%s\n" $(patsubst $(SRC_KERNEL)/%.c, $(OUT_DIR)/%.o, $(SOURCES)) $(patsubst $(SRC_KERNEL)/%.asm, $(OUT_DIR)/%.o, $(ASM_SOURCES)) | sort -u)
+IMG_OBJS   = $(OUT_DIR)/src_file_img.o
 
 BOOT       = $(OUT_DIR)/boot.bin
 KERNEL_ELF = $(OUT_DIR)/kernel.elf
@@ -43,8 +44,8 @@ $(OUT_DIR):
 $(IMG): $(BOOT) $(KERNEL)
 	cat $^ > $@
 
-$(KERNEL_ELF): $(OBJECTS) $(LINKER)
-	$(LD) $(LDFLAGS) -T $(LINKER) $(OBJECTS) -o $@
+$(KERNEL_ELF): $(OBJECTS) $(IMG_OBJS) $(LINKER)
+	$(LD) $(LDFLAGS) -T $(LINKER) $(OBJECTS) $(IMG_OBJS) -o $@
 
 $(KERNEL): $(KERNEL_ELF)
 	$(OBJCOPY) -O binary $< $@
@@ -57,6 +58,12 @@ $(OUT_DIR)/%.o: $(SRC_KERNEL)/%.c
 $(OUT_DIR)/%.o: $(SRC_KERNEL)/%.asm
 	mkdir -p $(dir $@)
 	$(NASM) -f elf32 $< -o $@
+
+$(OUT_DIR)/src_file_img.o: src/file.img | $(OUT_DIR)
+	mkdir -p $(dir $@)
+	$(OBJCOPY) -I binary -O elf32-i386 -B i386 \
+		--rename-section .data=.rodata,alloc,load,readonly,data,contents \
+		$< $@
 
 
 $(BOOT): $(SRC_BOOT)/boot.asm calculate-sectors

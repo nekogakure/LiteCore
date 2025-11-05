@@ -1,5 +1,5 @@
 #include <config.h>
-#include <console.h>
+#include <util/console.h>
 #include <interrupt/idt.h>
 #include <interrupt/irq.h>
 

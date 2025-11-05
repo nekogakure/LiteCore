@@ -2,24 +2,33 @@ ENTRY(kernel_entry)
 OUTPUT_ARCH(i386)
 
 SECTIONS {
-        . = 0x10000;           /* カーネルのアドレス */
+        . = 0x10000;
 
         .text : {
                 KEEP(*(.text.kernel_entry))
                 *(.text)
+                *(.text.*)
         }
 
-        .rodata ALIGN(4) : {    /* 読み取り専用データ */
-                *(.rodata)      /* 定数 */
+        . = ALIGN(0x1000);
+
+        .rodata : {
+                *(.rodata)
+                *(.rodata.*)
+                *(.eh_frame)
         }
 
-        .data ALIGN(4) : {      /* 初期化住みのデータ */
-                *(.data)        /* グローバル変数 */
+        . = ALIGN(0x1000);
+
+        .data : {
+                *(.data)
+                *(.data.*)
+                *(.got.plt)
         }
 
-        .bss ALIGN(4) : {       /* 未初期化データ */
-                *(.bss)         /* 未初期化の変数 */
+        .bss ALIGN(4) : {
+                *(.bss)
         }
 
-        __end = .;              /* カーネルの終了アドレス */
+        __end = .;
 }

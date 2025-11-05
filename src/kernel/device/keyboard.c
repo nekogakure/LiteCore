@@ -1,6 +1,6 @@
 #include <config.h>
 #include <util/io.h>
-#include <console.h>
+#include <util/console.h>
 #include <stdint.h>
 #include <stdbool.h>
 #include <interrupt/irq.h>

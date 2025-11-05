@@ -3,7 +3,7 @@
 #ifdef ALLOC_IRQ_TEST
 
 #include <config.h>
-#include <console.h>
+#include <util/console.h>
 #include <interrupt/irq.h>
 #include <mem/map.h>
 

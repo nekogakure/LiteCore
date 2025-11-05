@@ -1,4 +1,4 @@
-#include <console.h>
+#include <util/console.h>
 #include <stdint.h>
 #include <mem/vmem.h>
 #include <interrupt/irq.h>

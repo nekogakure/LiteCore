@@ -2,7 +2,7 @@
 #include <mem/manager.h>
 #include <util/io.h>
 #include <mem/map.h>
-#include <console.h>
+#include <util/console.h>
 #include <interrupt/irq.h>
 #include <sync/spinlock.h>
 

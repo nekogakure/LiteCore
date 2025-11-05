@@ -3,7 +3,7 @@
 #ifdef GDT_TEST
 
 #include <config.h>
-#include <console.h>
+#include <util/console.h>
 
 static inline uint16_t read_cs(void) {
     uint16_t sel;

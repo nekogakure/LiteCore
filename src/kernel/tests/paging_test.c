@@ -1,5 +1,5 @@
 #include <config.h>
-#include <console.h>
+#include <util/console.h>
 #include <mem/paging.h>
 #include <mem/map.h>
 
