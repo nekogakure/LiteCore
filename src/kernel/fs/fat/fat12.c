@@ -161,15 +161,25 @@ int fat12_read_file(struct fat12_super *sb, const char *name, void *buf,
 	char shortname[12];
 	mem_set(shortname, ' ', 11);
 	shortname[11] = '\0';
-	// 入力名を 8.3 の大文字形式に変換（ドットは無視）
 	int si = 0;
-	for (int i = 0; i < 11 && name[si]; i++) {
+	int ni = 0;
+	
+	while (name[si] && name[si] != '.' && ni < 8) {
 		char c = name[si++];
-		if (c == '.')
-			continue;
 		if (c >= 'a' && c <= 'z')
 			c = c - 'a' + 'A';
-		shortname[i] = c;
+		shortname[ni++] = c;
+	}
+	
+	if (name[si] == '.')
+		si++;
+	
+	ni = 8;
+	while (name[si] && ni < 11) {
+		char c = name[si++];
+		if (c >= 'a' && c <= 'z')
+			c = c - 'a' + 'A';
+		shortname[ni++] = c;
 	}
 
 	for (uint32_t s = 0; s < sectors; s++) {

@@ -1,3 +1,0 @@
-Welcome to LiteCore world!
-
-from FAT12...

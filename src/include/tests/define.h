@@ -2,25 +2,27 @@
 #define _TESTS_CONFIG_H
 
 // テストを実行するかどうか
-//#define TEST_TRUE
+#define TEST_TRUE
 
 #ifdef TEST_TRUE
 // メモリマップとメモリのテスト
-#define MEM_TEST
+//#define MEM_TEST
 // 割り込みのテスト
-#define INTERRUPT_TEST
+//#define INTERRUPT_TEST
 // 割り込みベクタのテスト
-#define INTERRUPT_VECTOR_TEST
+//#define INTERRUPT_VECTOR_TEST
 // 割り込みハンドラでメモリのテスト
-#define ALLOC_IRQ_TEST
+//#define ALLOC_IRQ_TEST
 // GDT（セグメント）再構築テスト
-#define GDT_TEST
+//#define GDT_TEST
 // ページングのテスト
-#define PAGING_TEST
+//#define PAGING_TEST
 // 仮想メモリのテスト
-#define VMEM_TEST
+//#define VMEM_TEST
 // FAT12 test
-#define FAT12_TEST
+//#define FAT12_TEST
+// ext2 test
+#define EXT2_TEST
 
 /* -------- 宣言 -------- */
 #ifdef MEM_TEST
@@ -53,6 +55,10 @@ void vmem_test();
 
 #ifdef FAT12_TEST
 void fat12_test();
+#endif
+
+#ifdef EXT2_TEST
+void ext2_test();
 #endif
 
 #endif /* TEST_TRUE */

@@ -10,7 +10,7 @@ SRC_KERNEL = $(SRC_DIR)/kernel
 INCLUDE    = $(SRC_DIR)/include
 OUT_DIR    = bin
 
-CFLAGS     = -Wimplicit-function-declaration -ffreestanding -m32 -c -Wall -Wextra -I$(INCLUDE)
+CFLAGS     = -O2 -Wimplicit-function-declaration -ffreestanding -m32 -c -Wall -Wextra -I$(INCLUDE)
 LDFLAGS    = -m elf_i386
 NFLAGS     = -f bin
 QEMU_FLAGS = -monitor stdio -no-reboot -d int,guest_errors -D kernel.log
@@ -68,15 +68,19 @@ $(OUT_DIR)/src_file_img.o: src/file.img | $(OUT_DIR)
 		--rename-section .data=.rodata,alloc,load,readonly,data,contents \
 		$< $@
 
-run: $(IMG)
-	make clean
-	make all
-	$(QEMU) $(QEMU_FLAGS) -fda $<
+src/ext2.img:
+	@echo "Creating ext2.img (2MB)..."
+	@python3 tools/mk_ext2_image.py src/ext2.img 2048 example/
 
-run-console: $(IMG)
+run: $(IMG) src/ext2.img
 	make clean
 	make all
-	$(QEMU) $(CONSOLE) -fda $< 
+	$(QEMU) $(QEMU_FLAGS) -fda $(IMG) -hdb src/ext2.img
+
+run-console: $(IMG) src/ext2.img
+	make clean
+	make all
+	$(QEMU) $(CONSOLE) -fda $(IMG) -hdb src/ext2.img 
 
 clean:
 	rm -rf $(OUT_DIR)

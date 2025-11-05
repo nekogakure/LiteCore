@@ -50,4 +50,10 @@ void run_test() {
 	fat12_test();
 	new_line();
 #endif
+
+#ifdef EXT2_TEST
+	printk("> EXT2 TEST\n");
+	ext2_test();
+	new_line();
+#endif
 }

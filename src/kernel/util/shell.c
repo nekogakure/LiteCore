@@ -1,7 +1,9 @@
 #include <util/shell.h>
 #include <util/commands.h>
+#include <util/commands.h>
 #include <util/console.h>
 #include <device/keyboard.h>
+#include <fs/fs.h>
 
 #define SHELL_BUFFER_SIZE 256
 #define SHELL_PROMPT "LiteCore> "
@@ -38,7 +40,7 @@ void init_shell(void) {
 	// コマンドシステムの初期化
 	init_commands();
 	register_builtin_commands();
-	
+
 	clear_buffer();
 	show_prompt();
 }
