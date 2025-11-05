@@ -41,7 +41,7 @@ const char* config_value = NULL;
 ```c
 int load_config(void);
 const char* get_config_value(const char* key);
-void build_compile_command(void);
+void build_compile_command();
 ```
 どこぞのモダン言語のようにかっこよさを求める必要はありません
 
