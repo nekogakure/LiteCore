@@ -1,9 +1,7 @@
 """
 LiteCoreのテスト用FAT12イメージジェネレーター
 使い方:
-        python3 tools/mk_fat12_image.py out.img file1:NAME1 file2:NAME2 ...
-Cヘッダーを生成する場合:
-        python3 tools/mk_fat12_image.py --c out.h file:NAME
+        python3 tools/mk_fat12_image.py out.img inputfile1:OUTNAME1 inputfile2:OUTNAME2 ...
 
 made by GPT-5 mini, Calude Sonnet 4.5 thanks you! :D
 """
