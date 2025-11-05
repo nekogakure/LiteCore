@@ -229,6 +229,14 @@ int printk(const char *fmt, ...) {
 			// widthとパディングの簡易サポート
 			int width = 0;
 			int pad_zero = 0;
+			int left_align = 0;  // 左詰めフラグ
+			
+			// '-' フラグをチェック（左詰め）
+			if (fmt[i] == '-') {
+				left_align = 1;
+				i++;
+			}
+			
 			if (fmt[i] == '0') {
 				pad_zero = 1;
 				i++;
@@ -310,8 +318,35 @@ int printk(const char *fmt, ...) {
 					buffer[j++] = numbuf[k];
 			} else if (spec == 's') {
 				const char *s = va_arg(args, const char *);
-				while (*s && j < (int)sizeof(buffer) - 1)
-					buffer[j++] = *s++;
+				int len = 0;
+				const char *p = s;
+				// 文字列の長さを計算
+				while (*p) {
+					len++;
+					p++;
+				}
+				// 左詰めの場合: 文字列を先に出力してからパディング
+				if (left_align) {
+					while (*s && j < (int)sizeof(buffer) - 1)
+						buffer[j++] = *s++;
+					// 右側にパディング
+					if (width > len) {
+						int pad = width - len;
+						while (pad-- > 0 &&
+						       j < (int)sizeof(buffer) - 1)
+							buffer[j++] = ' ';
+					}
+				} else {
+					// 右詰め（デフォルト）: パディングしてから文字列
+					if (width > len) {
+						int pad = width - len;
+						while (pad-- > 0 &&
+						       j < (int)sizeof(buffer) - 1)
+							buffer[j++] = ' ';
+					}
+					while (*s && j < (int)sizeof(buffer) - 1)
+						buffer[j++] = *s++;
+				}
 			} else if (spec == 'c') {
 				char c = (char)va_arg(args, int);
 				buffer[j++] = c;
