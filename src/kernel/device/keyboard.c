@@ -5,6 +5,29 @@
 #include <stdbool.h>
 #include <interrupt/irq.h>
 
+#define KEY_BUFFER_SIZE 256
+static char key_buffer[KEY_BUFFER_SIZE];
+static volatile int buffer_read_pos = 0;
+static volatile int buffer_write_pos = 0;
+
+static void buffer_put(char c) {
+	int next_pos = (buffer_write_pos + 1) % KEY_BUFFER_SIZE;
+	if (next_pos != buffer_read_pos) {
+		key_buffer[buffer_write_pos] = c;
+		buffer_write_pos = next_pos;
+	}
+}
+
+// バッファから文字を取得
+static char buffer_get(void) {
+	if (buffer_read_pos == buffer_write_pos) {
+		return 0; // バッファが空
+	}
+	char c = key_buffer[buffer_read_pos];
+	buffer_read_pos = (buffer_read_pos + 1) % KEY_BUFFER_SIZE;
+	return c;
+}
+
 /* Keyboard I/O */
 static inline void outb(uint16_t port, uint8_t val) {
 	__asm__ volatile("outb %0, %1" : : "a"(val), "Nd"(port));
@@ -102,6 +125,10 @@ static void kbd_process(uint32_t sc_payload, void *ctx) {
 			if (up >= 'a' && up <= 'z')
 				up = up - 'a' + 'A';
 			if (up >= 'A' && up <= 'Z') {
+				// バッファに追加
+				buffer_put('^');
+				buffer_put(up);
+				// 画面にも表示
 				char s[3] = { '^', up, '\0' };
 				printk("%s", s);
 				return;
@@ -110,12 +137,15 @@ static void kbd_process(uint32_t sc_payload, void *ctx) {
 			return;
 		}
 		if (alt_down) {
+			// Alt+キーはバッファに追加しない（現状）
 			char s[4] = { '[', out, ']', '\0' };
 			printk("%s", s);
 			return;
 		}
-		char s[2] = { out, '\0' };
-		printk("%s", s);
+		// すべての文字（制御文字含む）をバッファに追加
+		// シェルが適切に処理する
+		buffer_put(out);
+		// 画面には表示しない（シェルが表示する）
 	} else {
 		/*
                 if (sc == 0x49) { // PGUP
@@ -145,4 +175,26 @@ void keyboard_init(void) {
 
 void keyboard_poll(void) {
 	kbd_isr(0, NULL);
+}
+
+/**
+ * @brief キーボードから1文字取得（ブロッキング）
+ * @return 取得した文字
+ */
+char keyboard_getchar(void) {
+	char c;
+	while ((c = buffer_get()) == 0) {
+		// バッファが空の場合、ポーリングして待つ
+		keyboard_poll();
+	}
+	return c;
+}
+
+/**
+ * @brief キーボードから1文字取得（ポーリング）
+ * @return 取得した文字、バッファが空の場合0
+ */
+char keyboard_getchar_poll(void) {
+	keyboard_poll();
+	return buffer_get();
 }

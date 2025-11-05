@@ -135,6 +135,19 @@ static void console_putc(char ch) {
 		return;
 	}
 
+	if (ch == '\b' || ch == 0x08) {
+		// Backspace処理: カーソルを1文字戻す
+		if (cursor_col > 0) {
+			cursor_col--;
+		} else if (cursor_row > 0) {
+			// 前の行の最後に移動
+			cursor_row--;
+			cursor_col = CONSOLE_COLS - 1;
+		}
+		serial_putc('\b');
+		return;
+	}
+
 	int pos = (cursor_row * CONSOLE_COLS + cursor_col) * 2;
 	video[pos] = (uint8_t)ch;
 	video[pos + 1] = attr;
