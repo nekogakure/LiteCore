@@ -7,5 +7,5 @@ __attribute__((section(".text.kernel_entry")))
  * @brief カーネルのエントリーポイント
  */
 void kernel_entry() {
-        kmain();
+	kmain();
 }
