@@ -10,7 +10,8 @@ void fs_test() {
 	size_t img_len = (size_t)((uintptr_t)_binary_src_file_img_end -
 				  (uintptr_t)_binary_src_file_img_start);
 
-	printk("fs_test: Embedded FAT12 image at %p, size=%u bytes\n", img, (unsigned)img_len);
+	printk("fs_test: Embedded FAT12 image at %p, size=%u bytes\n", img,
+	       (unsigned)img_len);
 
 	int r = fs_mount(img, img_len, &fh);
 	if (r != 0) {
@@ -18,7 +19,7 @@ void fs_test() {
 		return;
 	}
 	printk("fs_mount: SUCCESS\n");
-	
+
 	dir_handle *d;
 	if (fs_opendir(fh, "/", &d) == 0) {
 		char name[64];

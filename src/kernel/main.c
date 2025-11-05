@@ -25,7 +25,7 @@ void kmain() {
 	printk("Welcome to Litecore kernel!\n");
 	printk("    Version: %s\n", VERSION);
 	printk("    Author : nekogakure\n");
-        
+
 	new_line();
 	printk("=== KERNEL INIT ===\n");
 	printk("> MEMORY INIT\n");
