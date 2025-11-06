@@ -99,7 +99,7 @@ static int cmd_ver(int argc, char **argv) {
 	(void)argc;
 	(void)argv;
 
-	printk("LiteCore Operating System\n");
+	printk("LiteCore Kernel\n");
 	printk("Version: %s\n", VERSION);
 	printk("Build: %s %s\n", __DATE__, __TIME__);
 	printk("Author: nekogakure\n");

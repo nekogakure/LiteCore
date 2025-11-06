@@ -1,0 +1,2 @@
+# LiteCore Kernel
+LiteCore Kernel is a simple and lightweight kernel designed for educational purposes. It targets the x86_64 architecture and provides basic features such as memory management, file system, device drivers, and a command system.

@@ -412,12 +412,21 @@ int ext2_read_file(struct ext2_super *sb, const char *name, void *buf,
 				file_inode.i_block[block_idx] != 0;
 	     block_idx++) {
 		uint32_t block_num = file_inode.i_block[block_idx];
-		uint32_t block_offset = block_num * sb->block_size;
 
-		if (block_offset + sb->block_size > sb->image_size)
-			break;
+		/* ブロックデータを読み込む */
+		uint8_t block_data[4096];
+		if (sb->cache) {
+			if (block_cache_read(sb->cache, block_num,
+					     block_data) != 0)
+				break;
+		} else {
+			uint32_t block_offset = block_num * sb->block_size;
+			if (block_offset + sb->block_size > sb->image_size)
+				break;
+			mem_copy(block_data, sb->image + block_offset,
+				 sb->block_size);
+		}
 
-		const uint8_t *block_data = sb->image + block_offset;
 		uint32_t copy_size = sb->block_size;
 		if (bytes_read + copy_size > bytes_to_read)
 			copy_size = bytes_to_read - bytes_read;

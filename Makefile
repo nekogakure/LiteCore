@@ -25,18 +25,21 @@ BOOT       = $(OUT_DIR)/boot.bin
 KERNEL_ELF = $(OUT_DIR)/kernel.elf
 KERNEL     = $(OUT_DIR)/kernel.bin
 IMG        = $(OUT_DIR)/disk.img
+LITECORE_IMG = $(OUT_DIR)/LiteCore.img
 LINKER     = $(SRC_DIR)/kernel.ld
 
 CALC_SCRIPT = $(SRC_BOOT)/config.inc
 
-.PHONY: calculate-sectors
+.PHONY: all run run-console run-serial clean calculate-sectors
+.DEFAULT_GOAL := all
+
 calculate-sectors: $(KERNEL)
 	@echo "Generating $(SRC_BOOT)/config.inc (based on $(KERNEL) size)"
 	@size=$$(wc -c < $(KERNEL)); sectors=$$(( (size + 511) / 512 )); \
 	printf "KERNEL_OFFSET EQU 0x10000       ; カーネルをロードするアドレス\nSECTOR_COUNT  EQU %s            ; 読み込むセクタの数\nSTART_SECTOR  EQU 2             ; 開始するセクタ番号\nCYLINDER_NUM  EQU 0             ; シリンダ番号\nHEAD_NUM      EQU 0             ; ヘッド番号\nCODE_SEGMENT  EQU 0x08          ; コードセグメント\nDATA_SEGMENT  EQU 0x10          ; データセメント\n" "$$sectors" > $(SRC_BOOT)/config.inc
 
 
-all: $(OUT_DIR) $(IMG)
+all: $(OUT_DIR) $(IMG) $(LITECORE_IMG)
 
 $(OUT_DIR):
 	mkdir -p $(OUT_DIR)
@@ -62,22 +65,21 @@ $(OUT_DIR)/%.o: $(SRC_KERNEL)/%.asm
 	mkdir -p $(dir $@)
 	$(NASM) -f elf32 $< -o $@
 
-src/ext2.img:
-	@echo "Creating ext2.img (2MB)..."
-	@python3 tools/mk_ext2_image.py src/ext2.img 2048 example/
+$(LITECORE_IMG):
+	@echo "Creating LiteCore.img (2MB ext2 filesystem)..."
+	@python3 tools/mk_ext2_image.py $(LITECORE_IMG) 2048 tree
 
-run: $(IMG) src/ext2.img
+run: $(IMG) $(LITECORE_IMG)
 	make all
-	$(QEMU) $(QEMU_FLAGS) -drive file=$(IMG),format=raw,if=floppy -drive file=src/ext2.img,format=raw,if=ide
+	$(QEMU) $(QEMU_FLAGS) -drive file=$(IMG),format=raw,if=floppy -drive file=$(LITECORE_IMG),format=raw,if=ide
 
-run-console: $(IMG) src/ext2.img
+run-console: $(IMG) $(LITECORE_IMG)
 	make all
-	$(QEMU) $(CONSOLE) -drive file=$(IMG),format=raw,if=floppy -drive file=src/ext2.img,format=raw,if=ide
-run-serial: $(IMG) src/ext2.img
+	$(QEMU) $(CONSOLE) -drive file=$(IMG),format=raw,if=floppy -drive file=$(LITECORE_IMG),format=raw,if=ide
+
+run-serial: $(IMG) $(LITECORE_IMG)
 	make all
-	$(QEMU) $(QEMU_SERIAL) -drive file=$(IMG),format=raw,if=floppy -drive file=src/ext2.img,format=raw,if=ide
+	$(QEMU) $(QEMU_SERIAL) -drive file=$(IMG),format=raw,if=floppy -drive file=$(LITECORE_IMG),format=raw,if=ide
 
 clean:
 	rm -rf $(OUT_DIR)
-
-.PHONY: all run clean
