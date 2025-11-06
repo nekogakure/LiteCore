@@ -54,82 +54,92 @@ static void ata_get_base(uint8_t drive, uint16_t *base, uint8_t *drive_sel) {
 int ata_init(void) {
 	printk("ATA: Initializing ATA driver\n");
 	
-	/* Secondary Masterを選択（QEMUの-hdb） */
-	outb(ATA_SECONDARY_DRIVE, ATA_MASTER);
-	ata_wait_ready(ATA_SECONDARY_DATA);
+	/* 試すドライブのリスト */
+	const struct {
+		uint16_t base;
+		uint8_t drive_sel;
+		const char *name;
+	} drives[] = {
+		{ATA_PRIMARY_DATA, ATA_SLAVE, "Primary Slave (hdb)"},
+		{ATA_SECONDARY_DATA, ATA_MASTER, "Secondary Master (hdc)"},
+		{ATA_PRIMARY_DATA, ATA_MASTER, "Primary Master (hda)"},
+	};
 	
-	/* IDENTIFYコマンドを送信 */
-	outb(ATA_SECONDARY_COMMAND, ATA_CMD_IDENTIFY);
-	ata_wait_ready(ATA_SECONDARY_DATA);
-	
-	uint8_t status = inb(ATA_SECONDARY_STATUS);
-	
-	if (status == 0) {
-		printk("ATA: No drive detected on Secondary Master\n");
-		printk("ATA: Trying Primary Master...\n");
+	for (int i = 0; i < 3; i++) {
+		printk("ATA: Trying %s...\n", drives[i].name);
 		
-		/* Primary Masterを試す */
-		outb(ATA_PRIMARY_DRIVE, ATA_MASTER);
-		ata_wait_ready(ATA_PRIMARY_DATA);
+		/* 割り込みを無効化（PIOモードでポーリングするため） */
+		outb(drives[i].base + 0x206, 0x02);  /* nIEN ビットをセット */
 		
-		outb(ATA_PRIMARY_COMMAND, ATA_CMD_IDENTIFY);
-		ata_wait_ready(ATA_PRIMARY_DATA);
+		/* ドライブを選択 */
+		outb(drives[i].base + 6, drives[i].drive_sel);
 		
-		status = inb(ATA_PRIMARY_STATUS);
-		
-		if (status == 0) {
-			printk("ATA: No drive detected on Primary Master\n");
-			return -1;
+		/* 400ns待つ（ポートを4回読む） */
+		for (int j = 0; j < 4; j++) {
+			inb(drives[i].base + 7);
 		}
 		
+		/* IDENTIFYコマンドを送信 */
+		outb(drives[i].base + 7, ATA_CMD_IDENTIFY);
+		
+		/* 400ns待つ */
+		for (int j = 0; j < 4; j++) {
+			inb(drives[i].base + 7);
+		}
+		
+		/* ステータスを確認 */
+		uint8_t status = inb(drives[i].base + 7);
+		
+		/* ドライブが存在しない */
+		if (status == 0 || status == 0xFF) {
+			printk("ATA:   No drive (status=0x%x)\n", status);
+			continue;
+		}
+		
+		/* エラーチェック */
 		if (status & ATA_SR_ERR) {
-			printk("ATA: Error detecting Primary Master\n");
-			return -1;
+			uint8_t err = inb(drives[i].base + 1);
+			printk("ATA:   Error detected (err=0x%x)\n", err);
+			/* ATAPI デバイスの場合はスキップ */
+			if (err == 0x01) {
+				printk("ATA:   ATAPI device (not supported)\n");
+			}
+			continue;
 		}
 		
-		/* IDENTIFYデータを読み取る */
-		for (int i = 0; i < 256; i++) {
-			(void)inw(ATA_PRIMARY_DATA);
+		/* BSYがクリアされるまで待つ */
+		uint32_t timeout = 100000;
+		while (timeout-- && (inb(drives[i].base + 7) & ATA_SR_BSY)) {
+			/* 待機 */
 		}
 		
-		printk("ATA: Primary Master detected\n");
+		if (timeout == 0) {
+			printk("ATA:   Timeout waiting for BSY clear\n");
+			continue;
+		}
+		
+		/* DRQビットを待つ */
+		timeout = 100000;
+		while (timeout-- && !(inb(drives[i].base + 7) & ATA_SR_DRQ)) {
+			/* 待機 */
+		}
+		
+		if (timeout == 0) {
+			printk("ATA:   Timeout waiting for DRQ\n");
+			continue;
+		}
+		
+		/* IDENTIFYデータを読み取る（256ワード = 512バイト）*/
+		for (int j = 0; j < 256; j++) {
+			(void)inw(drives[i].base);
+		}
+		
+		printk("ATA: %s detected successfully!\n", drives[i].name);
 		return 0;
 	}
 	
-	if (status & ATA_SR_ERR) {
-		printk("ATA: Error detecting Secondary Master, trying Primary Master...\n");
-		
-		/* Primary Masterを試す */
-		outb(ATA_PRIMARY_DRIVE, ATA_MASTER);
-		ata_wait_ready(ATA_PRIMARY_DATA);
-		
-		outb(ATA_PRIMARY_COMMAND, ATA_CMD_IDENTIFY);
-		ata_wait_ready(ATA_PRIMARY_DATA);
-		
-		status = inb(ATA_PRIMARY_STATUS);
-		
-		if (status == 0 || (status & ATA_SR_ERR)) {
-			printk("ATA: No valid ATA drive found\n");
-			return -1;
-		}
-		
-		/* IDENTIFYデータを読み取る */
-		for (int i = 0; i < 256; i++) {
-			(void)inw(ATA_PRIMARY_DATA);
-		}
-		
-		printk("ATA: Primary Master detected\n");
-		return 0;
-	}
-	
-	/* IDENTIFYデータを読み取る（256ワード = 512バイト）*/
-	for (int i = 0; i < 256; i++) {
-		(void)inw(ATA_SECONDARY_DATA);
-	}
-	
-	printk("ATA: Secondary Master detected\n");
-	
-	return 0;
+	printk("ATA: No valid ATA drive found\n");
+	return -1;
 }
 
 /**
@@ -147,11 +157,14 @@ int ata_read_sectors(uint8_t drive, uint32_t lba, uint8_t sectors, void *buffer)
 	/* ベースアドレスとドライブ選択を取得 */
 	ata_get_base(drive, &base, &drive_sel);
 	
+	/* 割り込みを無効化 */
+	outb(base + 0x206, 0x02);
+	
 	/* デバイスが準備完了するまで待機 */
 	ata_wait_ready(base);
 	
 	/* LBA28モードでドライブを選択 */
-	outb(base + 6, drive_sel | ((lba >> 24) & 0x0F));
+	outb(base + 6, (drive_sel | 0xE0) | ((lba >> 24) & 0x0F));
 	
 	/* セクタ数を設定 */
 	outb(base + 2, sectors);
@@ -201,11 +214,14 @@ int ata_write_sectors(uint8_t drive, uint32_t lba, uint8_t sectors, const void *
 	/* ベースアドレスとドライブ選択を取得 */
 	ata_get_base(drive, &base, &drive_sel);
 	
+	/* 割り込みを無効化 */
+	outb(base + 0x206, 0x02);
+	
 	/* デバイスが準備完了するまで待機 */
 	ata_wait_ready(base);
 	
 	/* LBA28モードでドライブを選択 */
-	outb(base + 6, drive_sel | ((lba >> 24) & 0x0F));
+	outb(base + 6, (drive_sel | 0xE0) | ((lba >> 24) & 0x0F));
 	
 	/* セクタ数を設定 */
 	outb(base + 2, sectors);
