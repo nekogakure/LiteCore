@@ -3,6 +3,9 @@
 
 #define VERSION "0.1"
 
+// 初期化メッセージを表示するかどうか
+#define INIT_MSG
+
 #ifndef NULL
 #define NULL ((void *)0)
 #endif

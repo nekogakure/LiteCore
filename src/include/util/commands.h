@@ -15,9 +15,9 @@ typedef int (*command_func_t)(int argc, char **argv);
  * @brief シェルコマンドの情報を格納する構造体
  */
 typedef struct {
-        const char *name;           /// コマンド名
-        const char *description;    /// コマンドの説明
-        command_func_t function;    /// 実行する関数
+	const char *name; /// コマンド名
+	const char *description; /// コマンドの説明
+	command_func_t function; /// 実行する関数
 } shell_command_t;
 
 // コマンドシステムの初期化・管理関数
@@ -35,7 +35,7 @@ void init_commands(void);
  * @return 成功時0、失敗時-1
  */
 int register_command(const char *name, const char *description,
-                     command_func_t function);
+		     command_func_t function);
 
 /**
  * @brief コマンドを実行

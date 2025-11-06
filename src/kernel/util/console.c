@@ -220,14 +220,14 @@ int printk(const char *fmt, ...) {
 			// widthとパディングの簡易サポート
 			int width = 0;
 			int pad_zero = 0;
-			int left_align = 0;  // 左詰めフラグ
-			
+			int left_align = 0; // 左詰めフラグ
+
 			// '-' フラグをチェック（左詰め）
 			if (fmt[i] == '-') {
 				left_align = 1;
 				i++;
 			}
-			
+
 			if (fmt[i] == '0') {
 				pad_zero = 1;
 				i++;
@@ -318,13 +318,15 @@ int printk(const char *fmt, ...) {
 				}
 				// 左詰めの場合: 文字列を先に出力してからパディング
 				if (left_align) {
-					while (*s && j < (int)sizeof(buffer) - 1)
+					while (*s &&
+					       j < (int)sizeof(buffer) - 1)
 						buffer[j++] = *s++;
 					// 右側にパディング
 					if (width > len) {
 						int pad = width - len;
 						while (pad-- > 0 &&
-						       j < (int)sizeof(buffer) - 1)
+						       j < (int)sizeof(buffer) -
+								       1)
 							buffer[j++] = ' ';
 					}
 				} else {
@@ -332,10 +334,12 @@ int printk(const char *fmt, ...) {
 					if (width > len) {
 						int pad = width - len;
 						while (pad-- > 0 &&
-						       j < (int)sizeof(buffer) - 1)
+						       j < (int)sizeof(buffer) -
+								       1)
 							buffer[j++] = ' ';
 					}
-					while (*s && j < (int)sizeof(buffer) - 1)
+					while (*s &&
+					       j < (int)sizeof(buffer) - 1)
 						buffer[j++] = *s++;
 				}
 			} else if (spec == 'c') {

@@ -1,36 +1,11 @@
 #include <util/commands.h>
 #include <util/console.h>
 #include <mem/manager.h>
-#include <fs/fs.h>
+#include <fs/ext/ext2.h>
 #include <stdint.h>
 
-// 埋め込みファイルイメージのシンボル
-extern const unsigned char _binary_src_file_img_start[];
-extern const unsigned char _binary_src_file_img_end[];
-
-// グローバルFSハンドル（初回マウント時に設定）
-static fs_handle *g_fs = NULL;
-
-/**
- * @brief FSをマウントする（初回のみ）
- */
-static int ensure_fs_mounted(void) {
-	if (g_fs != NULL) {
-		return 0; // 既にマウント済み
-	}
-	
-	const unsigned char *img = _binary_src_file_img_start;
-	size_t img_len = (size_t)((uintptr_t)_binary_src_file_img_end -
-				  (uintptr_t)_binary_src_file_img_start);
-	
-	int r = fs_mount(img, img_len, &g_fs);
-	if (r != 0) {
-		printk("Error: Failed to mount filesystem (code %d)\n", r);
-		return -1;
-	}
-	
-	return 0;
-}
+// 外部宣言: main.cで定義されているグローバル変数
+extern struct ext2_super *g_ext2_sb;
 
 /**
  * @brief memコマンド - メモリ使用状況を表示
@@ -38,11 +13,11 @@ static int ensure_fs_mounted(void) {
 static int cmd_mem(int argc, char **argv) {
 	(void)argc;
 	(void)argv;
-	
+
 	// TODO: メモリマネージャーから統計情報を取得
 	printk("Memory information:\n");
 	printk("  (Memory statistics not yet implemented)\n");
-	
+
 	return 0;
 }
 
@@ -50,54 +25,22 @@ static int cmd_mem(int argc, char **argv) {
  * @brief lsコマンド - ファイル一覧を表示
  */
 static int cmd_ls(int argc, char **argv) {
-	const char *path = "/";
-	
-	if (argc > 1) {
-		path = argv[1];
-	}
-	
-	// FSをマウント
-	if (ensure_fs_mounted() != 0) {
+	(void)argc;
+	(void)argv;
+
+	if (g_ext2_sb == NULL) {
+		printk("Error: ext2 filesystem not mounted\n");
 		return -1;
 	}
-	
-	// ディレクトリを開く
-	dir_handle *dir = NULL;
-	int r = fs_opendir(g_fs, path, &dir);
-	if (r != 0) {
-		printk("Error: Cannot open directory '%s' (code %d)\n", path, r);
+
+	// ルートディレクトリのファイル一覧を表示
+	int count = ext2_list_root(g_ext2_sb);
+
+	if (count < 0) {
+		printk("Error: Failed to list directory\n");
 		return -1;
 	}
-	
-	printk("Directory listing of '%s':\n", path);
-	printk("%-16s %8s  %s\n", "NAME", "SIZE", "TYPE");
-	printk("----------------------------------------\n");
-	
-	// エントリを列挙
-	char name[64];
-	int is_dir;
-	uint32_t size;
-	uint16_t cluster;
-	int count = 0;
-	
-	while (1) {
-		r = fs_readdir(dir, name, sizeof(name), &is_dir, &size, &cluster);
-		if (r != 0) {
-			break; // 終端またはエラー
-		}
-		
-		const char *type = is_dir ? "DIR" : "FILE";
-		if (is_dir) {
-			printk("%-16s %8s  %s\n", name, "", type);
-		} else {
-			printk("%-16s %8u  %s\n", name, size, type);
-		}
-		count++;
-	}
-	
-	fs_closedir(dir);
-	printk("\nTotal: %d entries\n", count);
-	
+
 	return 0;
 }
 
@@ -109,51 +52,43 @@ static int cmd_cat(int argc, char **argv) {
 		printk("Usage: cat <filename>\n");
 		return -1;
 	}
-	
-	// FSをマウント
-	if (ensure_fs_mounted() != 0) {
+
+	if (g_ext2_sb == NULL) {
+		printk("Error: ext2 filesystem not mounted\n");
 		return -1;
 	}
-	
+
 	const char *filename = argv[1];
-	
-	// ファイルを開く
-	file_handle *file = NULL;
-	int r = fs_open(g_fs, filename, &file);
-	if (r != 0) {
-		printk("Error: Cannot open file '%s' (code %d)\n", filename, r);
+
+	// 最大8KBのファイルを読み込む（スタック上）
+	char buffer[8192];
+	size_t bytes_read = 0;
+
+	// ルートディレクトリからファイルを読み込む
+	int result = ext2_read_file(g_ext2_sb, filename, buffer, sizeof(buffer),
+				    &bytes_read);
+
+	if (result != 0) {
+		printk("Error: Failed to read file '%s' (error code: %d)\n",
+		       filename, result);
 		return -1;
 	}
-	
-	// ファイル内容を読み込む（最大16KB）
-	const size_t max_size = 16 * 1024;
-	char *buffer = (char *)kmalloc(max_size);
-	if (!buffer) {
-		printk("Error: Out of memory\n");
-		fs_close(file);
-		return -1;
+
+	if (bytes_read == 0) {
+		printk("(empty file)\n");
+		return 0;
 	}
-	
-	int bytes_read = fs_read(file, buffer, max_size - 1, 0);
-	if (bytes_read < 0) {
-		printk("Error: Cannot read file '%s' (code %d)\n", filename, bytes_read);
-		kfree(buffer);
-		fs_close(file);
-		return -1;
+
+	// ファイル内容を表示
+	for (size_t i = 0; i < bytes_read; i++) {
+		printk("%c", buffer[i]);
 	}
-	
-	// NULL終端して表示
-	buffer[bytes_read] = '\0';
-	printk("%s", buffer);
-	
-	// 改行がない場合は追加
-	if (bytes_read > 0 && buffer[bytes_read - 1] != '\n') {
+
+	// 改行で終わっていない場合は改行を追加
+	if (buffer[bytes_read - 1] != '\n') {
 		printk("\n");
 	}
-	
-	kfree(buffer);
-	fs_close(file);
-	
+
 	return 0;
 }
 
@@ -163,11 +98,12 @@ static int cmd_cat(int argc, char **argv) {
 static int cmd_ver(int argc, char **argv) {
 	(void)argc;
 	(void)argv;
-	
+
 	printk("LiteCore Operating System\n");
 	printk("Version: %s\n", VERSION);
 	printk("Build: %s %s\n", __DATE__, __TIME__);
-	
+	printk("Author: nekogakure\n");
+
 	return 0;
 }
 
@@ -177,11 +113,11 @@ static int cmd_ver(int argc, char **argv) {
 static int cmd_uptime(int argc, char **argv) {
 	(void)argc;
 	(void)argv;
-	
+
 	// TODO: タイマーから起動時間を取得
 	printk("System uptime:\n");
 	printk("  (Timer not yet implemented)\n");
-	
+
 	return 0;
 }
 

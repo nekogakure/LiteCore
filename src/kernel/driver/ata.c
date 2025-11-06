@@ -1,14 +1,28 @@
 #include <driver/ata.h>
 #include <util/io.h>
 #include <util/console.h>
+#include <interrupt/irq.h>
 
 /**
  * @brief ATAデバイスの準備完了を待つ
  */
-static void ata_wait_ready(uint16_t base) {
-	while (inb(base + 7) & ATA_SR_BSY) {
-		/* Busyフラグがクリアされるまで待機 */
+static int ata_wait_ready(uint16_t base) {
+	uint32_t timeout = 100000;
+	uint8_t status = 0;
+
+	while (timeout--) {
+		status = inb(base + 7);
+		if (!(status & ATA_SR_BSY)) {
+			return 0; /* ready */
+		}
+
+		/* 割り込みイベントを頻繁に処理してFIFO溢れを防ぐ */
+		if ((timeout % 100) == 0) {
+			interrupt_dispatch_all();
+		}
 	}
+
+	return -1;
 }
 
 /**
@@ -16,21 +30,29 @@ static void ata_wait_ready(uint16_t base) {
  */
 static int ata_wait_drq(uint16_t base) {
 	uint32_t timeout = 100000;
-	uint8_t status;
-	
+	uint8_t status = 0;
+
 	while (timeout--) {
 		status = inb(base + 7);
-		
+
+		/* エラーが出たら即時報告 */
 		if (status & ATA_SR_ERR) {
-			return -1;  /* エラー */
+			printk("ATA: ata_wait_drq detected ERR (status=0x%x, base=0x%x)\n",
+			       status, base);
+			return -1; /* エラー */
 		}
-		
+
 		if (status & ATA_SR_DRQ) {
-			return 0;   /* DRQ準備完了 */
+			return 0; /* DRQ準備完了 */
+		}
+
+		/* 割り込みイベントを頻繁に処理してFIFO溢れを防ぐ */
+		if ((timeout % 100) == 0) {
+			interrupt_dispatch_all();
 		}
 	}
-	
-	return -1;  /* タイムアウト */
+
+	return -1; /* タイムアウト */
 }
 
 /**
@@ -53,49 +75,47 @@ static void ata_get_base(uint8_t drive, uint16_t *base, uint8_t *drive_sel) {
  */
 int ata_init(void) {
 	printk("ATA: Initializing ATA driver\n");
-	
+
 	/* 試すドライブのリスト */
 	const struct {
 		uint16_t base;
 		uint8_t drive_sel;
 		const char *name;
 	} drives[] = {
-		{ATA_PRIMARY_DATA, ATA_SLAVE, "Primary Slave (hdb)"},
-		{ATA_SECONDARY_DATA, ATA_MASTER, "Secondary Master (hdc)"},
-		{ATA_PRIMARY_DATA, ATA_MASTER, "Primary Master (hda)"},
+		{ ATA_PRIMARY_DATA, ATA_SLAVE, "Primary Slave (hdb)" },
+		{ ATA_SECONDARY_DATA, ATA_MASTER, "Secondary Master (hdc)" },
+		{ ATA_PRIMARY_DATA, ATA_MASTER, "Primary Master (hda)" },
 	};
-	
+
 	for (int i = 0; i < 3; i++) {
-		printk("ATA: Trying %s...\n", drives[i].name);
-		
 		/* 割り込みを無効化（PIOモードでポーリングするため） */
-		outb(drives[i].base + 0x206, 0x02);  /* nIEN ビットをセット */
-		
+		outb(drives[i].base + 0x206, 0x02); /* nIEN ビットをセット */
+
 		/* ドライブを選択 */
 		outb(drives[i].base + 6, drives[i].drive_sel);
-		
+
 		/* 400ns待つ（ポートを4回読む） */
 		for (int j = 0; j < 4; j++) {
 			inb(drives[i].base + 7);
 		}
-		
+
 		/* IDENTIFYコマンドを送信 */
 		outb(drives[i].base + 7, ATA_CMD_IDENTIFY);
-		
+
 		/* 400ns待つ */
 		for (int j = 0; j < 4; j++) {
 			inb(drives[i].base + 7);
 		}
-		
+
 		/* ステータスを確認 */
 		uint8_t status = inb(drives[i].base + 7);
-		
+
 		/* ドライブが存在しない */
 		if (status == 0 || status == 0xFF) {
 			printk("ATA:   No drive (status=0x%x)\n", status);
 			continue;
 		}
-		
+
 		/* エラーチェック */
 		if (status & ATA_SR_ERR) {
 			uint8_t err = inb(drives[i].base + 1);
@@ -106,38 +126,48 @@ int ata_init(void) {
 			}
 			continue;
 		}
-		
+
 		/* BSYがクリアされるまで待つ */
 		uint32_t timeout = 100000;
 		while (timeout-- && (inb(drives[i].base + 7) & ATA_SR_BSY)) {
-			/* 待機 */
+			/* 割り込みイベントを処理 */
+			if ((timeout % 100) == 0) {
+				interrupt_dispatch_all();
+			}
 		}
-		
+
 		if (timeout == 0) {
-			printk("ATA:   Timeout waiting for BSY clear\n");
+			printk("ATA:   Timeout waiting for BSY clear (base=0x%x)\n",
+			       drives[i].base);
 			continue;
 		}
-		
+
 		/* DRQビットを待つ */
 		timeout = 100000;
 		while (timeout-- && !(inb(drives[i].base + 7) & ATA_SR_DRQ)) {
-			/* 待機 */
+			/* 割り込みイベントを処理 */
+			if ((timeout % 100) == 0) {
+				interrupt_dispatch_all();
+			}
 		}
-		
+
 		if (timeout == 0) {
-			printk("ATA:   Timeout waiting for DRQ\n");
+			printk("ATA:   Timeout waiting for DRQ (base=0x%x)\n",
+			       drives[i].base);
 			continue;
 		}
-		
+
 		/* IDENTIFYデータを読み取る（256ワード = 512バイト）*/
+		printk("ATA:   reading IDENTIFY data from base 0x%x\n",
+		       drives[i].base);
 		for (int j = 0; j < 256; j++) {
 			(void)inw(drives[i].base);
 		}
-		
+
 		printk("ATA: %s detected successfully!\n", drives[i].name);
 		return 0;
 	}
-	
+
 	printk("ATA: No valid ATA drive found\n");
 	return -1;
 }
@@ -145,116 +175,130 @@ int ata_init(void) {
 /**
  * @brief ATAデバイスからセクタを読み取る
  */
-int ata_read_sectors(uint8_t drive, uint32_t lba, uint8_t sectors, void *buffer) {
+int ata_read_sectors(uint8_t drive, uint32_t lba, uint8_t sectors,
+		     void *buffer) {
 	uint16_t base;
 	uint8_t drive_sel;
 	uint16_t *buf = (uint16_t *)buffer;
-	
+
 	if (sectors == 0) {
 		return -1;
 	}
-	
+
 	/* ベースアドレスとドライブ選択を取得 */
 	ata_get_base(drive, &base, &drive_sel);
-	
+
 	/* 割り込みを無効化 */
 	outb(base + 0x206, 0x02);
-	
+
 	/* デバイスが準備完了するまで待機 */
-	ata_wait_ready(base);
-	
+	if (ata_wait_ready(base) != 0) {
+		printk("ATA: device not ready (base=0x%x)\n", base);
+		return -1;
+	}
+
 	/* LBA28モードでドライブを選択 */
 	outb(base + 6, (drive_sel | 0xE0) | ((lba >> 24) & 0x0F));
-	
+
 	/* セクタ数を設定 */
 	outb(base + 2, sectors);
-	
+
 	/* LBAアドレスを設定 */
 	outb(base + 3, (uint8_t)(lba & 0xFF));
 	outb(base + 4, (uint8_t)((lba >> 8) & 0xFF));
 	outb(base + 5, (uint8_t)((lba >> 16) & 0xFF));
-	
+
 	/* READコマンドを送信 */
 	outb(base + 7, ATA_CMD_READ_PIO);
-	
+
 	/* 各セクタを読み取る */
 	for (int s = 0; s < sectors; s++) {
 		/* DRQを待つ */
 		if (ata_wait_drq(base) != 0) {
-			printk("ATA: Read timeout at sector %d\n", s);
+			printk("ATA: Read error/timeout at sector %d (base=0x%x lba=%u)\n",
+			       s, base, lba + s);
 			return -1;
 		}
-		
+
 		/* 256ワード（512バイト）を読み取る */
 		for (int i = 0; i < 256; i++) {
 			buf[s * 256 + i] = inw(base);
 		}
-		
+
 		/* 400nsの遅延 */
 		for (int i = 0; i < 4; i++) {
 			inb(base + 7);
 		}
+		
+		/* セクタ読み取り後に割り込みを処理 */
+		interrupt_dispatch_all();
 	}
-	
+
 	return 0;
 }
 
 /**
  * @brief ATAデバイスにセクタを書き込む
  */
-int ata_write_sectors(uint8_t drive, uint32_t lba, uint8_t sectors, const void *buffer) {
+int ata_write_sectors(uint8_t drive, uint32_t lba, uint8_t sectors,
+		      const void *buffer) {
 	uint16_t base;
 	uint8_t drive_sel;
 	const uint16_t *buf = (const uint16_t *)buffer;
-	
+
 	if (sectors == 0) {
 		return -1;
 	}
-	
+
 	/* ベースアドレスとドライブ選択を取得 */
 	ata_get_base(drive, &base, &drive_sel);
-	
+
 	/* 割り込みを無効化 */
 	outb(base + 0x206, 0x02);
-	
+
 	/* デバイスが準備完了するまで待機 */
-	ata_wait_ready(base);
-	
+	if (ata_wait_ready(base) != 0) {
+		printk("ATA: device not ready before write (base=0x%x)\n",
+		       base);
+		return -1;
+	}
+
 	/* LBA28モードでドライブを選択 */
 	outb(base + 6, (drive_sel | 0xE0) | ((lba >> 24) & 0x0F));
-	
+
 	/* セクタ数を設定 */
 	outb(base + 2, sectors);
-	
+
 	/* LBAアドレスを設定 */
 	outb(base + 3, (uint8_t)(lba & 0xFF));
 	outb(base + 4, (uint8_t)((lba >> 8) & 0xFF));
 	outb(base + 5, (uint8_t)((lba >> 16) & 0xFF));
-	
+
 	/* WRITEコマンドを送信 */
 	outb(base + 7, ATA_CMD_WRITE_PIO);
-	
+
 	/* 各セクタを書き込む */
 	for (int s = 0; s < sectors; s++) {
 		/* DRQを待つ */
 		if (ata_wait_drq(base) != 0) {
-			printk("ATA: Write timeout at sector %d\n", s);
+			printk("ATA: Write error/timeout at sector %d (base=0x%x lba=%u)\n",
+			       s, base, lba + s);
 			return -1;
 		}
-		
+
 		/* 256ワード（512バイト）を書き込む */
 		for (int i = 0; i < 256; i++) {
 			outw(base, buf[s * 256 + i]);
 		}
-		
+
 		/* 書き込み完了を待つ */
 		ata_wait_ready(base);
-		
+
 		/* 400nsの遅延 */
 		for (int i = 0; i < 4; i++) {
 			inb(base + 7);
 		}
 	}
-	
+
 	return 0;
 }

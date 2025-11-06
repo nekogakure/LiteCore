@@ -248,7 +248,8 @@ void memory_init() {
 	uint32_t heap_start = (base_end > bitmap_end) ? base_end : bitmap_end;
 	// 4KBページ境界に切り上げてアライン
 	heap_start = (heap_start + 0x0FFF) & ~0x0FFF;
-	uint32_t heap_end = heap_start + 0x10000; // 64KBのヒープ領域
+	/* 増やす: ブロックキャッシュなどで大きな動的確保が必要になるためヒープを256KBに拡張 */
+	uint32_t heap_end = heap_start + 0x40000; // 256KBのヒープ領域
 	mem_init(heap_start, heap_end);
 	memmap_reserve(heap_start, heap_end);
 }

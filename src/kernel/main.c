@@ -7,9 +7,12 @@
 #include <util/shell.h>
 #include <util/shell_integration.h>
 #include <util/io.h>
+#include <util/init_msg.h>
 #include <mem/map.h>
 #include <mem/manager.h>
 #include <mem/segment.h>
+#include <driver/ata.h>
+#include <fs/ext/ext2.h>
 
 #include <tests/define.h>
 #include <tests/run.h>
@@ -17,6 +20,8 @@
 void kloop();
 static int shell_started = 0;
 
+// グローバルext2ハンドル
+struct ext2_super *g_ext2_sb = NULL;
 
 /**
  * @fn kmain
@@ -28,32 +33,15 @@ void kmain() {
 	gdt_install_lgdt();
 
 	printk("Welcome to Litecore kernel!\n");
-	printk("    Version: %s\n", VERSION);
-	printk("    Author : nekogakure\n");
+	printk("    Version : %s\n", VERSION);
+	printk("    Build   : %s %s\n", __DATE__, __TIME__);
+	printk("    Author  : nekogakure\n");
 
 	new_line();
-	printk("=== KERNEL INIT ===\n");
-	printk("> MEMORY INIT\n");
-	memory_init();
-	printk("ok\n");
 
-	new_line();
-	printk("> INTERRUPT INIT\n");
-	idt_init();
-	interrupt_init();
-	printk("ok\n");
-	
-	// タイマー割り込み（IRQ 0）を登録
-	interrupt_register(0, timer_handler, NULL);
-
-	new_line();
-	printk("> DEVICE INIT\n");
-	keyboard_init();
-	printk("ok\n");
-	
-	// 割り込みを有効化
-	__asm__ volatile("sti");
-	printk("> Interrupts enabled\n");
+#ifdef INIT_MSG
+	kernel_init();
+#endif /* INIT_MSG */
 
 #ifdef TEST_TRUE
 	new_line();
@@ -77,18 +65,19 @@ void kmain() {
  * @brief kmainの処理が終了した後常に動き続ける処理
  */
 void kloop() {
-	int activity = 0;  // このループで何か処理したかフラグ
-	
+	int activity =
+		0; // このループで何か処理したかフラグ（分かりづらい仕事しろ、いいえ私ではない。そうだこの変数だ）
+
 	/* ポーリングによるフォールバック: キーボードのscancodeを回収 */
 	keyboard_poll();
-	
+
 	/* FIFOに入ったイベントを処理 */
 	int event_count = 0;
 	while (interrupt_dispatch_one()) {
 		activity = 1;
 		event_count++;
 	}
-	
+
 	/* シェルが開始されていない場合は、キー入力待ち */
 	if (!shell_started) {
 		char c = keyboard_getchar_poll();
@@ -106,9 +95,11 @@ void kloop() {
 			activity = 1;
 		}
 	}
-	
+
 	/* 何も処理しなかった場合はCPUを休止（次の割り込みまで） */
 	if (!activity) {
 		cpu_halt();
 	}
+
+	// TODO: もっといい感じの処理にしなければならないなと思った
 }

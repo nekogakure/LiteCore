@@ -6,86 +6,86 @@
 
 /* ext2 Superblock (オフセット 1024, サイズ 1024バイト) */
 struct ext2_superblock {
-	uint32_t s_inodes_count;      /* inodeの総数 */
-	uint32_t s_blocks_count;      /* ブロックの総数 */
-	uint32_t s_r_blocks_count;    /* 予約ブロック数 */
+	uint32_t s_inodes_count; /* inodeの総数 */
+	uint32_t s_blocks_count; /* ブロックの総数 */
+	uint32_t s_r_blocks_count; /* 予約ブロック数 */
 	uint32_t s_free_blocks_count; /* 空きブロック数 */
 	uint32_t s_free_inodes_count; /* 空きinode数 */
-	uint32_t s_first_data_block;  /* 最初のデータブロック */
-	uint32_t s_log_block_size;    /* ブロックサイズ (1024 << s_log_block_size) */
-	uint32_t s_log_frag_size;     /* フラグメントサイズ */
-	uint32_t s_blocks_per_group;  /* ブロックグループあたりのブロック数 */
-	uint32_t s_frags_per_group;   /* ブロックグループあたりのフラグメント数 */
-	uint32_t s_inodes_per_group;  /* ブロックグループあたりのinode数 */
-	uint32_t s_mtime;             /* マウント時刻 */
-	uint32_t s_wtime;             /* 書き込み時刻 */
-	uint16_t s_mnt_count;         /* マウント回数 */
-	uint16_t s_max_mnt_count;     /* 最大マウント回数 */
-	uint16_t s_magic;             /* マジックシグネチャ (0xEF53) */
-	uint16_t s_state;             /* ファイルシステムの状態 */
-	uint16_t s_errors;            /* エラー発生時の動作 */
-	uint16_t s_minor_rev_level;   /* マイナーリビジョン */
-	uint32_t s_lastcheck;         /* 最終チェック時刻 */
-	uint32_t s_checkinterval;     /* チェック間隔 */
-	uint32_t s_creator_os;        /* 作成OS */
-	uint32_t s_rev_level;         /* リビジョンレベル */
-	uint16_t s_def_resuid;        /* デフォルト予約UID */
-	uint16_t s_def_resgid;        /* デフォルト予約GID */
+	uint32_t s_first_data_block; /* 最初のデータブロック */
+	uint32_t s_log_block_size; /* ブロックサイズ (1024 << s_log_block_size) */
+	uint32_t s_log_frag_size; /* フラグメントサイズ */
+	uint32_t s_blocks_per_group; /* ブロックグループあたりのブロック数 */
+	uint32_t s_frags_per_group; /* ブロックグループあたりのフラグメント数 */
+	uint32_t s_inodes_per_group; /* ブロックグループあたりのinode数 */
+	uint32_t s_mtime; /* マウント時刻 */
+	uint32_t s_wtime; /* 書き込み時刻 */
+	uint16_t s_mnt_count; /* マウント回数 */
+	uint16_t s_max_mnt_count; /* 最大マウント回数 */
+	uint16_t s_magic; /* マジックシグネチャ (0xEF53) */
+	uint16_t s_state; /* ファイルシステムの状態 */
+	uint16_t s_errors; /* エラー発生時の動作 */
+	uint16_t s_minor_rev_level; /* マイナーリビジョン */
+	uint32_t s_lastcheck; /* 最終チェック時刻 */
+	uint32_t s_checkinterval; /* チェック間隔 */
+	uint32_t s_creator_os; /* 作成OS */
+	uint32_t s_rev_level; /* リビジョンレベル */
+	uint16_t s_def_resuid; /* デフォルト予約UID */
+	uint16_t s_def_resgid; /* デフォルト予約GID */
 	/* EXT2_DYNAMIC_REV用の拡張フィールド */
-	uint32_t s_first_ino;         /* 最初の利用可能inode */
-	uint16_t s_inode_size;        /* inodeサイズ */
-	uint16_t s_block_group_nr;    /* このスーパーブロックのブロックグループ番号 */
-	uint32_t s_feature_compat;    /* 互換性のある機能 */
-	uint32_t s_feature_incompat;  /* 非互換な機能 */
+	uint32_t s_first_ino; /* 最初の利用可能inode */
+	uint16_t s_inode_size; /* inodeサイズ */
+	uint16_t s_block_group_nr; /* このスーパーブロックのブロックグループ番号 */
+	uint32_t s_feature_compat; /* 互換性のある機能 */
+	uint32_t s_feature_incompat; /* 非互換な機能 */
 	uint32_t s_feature_ro_compat; /* 読み取り専用互換機能 */
-	uint8_t s_uuid[16];           /* ボリュームID */
-	char s_volume_name[16];       /* ボリューム名 */
-	char s_last_mounted[64];      /* 最後にマウントされたパス */
-	uint32_t s_algo_bitmap;       /* 圧縮アルゴリズム */
+	uint8_t s_uuid[16]; /* ボリュームID */
+	char s_volume_name[16]; /* ボリューム名 */
+	char s_last_mounted[64]; /* 最後にマウントされたパス */
+	uint32_t s_algo_bitmap; /* 圧縮アルゴリズム */
 	/* 残りのフィールドは省略（簡易実装用） */
 };
 
 /* ext2 Block Group Descriptor */
 struct ext2_group_desc {
-	uint32_t bg_block_bitmap;      /* ブロックビットマップのブロック番号 */
-	uint32_t bg_inode_bitmap;      /* inodeビットマップのブロック番号 */
-	uint32_t bg_inode_table;       /* inodeテーブルの開始ブロック番号 */
+	uint32_t bg_block_bitmap; /* ブロックビットマップのブロック番号 */
+	uint32_t bg_inode_bitmap; /* inodeビットマップのブロック番号 */
+	uint32_t bg_inode_table; /* inodeテーブルの開始ブロック番号 */
 	uint16_t bg_free_blocks_count; /* 空きブロック数 */
 	uint16_t bg_free_inodes_count; /* 空きinode数 */
-	uint16_t bg_used_dirs_count;   /* ディレクトリ数 */
-	uint16_t bg_pad;               /* パディング */
-	uint8_t bg_reserved[12];       /* 予約領域 */
+	uint16_t bg_used_dirs_count; /* ディレクトリ数 */
+	uint16_t bg_pad; /* パディング */
+	uint8_t bg_reserved[12]; /* 予約領域 */
 };
 
 /* ext2 Inode */
 struct ext2_inode {
-	uint16_t i_mode;        /* ファイルモード */
-	uint16_t i_uid;         /* 所有者UID */
-	uint32_t i_size;        /* サイズ（バイト） */
-	uint32_t i_atime;       /* アクセス時刻 */
-	uint32_t i_ctime;       /* 作成時刻 */
-	uint32_t i_mtime;       /* 変更時刻 */
-	uint32_t i_dtime;       /* 削除時刻 */
-	uint16_t i_gid;         /* グループGID */
+	uint16_t i_mode; /* ファイルモード */
+	uint16_t i_uid; /* 所有者UID */
+	uint32_t i_size; /* サイズ（バイト） */
+	uint32_t i_atime; /* アクセス時刻 */
+	uint32_t i_ctime; /* 作成時刻 */
+	uint32_t i_mtime; /* 変更時刻 */
+	uint32_t i_dtime; /* 削除時刻 */
+	uint16_t i_gid; /* グループGID */
 	uint16_t i_links_count; /* ハードリンク数 */
-	uint32_t i_blocks;      /* ブロック数 */
-	uint32_t i_flags;       /* ファイルフラグ */
-	uint32_t i_osd1;        /* OS依存1 */
-	uint32_t i_block[15];   /* ブロックポインタ */
-	uint32_t i_generation;  /* ファイルバージョン */
-	uint32_t i_file_acl;    /* ファイルACL */
-	uint32_t i_dir_acl;     /* ディレクトリACL */
-	uint32_t i_faddr;       /* フラグメントアドレス */
-	uint8_t i_osd2[12];     /* OS依存2 */
+	uint32_t i_blocks; /* ブロック数 */
+	uint32_t i_flags; /* ファイルフラグ */
+	uint32_t i_osd1; /* OS依存1 */
+	uint32_t i_block[15]; /* ブロックポインタ */
+	uint32_t i_generation; /* ファイルバージョン */
+	uint32_t i_file_acl; /* ファイルACL */
+	uint32_t i_dir_acl; /* ディレクトリACL */
+	uint32_t i_faddr; /* フラグメントアドレス */
+	uint8_t i_osd2[12]; /* OS依存2 */
 };
 
 /* ext2 Directory Entry */
 struct ext2_dir_entry {
-	uint32_t inode;    /* inode番号 */
-	uint16_t rec_len;  /* このエントリの長さ */
-	uint8_t name_len;  /* ファイル名の長さ */
+	uint32_t inode; /* inode番号 */
+	uint16_t rec_len; /* このエントリの長さ */
+	uint8_t name_len; /* ファイル名の長さ */
 	uint8_t file_type; /* ファイルタイプ */
-	char name[];       /* ファイル名（可変長） */
+	char name[]; /* ファイル名（可変長） */
 };
 
 /* ファイルタイプ */
@@ -99,9 +99,9 @@ struct ext2_dir_entry {
 #define EXT2_FT_SYMLINK 7
 
 /* i_mode のフラグ */
-#define EXT2_S_IFREG 0x8000  /* 通常ファイル */
-#define EXT2_S_IFDIR 0x4000  /* ディレクトリ */
-#define EXT2_S_IFLNK 0xA000  /* シンボリックリンク */
+#define EXT2_S_IFREG 0x8000 /* 通常ファイル */
+#define EXT2_S_IFDIR 0x4000 /* ディレクトリ */
+#define EXT2_S_IFLNK 0xA000 /* シンボリックリンク */
 
 /* マジックナンバー */
 #define EXT2_SUPER_MAGIC 0xEF53
@@ -109,26 +109,39 @@ struct ext2_dir_entry {
 /* ルートinode番号 */
 #define EXT2_ROOT_INO 2
 
+/* 前方宣言 */
+struct block_cache;
+
 /**
  * @brief ext2マウント情報を保持する構造体
  */
 struct ext2_super {
-	const uint8_t *image;           /* イメージ先頭へのポインタ */
-	size_t image_size;              /* イメージサイズ */
-	struct ext2_superblock sb;      /* スーパーブロック */
-	uint32_t block_size;            /* ブロックサイズ（バイト） */
-	uint32_t num_groups;            /* ブロックグループ数 */
-	uint32_t group_desc_offset;     /* グループディスクリプタのオフセット */
+	const uint8_t *
+		image; /* イメージ先頭へのポインタ（廃止予定、互換性のため残す） */
+	size_t image_size; /* イメージサイズ */
+	struct ext2_superblock sb; /* スーパーブロック */
+	uint32_t block_size; /* ブロックサイズ（バイト） */
+	uint32_t num_groups; /* ブロックグループ数 */
+	uint32_t group_desc_offset; /* グループディスクリプタのオフセット */
+	struct block_cache *cache; /* ブロックキャッシュ */
 };
 
 /**
- * @brief ext2イメージをマウントする
+ * @brief ext2イメージをマウントする（レガシー、埋め込みイメージ用）
  * @param image イメージ先頭へのポインタ
  * @param size イメージサイズ
  * @param out マウント結果を返すポインタ
  * @return 0 成功、負値はエラー
  */
 int ext2_mount(const void *image, size_t size, struct ext2_super **out);
+
+/**
+ * @brief ext2ファイルシステムをブロックキャッシュ経由でマウントする
+ * @param cache ブロックキャッシュ
+ * @param out マウント結果を返すポインタ
+ * @return 0 成功、負値はエラー
+ */
+int ext2_mount_with_cache(struct block_cache *cache, struct ext2_super **out);
 
 /**
  * @brief ルートディレクトリの内容をデバッグ表示する
@@ -226,7 +239,7 @@ int ext2_resolve_symlink(struct ext2_super *sb, struct ext2_inode *link_inode,
  * @return 0 成功、負値はエラー
  */
 int ext2_read_file_by_path(struct ext2_super *sb, const char *path, void *buf,
-			    size_t len, uint32_t offset, size_t *out_len);
+			   size_t len, uint32_t offset, size_t *out_len);
 
 /**
  * @brief ディレクトリの内容を一覧表示する（デバッグ用）

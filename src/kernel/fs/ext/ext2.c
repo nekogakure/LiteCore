@@ -3,6 +3,7 @@
 #include <util/console.h>
 #include <mem/manager.h>
 #include <fs/ext/ext2.h>
+#include <fs/block_cache.h>
 
 /* ヘルパー関数 */
 static void mem_copy(void *dst, const void *src, size_t n) {
@@ -39,8 +40,8 @@ static uint16_t le16(const uint8_t *p) {
 }
 
 static uint32_t le32(const uint8_t *p) {
-	return (uint32_t)p[0] | ((uint32_t)p[1] << 8) |
-	       ((uint32_t)p[2] << 16) | ((uint32_t)p[3] << 24);
+	return (uint32_t)p[0] | ((uint32_t)p[1] << 8) | ((uint32_t)p[2] << 16) |
+	       ((uint32_t)p[3] << 24);
 }
 
 /**
@@ -111,8 +112,9 @@ int ext2_mount(const void *image, size_t size, struct ext2_super **out) {
 	sb->block_size = 1024 << sb->sb.s_log_block_size;
 
 	/* ブロックグループ数を計算 */
-	sb->num_groups = (sb->sb.s_blocks_count + sb->sb.s_blocks_per_group - 1) /
-			 sb->sb.s_blocks_per_group;
+	sb->num_groups =
+		(sb->sb.s_blocks_count + sb->sb.s_blocks_per_group - 1) /
+		sb->sb.s_blocks_per_group;
 
 	/* グループディスクリプタテーブルの位置 */
 	/* スーパーブロックの次のブロックから始まる */
@@ -142,18 +144,50 @@ int ext2_read_inode(struct ext2_super *sb, uint32_t inode_num,
 		return -2;
 
 	/* グループディスクリプタを読み取る */
-	const uint8_t *gd_data =
-		sb->image + sb->group_desc_offset + group * 32;
+	uint8_t gd_block[4096];
+	uint32_t gd_block_num =
+		sb->group_desc_offset + (group * 32) / sb->block_size;
+	uint32_t gd_offset_in_block = (group * 32) % sb->block_size;
+
+	if (sb->cache) {
+		/* キャッシュ経由で読み込み */
+		if (block_cache_read(sb->cache, gd_block_num, gd_block) != 0)
+			return -3;
+	} else {
+		/* レガシー：直接イメージから読み込み */
+		const uint8_t *gd_data =
+			sb->image + gd_block_num * sb->block_size;
+		mem_copy(gd_block, gd_data, sb->block_size);
+	}
+
+	const uint8_t *gd_data = gd_block + gd_offset_in_block;
 	uint32_t inode_table = le32(gd_data + 8);
 
 	/* inodeテーブル内のオフセット */
-	uint32_t inode_offset =
-		inode_table * sb->block_size + local_index * sb->sb.s_inode_size;
+	uint32_t inode_size = (sb->sb.s_inode_size > 0) ? sb->sb.s_inode_size :
+							  128;
+	uint32_t inode_block_num =
+		inode_table + (local_index * inode_size) / sb->block_size;
+	uint32_t inode_offset_in_block =
+		(local_index * inode_size) % sb->block_size;
 
-	if (inode_offset + sb->sb.s_inode_size > sb->image_size)
-		return -3;
+	/* inodeデータを読み込む */
+	uint8_t inode_block[4096];
+	if (sb->cache) {
+		if (block_cache_read(sb->cache, inode_block_num, inode_block) !=
+		    0)
+			return -4;
+	} else {
+		/* レガシー */
+		if (inode_block_num * sb->block_size + inode_size >
+		    sb->image_size)
+			return -5;
+		const uint8_t *inode_data_src =
+			sb->image + inode_block_num * sb->block_size;
+		mem_copy(inode_block, inode_data_src, sb->block_size);
+	}
 
-	const uint8_t *inode_data = sb->image + inode_offset;
+	const uint8_t *inode_data = inode_block + inode_offset_in_block;
 
 	/* inodeフィールドを読み取る */
 	mem_set(inode, 0, sizeof(struct ext2_inode));
@@ -202,16 +236,26 @@ int ext2_find_file_in_dir(struct ext2_super *sb, struct ext2_inode *dir_inode,
 	/* 簡易実装: 直接ブロックポインタのみ対応 (最初の12ブロック) */
 	uint32_t read_offset = 0;
 
-	for (int block_idx = 0;
-	     block_idx < 12 && read_offset < dir_size && dir_inode->i_block[block_idx] != 0;
+	for (int block_idx = 0; block_idx < 12 && read_offset < dir_size &&
+				dir_inode->i_block[block_idx] != 0;
 	     block_idx++) {
 		uint32_t block_num = dir_inode->i_block[block_idx];
-		uint32_t block_offset = block_num * sb->block_size;
 
-		if (block_offset + sb->block_size > sb->image_size)
-			return -4;
+		/* ブロックデータを読み込む */
+		uint8_t block_data[4096];
+		if (sb->cache) {
+			if (block_cache_read(sb->cache, block_num,
+					     block_data) != 0)
+				return -4;
+		} else {
+			/* レガシー */
+			uint32_t block_offset = block_num * sb->block_size;
+			if (block_offset + sb->block_size > sb->image_size)
+				return -4;
+			mem_copy(block_data, sb->image + block_offset,
+				 sb->block_size);
+		}
 
-		const uint8_t *block_data = sb->image + block_offset;
 		uint32_t offset = 0;
 
 		/* ディレクトリエントリを順次読み取る */
@@ -226,7 +270,8 @@ int ext2_find_file_in_dir(struct ext2_super *sb, struct ext2_inode *dir_inode,
 
 			if (inode != 0 && name_len > 0) {
 				/* ファイル名比較 */
-				const char *entry_name = (const char *)(entry + 8);
+				const char *entry_name =
+					(const char *)(entry + 8);
 				if (name_len == str_len(name)) {
 					int match = 1;
 					for (uint8_t i = 0; i < name_len; i++) {
@@ -264,21 +309,29 @@ int ext2_list_root(struct ext2_super *sb) {
 		return r;
 	}
 
-	printk("Root directory contents:\n");
-
 	uint32_t dir_size = root_inode.i_size;
 	uint32_t read_offset = 0;
+	int entry_count = 0;
 
-	for (int block_idx = 0;
-	     block_idx < 12 && read_offset < dir_size && root_inode.i_block[block_idx] != 0;
+	for (int block_idx = 0; block_idx < 12 && read_offset < dir_size &&
+				root_inode.i_block[block_idx] != 0;
 	     block_idx++) {
 		uint32_t block_num = root_inode.i_block[block_idx];
-		uint32_t block_offset = block_num * sb->block_size;
 
-		if (block_offset + sb->block_size > sb->image_size)
-			break;
+		uint8_t block_data[4096];  /* 最大ブロックサイズ */
+		if (sb->cache) {
+			if (block_cache_read(sb->cache, block_num,
+					     block_data) != 0)
+				break;
+		} else {
+			/* レガシー */
+			uint32_t block_offset = block_num * sb->block_size;
+			if (block_offset + sb->block_size > sb->image_size)
+				break;
+			mem_copy(block_data, sb->image + block_offset,
+				 sb->block_size);
+		}
 
-		const uint8_t *block_data = sb->image + block_offset;
 		uint32_t offset = 0;
 
 		while (offset < sb->block_size && read_offset < dir_size) {
@@ -294,7 +347,8 @@ int ext2_list_root(struct ext2_super *sb) {
 			if (inode != 0 && name_len > 0) {
 				char name[256];
 				mem_set(name, 0, sizeof(name));
-				for (uint8_t i = 0; i < name_len && i < 255; i++) {
+				for (uint8_t i = 0; i < name_len && i < 255;
+				     i++) {
 					name[i] = entry[8 + i];
 				}
 
@@ -306,15 +360,9 @@ int ext2_list_root(struct ext2_super *sb) {
 				else if (file_type == EXT2_FT_SYMLINK)
 					type_str = "SYMLINK";
 
-				/* inodeを読み取ってサイズを取得 */
-				struct ext2_inode file_inode;
-				uint32_t file_size = 0;
-				if (ext2_read_inode(sb, inode, &file_inode) == 0) {
-					file_size = file_inode.i_size;
-				}
-
-				printk("  %-20s [%-7s] inode=%u size=%u\n", name,
-				       type_str, inode, file_size);
+				printk("  %-20s [%-4s]\n", name,
+				       type_str, inode);
+				entry_count++;
 			}
 
 			offset += rec_len;
@@ -322,7 +370,7 @@ int ext2_list_root(struct ext2_super *sb) {
 		}
 	}
 
-	return 0;
+	return entry_count;
 }
 
 /**
@@ -398,7 +446,8 @@ int ext2_get_block_num(struct ext2_super *sb, struct ext2_inode *inode,
 	if (!sb || !inode || !out_block_num)
 		return -1;
 
-	uint32_t ptrs_per_block = sb->block_size / 4; /* 1ブロックあたりのポインタ数 */
+	uint32_t ptrs_per_block =
+		sb->block_size / 4; /* 1ブロックあたりのポインタ数 */
 
 	/* 直接ブロックポインタ (0-11) */
 	if (block_index < 12) {
@@ -413,11 +462,21 @@ int ext2_get_block_num(struct ext2_super *sb, struct ext2_inode *inode,
 		if (indirect_block == 0)
 			return -2;
 
-		uint32_t offset = indirect_block * sb->block_size + block_index * 4;
-		if (offset + 4 > sb->image_size)
-			return -3;
+		/* 間接ブロックを読み込む */
+		uint8_t indirect_data[4096];
+		if (sb->cache) {
+			if (block_cache_read(sb->cache, indirect_block,
+					     indirect_data) != 0)
+				return -3;
+		} else {
+			uint32_t offset = indirect_block * sb->block_size;
+			if (offset + sb->block_size > sb->image_size)
+				return -3;
+			mem_copy(indirect_data, sb->image + offset,
+				 sb->block_size);
+		}
 
-		*out_block_num = le32(sb->image + offset);
+		*out_block_num = le32(indirect_data + block_index * 4);
 		return 0;
 	}
 	block_index -= ptrs_per_block;
@@ -432,21 +491,37 @@ int ext2_get_block_num(struct ext2_super *sb, struct ext2_inode *inode,
 		uint32_t idx1 = block_index / ptrs_per_block;
 		uint32_t idx2 = block_index % ptrs_per_block;
 
-		/* 第1段のポインタを読み取る */
-		uint32_t offset1 = double_indirect * sb->block_size + idx1 * 4;
-		if (offset1 + 4 > sb->image_size)
-			return -3;
+		/* 第1段のブロックを読み込む */
+		uint8_t block1[4096];
+		if (sb->cache) {
+			if (block_cache_read(sb->cache, double_indirect,
+					     block1) != 0)
+				return -3;
+		} else {
+			uint32_t offset1 = double_indirect * sb->block_size;
+			if (offset1 + sb->block_size > sb->image_size)
+				return -3;
+			mem_copy(block1, sb->image + offset1, sb->block_size);
+		}
 
-		uint32_t indirect_block = le32(sb->image + offset1);
+		uint32_t indirect_block = le32(block1 + idx1 * 4);
 		if (indirect_block == 0)
 			return -2;
 
-		/* 第2段のポインタを読み取る */
-		uint32_t offset2 = indirect_block * sb->block_size + idx2 * 4;
-		if (offset2 + 4 > sb->image_size)
-			return -3;
+		/* 第2段のブロックを読み込む */
+		uint8_t block2[4096];
+		if (sb->cache) {
+			if (block_cache_read(sb->cache, indirect_block,
+					     block2) != 0)
+				return -3;
+		} else {
+			uint32_t offset2 = indirect_block * sb->block_size;
+			if (offset2 + sb->block_size > sb->image_size)
+				return -3;
+			mem_copy(block2, sb->image + offset2, sb->block_size);
+		}
 
-		*out_block_num = le32(sb->image + offset2);
+		*out_block_num = le32(block2 + idx2 * 4);
 		return 0;
 	}
 	block_index -= ptrs_per_block * ptrs_per_block;
@@ -463,29 +538,53 @@ int ext2_get_block_num(struct ext2_super *sb, struct ext2_inode *inode,
 		uint32_t idx3 = block_index % ptrs_per_block;
 
 		/* 第1段 */
-		uint32_t offset1 = triple_indirect * sb->block_size + idx1 * 4;
-		if (offset1 + 4 > sb->image_size)
-			return -3;
+		uint8_t block1[4096];
+		if (sb->cache) {
+			if (block_cache_read(sb->cache, triple_indirect,
+					     block1) != 0)
+				return -3;
+		} else {
+			uint32_t offset1 = triple_indirect * sb->block_size;
+			if (offset1 + sb->block_size > sb->image_size)
+				return -3;
+			mem_copy(block1, sb->image + offset1, sb->block_size);
+		}
 
-		uint32_t double_indirect = le32(sb->image + offset1);
+		uint32_t double_indirect = le32(block1 + idx1 * 4);
 		if (double_indirect == 0)
 			return -2;
 
 		/* 第2段 */
-		uint32_t offset2 = double_indirect * sb->block_size + idx2 * 4;
-		if (offset2 + 4 > sb->image_size)
-			return -3;
+		uint8_t block2[4096];
+		if (sb->cache) {
+			if (block_cache_read(sb->cache, double_indirect,
+					     block2) != 0)
+				return -3;
+		} else {
+			uint32_t offset2 = double_indirect * sb->block_size;
+			if (offset2 + sb->block_size > sb->image_size)
+				return -3;
+			mem_copy(block2, sb->image + offset2, sb->block_size);
+		}
 
-		uint32_t indirect_block = le32(sb->image + offset2);
+		uint32_t indirect_block = le32(block2 + idx2 * 4);
 		if (indirect_block == 0)
 			return -2;
 
 		/* 第3段 */
-		uint32_t offset3 = indirect_block * sb->block_size + idx3 * 4;
-		if (offset3 + 4 > sb->image_size)
-			return -3;
+		uint8_t block3[4096];
+		if (sb->cache) {
+			if (block_cache_read(sb->cache, indirect_block,
+					     block3) != 0)
+				return -3;
+		} else {
+			uint32_t offset3 = indirect_block * sb->block_size;
+			if (offset3 + sb->block_size > sb->image_size)
+				return -3;
+			mem_copy(block3, sb->image + offset3, sb->block_size);
+		}
 
-		*out_block_num = le32(sb->image + offset3);
+		*out_block_num = le32(block3 + idx3 * 4);
 		return 0;
 	}
 
@@ -502,7 +601,7 @@ int ext2_read_inode_data(struct ext2_super *sb, struct ext2_inode *inode,
 		return -1;
 
 	uint32_t file_size = inode->i_size;
-	
+
 	/* オフセットがファイルサイズを超えている */
 	if (offset >= file_size) {
 		if (out_len)
@@ -530,18 +629,26 @@ int ext2_read_inode_data(struct ext2_super *sb, struct ext2_inode *inode,
 			break;
 
 		/* ブロックデータを読み取る */
-		uint32_t block_offset = block_num * sb->block_size;
-		if (block_offset + sb->block_size > sb->image_size)
-			break;
+		uint8_t block_data[4096];
+		if (sb->cache) {
+			if (block_cache_read(sb->cache, block_num,
+					     block_data) != 0)
+				break;
+		} else {
+			uint32_t block_offset = block_num * sb->block_size;
+			if (block_offset + sb->block_size > sb->image_size)
+				break;
+			mem_copy(block_data, sb->image + block_offset,
+				 sb->block_size);
+		}
 
-		const uint8_t *block_data = sb->image + block_offset + block_off;
-		
 		/* このブロックから読み取るバイト数 */
 		uint32_t copy_size = sb->block_size - block_off;
 		if (bytes_read + copy_size > bytes_to_read)
 			copy_size = bytes_to_read - bytes_read;
 
-		mem_copy((uint8_t *)buf + bytes_read, block_data, copy_size);
+		mem_copy((uint8_t *)buf + bytes_read, block_data + block_off,
+			 copy_size);
 		bytes_read += copy_size;
 		current_offset += copy_size;
 	}
@@ -566,14 +673,15 @@ int ext2_resolve_symlink(struct ext2_super *sb, struct ext2_inode *link_inode,
 
 	char target_path[256];
 	size_t target_len = link_inode->i_size;
-	
+
 	if (target_len >= sizeof(target_path))
 		return -3;
 
 	/* シンボリックリンクの内容を読み取る */
 	/* 短いリンク（60バイト以下）はi_blockに直接格納される */
 	if (target_len <= 60) {
-		mem_copy(target_path, (const char *)link_inode->i_block, target_len);
+		mem_copy(target_path, (const char *)link_inode->i_block,
+			 target_len);
 	} else {
 		/* 長いリンクはブロックに格納される */
 		size_t read_len;
@@ -706,7 +814,7 @@ int ext2_resolve_path(struct ext2_super *sb, const char *path,
  * @brief パスからファイルを読み取る（完全版）
  */
 int ext2_read_file_by_path(struct ext2_super *sb, const char *path, void *buf,
-			    size_t len, uint32_t offset, size_t *out_len) {
+			   size_t len, uint32_t offset, size_t *out_len) {
 	if (!sb || !path || !buf)
 		return -1;
 
@@ -762,7 +870,8 @@ int ext2_list_dir(struct ext2_super *sb, struct ext2_inode *dir_inode) {
 	while (read_offset < dir_size) {
 		/* ブロック番号を取得 */
 		uint32_t block_num;
-		int r = ext2_get_block_num(sb, dir_inode, block_idx, &block_num);
+		int r = ext2_get_block_num(sb, dir_inode, block_idx,
+					   &block_num);
 		if (r != 0 || block_num == 0)
 			break;
 
@@ -786,7 +895,8 @@ int ext2_list_dir(struct ext2_super *sb, struct ext2_inode *dir_inode) {
 			if (inode != 0 && name_len > 0) {
 				char name[256];
 				mem_set(name, 0, sizeof(name));
-				for (uint8_t i = 0; i < name_len && i < 255; i++) {
+				for (uint8_t i = 0; i < name_len && i < 255;
+				     i++) {
 					name[i] = entry[8 + i];
 				}
 
@@ -801,12 +911,13 @@ int ext2_list_dir(struct ext2_super *sb, struct ext2_inode *dir_inode) {
 				/* inodeを読み取ってサイズを取得 */
 				struct ext2_inode file_inode;
 				uint32_t file_size = 0;
-				if (ext2_read_inode(sb, inode, &file_inode) == 0) {
+				if (ext2_read_inode(sb, inode, &file_inode) ==
+				    0) {
 					file_size = file_inode.i_size;
 				}
 
-				printk("  %-20s [%-7s] inode=%u size=%u\n", name,
-				       type_str, inode, file_size);
+				printk("  %-20s [%-7s] inode=%u size=%u\n",
+				       name, type_str, inode, file_size);
 			}
 
 			offset += rec_len;
@@ -816,5 +927,87 @@ int ext2_list_dir(struct ext2_super *sb, struct ext2_inode *dir_inode) {
 		block_idx++;
 	}
 
+	return 0;
+}
+
+/**
+ * @brief ext2ファイルシステムをブロックキャッシュ経由でマウントする
+ */
+int ext2_mount_with_cache(struct block_cache *cache, struct ext2_super **out) {
+	if (!cache || !out) {
+		return -1;
+	}
+	/* ブロックキャッシュのブロックサイズに合わせたバッファを確保して
+	 * スーパーブロックが存在する（イメージ先頭から）オフセット1024を含む
+	 * ブロックを読み込む。
+	 */
+	uint32_t bs = cache->block_size;
+	uint32_t sb_block_num =
+		1024 / bs; /* スーパーブロックを含むブロック番号 */
+	uint32_t sb_offset_in_block = 1024 % bs;
+
+	uint8_t *sb_buf = (uint8_t *)kmalloc(bs);
+	if (!sb_buf)
+		return -2;
+
+	if (block_cache_read(cache, sb_block_num, sb_buf) != 0) {
+		kfree(sb_buf);
+		return -3;
+	}
+
+	/* マジックナンバーチェック（スーパーブロックの先頭から56バイト目） */
+	uint16_t magic = le16(sb_buf + sb_offset_in_block + 56);
+	if (magic != EXT2_SUPER_MAGIC) {
+		kfree(sb_buf);
+		return -4; /* ext2ではない */
+	}
+
+	/* ext2_superを確保 */
+	struct ext2_super *sb =
+		(struct ext2_super *)kmalloc(sizeof(struct ext2_super));
+	if (!sb) {
+		kfree(sb_buf);
+		return -5;
+	}
+
+	mem_set(sb, 0, sizeof(struct ext2_super));
+	sb->image = NULL; /* キャッシュ経由なので不要 */
+	sb->image_size = 0;
+	sb->cache = cache;
+
+	/* スーパーブロックのフィールドを読み取る */
+	const uint8_t *sb_data = sb_buf + sb_offset_in_block;
+	sb->sb.s_inodes_count = le32(sb_data + 0);
+	sb->sb.s_blocks_count = le32(sb_data + 4);
+	sb->sb.s_r_blocks_count = le32(sb_data + 8);
+	sb->sb.s_free_blocks_count = le32(sb_data + 12);
+	sb->sb.s_free_inodes_count = le32(sb_data + 16);
+	sb->sb.s_first_data_block = le32(sb_data + 20);
+	sb->sb.s_log_block_size = le32(sb_data + 24);
+	sb->sb.s_log_frag_size = le32(sb_data + 28);
+	sb->sb.s_blocks_per_group = le32(sb_data + 32);
+	sb->sb.s_frags_per_group = le32(sb_data + 36);
+	sb->sb.s_inodes_per_group = le32(sb_data + 40);
+
+	/* 拡張フィールド */
+	sb->sb.s_first_ino = le32(sb_data + 84);
+	sb->sb.s_inode_size = le16(sb_data + 88);
+
+	/* ブロックサイズを計算 */
+	sb->block_size = 1024 << sb->sb.s_log_block_size;
+
+	/* ブロックグループ数を計算 */
+	sb->num_groups =
+		(sb->sb.s_blocks_count + sb->sb.s_blocks_per_group - 1) /
+		sb->sb.s_blocks_per_group;
+
+	/* グループディスクリプタテーブルの開始ブロック番号を設定 */
+	uint32_t sb_block = (sb->sb.s_first_data_block == 0) ? 1 : 2;
+	sb->group_desc_offset = sb_block; /* ブロック番号として保持 */
+
+	/* 一時バッファを解放して結果を返す */
+	kfree(sb_buf);
+
+	*out = sb;
 	return 0;
 }

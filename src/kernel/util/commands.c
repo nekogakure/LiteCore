@@ -186,8 +186,9 @@ void list_commands(void) {
 	printk("Available commands:\n");
 	for (int i = 0; i < command_count; i++) {
 		printk("  %-12s - %s\n", command_list[i].name,
-		       command_list[i].description ? command_list[i].description
-						   : "No description");
+		       command_list[i].description ?
+			       command_list[i].description :
+			       "No description");
 	}
 }
 

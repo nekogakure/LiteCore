@@ -8,7 +8,7 @@
 void init_full_shell(void) {
 	// シェルの初期化
 	init_shell();
-	
+
 	// 拡張コマンドの登録
 	register_extended_commands();
 

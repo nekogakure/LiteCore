@@ -107,7 +107,7 @@ int fs_mount(const void *device_image, size_t size, fs_handle **out) {
 		return -1;
 	}
 	const uint8_t *img = (const uint8_t *)device_image;
-	
+
 	/* ext2を先にチェック */
 	if (detect_ext2(img, size)) {
 		struct ext2_super *sb = NULL;
@@ -123,7 +123,7 @@ int fs_mount(const void *device_image, size_t size, fs_handle **out) {
 		*out = fh;
 		return 0;
 	}
-	
+
 	/* FAT12をチェック */
 	if (detect_fat12(img, size)) {
 		struct fat12_super *sb = NULL;
@@ -167,14 +167,14 @@ int fs_unmount(fs_handle *h) {
 int fs_opendir(fs_handle *h, const char *path, dir_handle **out) {
 	if (!h || !out)
 		return -1;
-	
+
 	struct dir_handle *d =
 		(struct dir_handle *)kmalloc(sizeof(struct dir_handle));
 	if (!d)
 		return -4;
-	
+
 	d->type = h->type;
-	
+
 	if (h->type == FS_TYPE_FAT12) {
 		/* FAT12はルートディレクトリのみ対応 */
 		struct fat12_super *sb = (struct fat12_super *)h->backend;
@@ -185,8 +185,9 @@ int fs_opendir(fs_handle *h, const char *path, dir_handle **out) {
 		d->u.fat12.sb = sb;
 		d->u.fat12.root_sector = sb->root_dir_sector;
 		d->u.fat12.entries_per_sector = sb->bytes_per_sector / 32;
-		d->u.fat12.total_sectors = (sb->max_root_entries + d->u.fat12.entries_per_sector - 1) /
-				   d->u.fat12.entries_per_sector;
+		d->u.fat12.total_sectors = (sb->max_root_entries +
+					    d->u.fat12.entries_per_sector - 1) /
+					   d->u.fat12.entries_per_sector;
 		d->u.fat12.sector_index = 0;
 		d->u.fat12.entry_index = 0;
 	} else if (h->type == FS_TYPE_EXT2) {
@@ -197,10 +198,11 @@ int fs_opendir(fs_handle *h, const char *path, dir_handle **out) {
 			return -3;
 		}
 		d->u.ext2.sb = sb;
-		
+
 		/* パスが指定されていない、または "/" の場合はルート */
 		uint32_t dir_inode_num = EXT2_ROOT_INO;
-		if (path && path[0] != '\0' && !(path[0] == '/' && path[1] == '\0')) {
+		if (path && path[0] != '\0' &&
+		    !(path[0] == '/' && path[1] == '\0')) {
 			/* パスからinode番号を解決 */
 			int r = ext2_resolve_path(sb, path, &dir_inode_num);
 			if (r != 0) {
@@ -208,20 +210,21 @@ int fs_opendir(fs_handle *h, const char *path, dir_handle **out) {
 				return r;
 			}
 		}
-		
+
 		/* ディレクトリinodeを読み取る */
-		int r = ext2_read_inode(sb, dir_inode_num, &d->u.ext2.dir_inode);
+		int r = ext2_read_inode(sb, dir_inode_num,
+					&d->u.ext2.dir_inode);
 		if (r != 0) {
 			kfree(d);
 			return r;
 		}
-		
+
 		/* ディレクトリかどうか確認 */
 		if ((d->u.ext2.dir_inode.i_mode & 0xF000) != EXT2_S_IFDIR) {
 			kfree(d);
 			return -5; /* ディレクトリではない */
 		}
-		
+
 		d->u.ext2.current_block_idx = 0;
 		d->u.ext2.current_offset = 0;
 		d->u.ext2.read_offset = 0;
@@ -229,7 +232,7 @@ int fs_opendir(fs_handle *h, const char *path, dir_handle **out) {
 		kfree(d);
 		return -2;
 	}
-	
+
 	*out = d;
 	return 0;
 }
@@ -241,15 +244,18 @@ int fs_readdir(dir_handle *d, char *name, int name_len, int *is_dir,
 	       uint32_t *size, uint16_t *start_cluster) {
 	if (!d || !name)
 		return -1;
-	
+
 	if (d->type == FS_TYPE_FAT12) {
 		struct fat12_super *sb = d->u.fat12.sb;
 		while (d->u.fat12.sector_index < d->u.fat12.total_sectors) {
 			const uint8_t *sec =
-				sb->image + (d->u.fat12.root_sector + d->u.fat12.sector_index) *
+				sb->image + (d->u.fat12.root_sector +
+					     d->u.fat12.sector_index) *
 						    sb->bytes_per_sector;
-			while (d->u.fat12.entry_index < d->u.fat12.entries_per_sector) {
-				const uint8_t *ent = sec + d->u.fat12.entry_index * 32;
+			while (d->u.fat12.entry_index <
+			       d->u.fat12.entries_per_sector) {
+				const uint8_t *ent =
+					sec + d->u.fat12.entry_index * 32;
 				d->u.fat12.entry_index++;
 				if (ent[0] == 0x00)
 					return 1; // 終端
@@ -260,7 +266,8 @@ int fs_readdir(dir_handle *d, char *name, int name_len, int *is_dir,
 					continue; // ボリュームラベル
 				// 名前構築（簡易）
 				int ni = 0;
-				for (int i = 0; i < 8 && ni < name_len - 1; i++) {
+				for (int i = 0; i < 8 && ni < name_len - 1;
+				     i++) {
 					char c = ent[i];
 					if (c == ' ')
 						break;
@@ -268,7 +275,8 @@ int fs_readdir(dir_handle *d, char *name, int name_len, int *is_dir,
 				}
 				if (ent[8] != ' ' && ni < name_len - 1) {
 					name[ni++] = '.';
-					for (int i = 0; i < 3 && ni < name_len - 1; i++) {
+					for (int i = 0;
+					     i < 3 && ni < name_len - 1; i++) {
 						char c = ent[8 + i];
 						if (c == ' ')
 							break;
@@ -284,8 +292,9 @@ int fs_readdir(dir_handle *d, char *name, int name_len, int *is_dir,
 						((uint32_t)ent[30] << 16) |
 						((uint32_t)ent[31] << 24);
 				if (start_cluster)
-					*start_cluster = (uint16_t)ent[26] |
-							 ((uint16_t)ent[27] << 8);
+					*start_cluster =
+						(uint16_t)ent[26] |
+						((uint16_t)ent[27] << 8);
 				return 0;
 			}
 			d->u.fat12.entry_index = 0;
@@ -296,80 +305,92 @@ int fs_readdir(dir_handle *d, char *name, int name_len, int *is_dir,
 		struct ext2_super *sb = d->u.ext2.sb;
 		struct ext2_inode *dir_inode = &d->u.ext2.dir_inode;
 		uint32_t dir_size = dir_inode->i_size;
-		
+
 		/* すべてのエントリを読み終わった */
 		if (d->u.ext2.read_offset >= dir_size)
 			return 1;
-		
+
 		/* 間接ブロックポインタ対応 */
 		while (d->u.ext2.read_offset < dir_size) {
 			/* ブロック番号を取得（ext2_get_block_numを使用） */
 			uint32_t block_num;
-			int r = ext2_get_block_num(sb, dir_inode, 
+			int r = ext2_get_block_num(sb, dir_inode,
 						   d->u.ext2.current_block_idx,
 						   &block_num);
 			if (r != 0 || block_num == 0)
 				return 1; /* 終端 */
-			
+
 			uint32_t block_offset = block_num * sb->block_size;
-			
+
 			if (block_offset + sb->block_size > sb->image_size)
 				return -2;
-			
+
 			const uint8_t *block_data = sb->image + block_offset;
-			
-			while (d->u.ext2.current_offset < sb->block_size && 
+
+			while (d->u.ext2.current_offset < sb->block_size &&
 			       d->u.ext2.read_offset < dir_size) {
-				const uint8_t *entry = block_data + d->u.ext2.current_offset;
-				uint32_t inode = (uint32_t)entry[0] | 
-				                 ((uint32_t)entry[1] << 8) |
-				                 ((uint32_t)entry[2] << 16) |
-				                 ((uint32_t)entry[3] << 24);
-				uint16_t rec_len = (uint16_t)entry[4] | ((uint16_t)entry[5] << 8);
+				const uint8_t *entry =
+					block_data + d->u.ext2.current_offset;
+				uint32_t inode = (uint32_t)entry[0] |
+						 ((uint32_t)entry[1] << 8) |
+						 ((uint32_t)entry[2] << 16) |
+						 ((uint32_t)entry[3] << 24);
+				uint16_t rec_len = (uint16_t)entry[4] |
+						   ((uint16_t)entry[5] << 8);
 				uint8_t name_len_val = entry[6];
 				uint8_t file_type = entry[7];
-				
+
 				if (rec_len == 0)
 					return 1; // 終端
-				
+
 				d->u.ext2.current_offset += rec_len;
 				d->u.ext2.read_offset += rec_len;
-				
+
 				if (inode != 0 && name_len_val > 0) {
 					/* 名前をコピー */
-					int copy_len = (name_len_val < (uint8_t)(name_len - 1)) ? 
-					               name_len_val : (name_len - 1);
+					int copy_len =
+						(name_len_val <
+						 (uint8_t)(name_len - 1)) ?
+							name_len_val :
+							(name_len - 1);
 					for (int i = 0; i < copy_len; i++) {
 						name[i] = entry[8 + i];
 					}
 					name[copy_len] = '\0';
-					
+
 					if (is_dir)
-						*is_dir = (file_type == EXT2_FT_DIR) ? 1 : 0;
-					
+						*is_dir = (file_type ==
+							   EXT2_FT_DIR) ?
+								  1 :
+								  0;
+
 					if (size || start_cluster) {
 						/* inodeを読み取ってサイズを取得 */
 						struct ext2_inode file_inode;
-						if (ext2_read_inode(sb, inode, &file_inode) == 0) {
+						if (ext2_read_inode(
+							    sb, inode,
+							    &file_inode) == 0) {
 							if (size)
-								*size = file_inode.i_size;
+								*size = file_inode
+										.i_size;
 							if (start_cluster)
-								*start_cluster = 0; /* ext2では使用しない */
+								*start_cluster =
+									0; /* ext2では使用しない */
 						}
 					}
-					
+
 					return 0;
 				}
 			}
-			
+
 			/* 次のブロックへ */
 			d->u.ext2.current_block_idx++;
 			d->u.ext2.current_offset = 0;
 		}
-		
+
 		return 1; // 終端
 	}
-	
+
 	return -1;
 }
 
@@ -383,14 +404,14 @@ int fs_closedir(dir_handle *d) {
 int fs_open(fs_handle *h, const char *path, file_handle **out) {
 	if (!h || !path || !out)
 		return -1;
-	
+
 	struct file_handle *fh =
 		(struct file_handle *)kmalloc(sizeof(struct file_handle));
 	if (!fh)
 		return -3;
-	
+
 	fh->type = h->type;
-	
+
 	if (h->type == FS_TYPE_FAT12) {
 		struct fat12_super *sb = (struct fat12_super *)h->backend;
 		int i = 0;
@@ -411,7 +432,7 @@ int fs_open(fs_handle *h, const char *path, file_handle **out) {
 		kfree(fh);
 		return -2;
 	}
-	
+
 	*out = fh;
 	return 0;
 }
@@ -419,28 +440,30 @@ int fs_open(fs_handle *h, const char *path, file_handle **out) {
 int fs_read(file_handle *f, void *buf, uint32_t len, uint32_t offset) {
 	if (!f || !buf)
 		return -1;
-	
+
 	size_t out_len = 0;
 	int r = -1;
-	
+
 	if (f->type == FS_TYPE_FAT12) {
 		/* FAT12はオフセット0のみ対応 */
 		if (offset != 0)
 			return -2;
-		r = fat12_read_file(f->u.fat12.sb, f->u.fat12.name, buf, len, &out_len);
+		r = fat12_read_file(f->u.fat12.sb, f->u.fat12.name, buf, len,
+				    &out_len);
 		if (r == 0) {
 			f->u.fat12.size = out_len;
 			return (int)out_len;
 		}
 	} else if (f->type == FS_TYPE_EXT2) {
 		/* ext2は完全なオフセット対応 */
-		r = ext2_read_file_by_path(f->u.ext2.sb, f->u.ext2.name, buf, len, offset, &out_len);
+		r = ext2_read_file_by_path(f->u.ext2.sb, f->u.ext2.name, buf,
+					   len, offset, &out_len);
 		if (r == 0) {
 			f->u.ext2.size = out_len;
 			return (int)out_len;
 		}
 	}
-	
+
 	return -3;
 }
 

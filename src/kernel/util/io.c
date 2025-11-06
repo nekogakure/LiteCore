@@ -30,7 +30,6 @@ void clear_screen() {
 	}
 }
 
-
 /**
  * @brief CPUを休止状態にする（次の割り込みまで）
  */

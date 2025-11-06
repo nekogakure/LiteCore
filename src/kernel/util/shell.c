@@ -36,7 +36,7 @@ void init_shell(void) {
 	printk("   Type 'help' for available commands   \n");
 	printk("========================================\n");
 	printk("\n");
-	
+
 	// コマンドシステムの初期化
 	init_commands();
 	register_builtin_commands();
@@ -54,17 +54,17 @@ static int process_char(char c) {
 	// Enter (改行)
 	if (c == '\n' || c == '\r') {
 		printk("\n");
-		
+
 		if (buffer_pos > 0) {
 			input_buffer[buffer_pos] = '\0';
 			execute_command(input_buffer);
 		}
-		
+
 		clear_buffer();
 		show_prompt();
 		return 1;
 	}
-	
+
 	// Backspace (0x08 or 0x7F/127)
 	if (c == '\b' || c == 0x08 || c == 127 || c == 0x7F) {
 		if (buffer_pos > 0) {
@@ -75,17 +75,17 @@ static int process_char(char c) {
 		}
 		return 0;
 	}
-	
+
 	// Tab - 無視（将来的に補完機能用）
 	if (c == '\t') {
 		return 0;
 	}
-	
+
 	// ESC - 無視
 	if (c == 27) {
 		return 0;
 	}
-	
+
 	// 通常の表示可能文字
 	if (c >= 32 && c < 127) {
 		if (buffer_pos < SHELL_BUFFER_SIZE - 1) {
@@ -95,7 +95,7 @@ static int process_char(char c) {
 		}
 		return 0;
 	}
-	
+
 	// その他の制御文字は無視
 	return 0;
 }
@@ -107,11 +107,11 @@ static int process_char(char c) {
 int shell_readline_and_execute(void) {
 	// キーボードから文字を取得（ポーリング）
 	char c = keyboard_getchar_poll();
-	
+
 	if (c != 0) {
 		return process_char(c);
 	}
-	
+
 	return 0;
 }
 
@@ -119,6 +119,6 @@ int shell_readline_and_execute(void) {
  * @brief シェルのメインループ（ブロッキング版）
  */
 void shell_run(void) {
-        char c = keyboard_getchar();
-        process_char(c);
+	char c = keyboard_getchar();
+	process_char(c);
 }

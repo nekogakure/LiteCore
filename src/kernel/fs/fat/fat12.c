@@ -163,17 +163,17 @@ int fat12_read_file(struct fat12_super *sb, const char *name, void *buf,
 	shortname[11] = '\0';
 	int si = 0;
 	int ni = 0;
-	
+
 	while (name[si] && name[si] != '.' && ni < 8) {
 		char c = name[si++];
 		if (c >= 'a' && c <= 'z')
 			c = c - 'a' + 'A';
 		shortname[ni++] = c;
 	}
-	
+
 	if (name[si] == '.')
 		si++;
-	
+
 	ni = 8;
 	while (name[si] && ni < 11) {
 		char c = name[si++];

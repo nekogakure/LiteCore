@@ -14,12 +14,12 @@ CFLAGS     = -O2 -Wimplicit-function-declaration -ffreestanding -m32 -c -Wall -W
 LDFLAGS    = -m elf_i386
 NFLAGS     = -f bin
 QEMU_FLAGS = -monitor stdio -no-reboot -d int,guest_errors -D kernel.log
+QEMU_SERIAL = -serial file:kernel_console.log -display none
 CONSOLE    = -display curses
 
 SOURCES    = $(shell find $(SRC_KERNEL) -name "*.c")
 ASM_SOURCES = $(shell find $(SRC_KERNEL) -name "*.asm")
 OBJECTS    = $(shell printf "%s\n" $(patsubst $(SRC_KERNEL)/%.c, $(OUT_DIR)/%.o, $(SOURCES)) $(patsubst $(SRC_KERNEL)/%.asm, $(OUT_DIR)/%.o, $(ASM_SOURCES)) | sort -u)
-IMG_OBJS   = $(OUT_DIR)/src_file_img.o
 
 BOOT       = $(OUT_DIR)/boot.bin
 KERNEL_ELF = $(OUT_DIR)/kernel.elf
@@ -41,8 +41,8 @@ all: $(OUT_DIR) $(IMG)
 $(OUT_DIR):
 	mkdir -p $(OUT_DIR)
 
-$(KERNEL_ELF): $(OBJECTS) $(IMG_OBJS) $(LINKER)
-	$(LD) $(LDFLAGS) -T $(LINKER) $(OBJECTS) $(IMG_OBJS) -o $@
+$(KERNEL_ELF): $(OBJECTS) $(LINKER)
+	$(LD) $(LDFLAGS) -T $(LINKER) $(OBJECTS) -o $@
 
 $(KERNEL): $(KERNEL_ELF)
 	$(OBJCOPY) -O binary $< $@
@@ -62,25 +62,20 @@ $(OUT_DIR)/%.o: $(SRC_KERNEL)/%.asm
 	mkdir -p $(dir $@)
 	$(NASM) -f elf32 $< -o $@
 
-$(OUT_DIR)/src_file_img.o: src/file.img | $(OUT_DIR)
-	mkdir -p $(dir $@)
-	$(OBJCOPY) -I binary -O elf32-i386 -B i386 \
-		--rename-section .data=.rodata,alloc,load,readonly,data,contents \
-		$< $@
-
 src/ext2.img:
 	@echo "Creating ext2.img (2MB)..."
 	@python3 tools/mk_ext2_image.py src/ext2.img 2048 example/
 
 run: $(IMG) src/ext2.img
-	make clean
 	make all
-	$(QEMU) $(QEMU_FLAGS) -fda $(IMG) -hdb src/ext2.img
+	$(QEMU) $(QEMU_FLAGS) -drive file=$(IMG),format=raw,if=floppy -drive file=src/ext2.img,format=raw,if=ide
 
 run-console: $(IMG) src/ext2.img
-	make clean
 	make all
-	$(QEMU) $(CONSOLE) -fda $(IMG) -hdb src/ext2.img 
+	$(QEMU) $(CONSOLE) -drive file=$(IMG),format=raw,if=floppy -drive file=src/ext2.img,format=raw,if=ide
+run-serial: $(IMG) src/ext2.img
+	make all
+	$(QEMU) $(QEMU_SERIAL) -drive file=$(IMG),format=raw,if=floppy -drive file=src/ext2.img,format=raw,if=ide
 
 clean:
 	rm -rf $(OUT_DIR)
