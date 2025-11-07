@@ -12,24 +12,24 @@
  * @param error_code エラーコード
  */
 void msg_from_code(int error_code) {
-        switch (error_code) {
-        case MSG_NO_ERROR:
-                printk("No error.\n");
-                break;
-        case MSG_INTER_ERROR:
-                printk("Error: Interrupt handling error occurred.\n");
-                break;
-        case MSG_MEM_ERROR:
-                printk("Error: Memory management error occurred.\n");
-                break;
-        case MSG_FS_ERROR:
-                printk("Error: Filesystem error occurred.\n");
-                break;
-        case MSG_IO_ERROR:
-                printk("Error: I/O operation error occurred.\n");
-                break;
-        default:
-                printk("Error: Unknown error code %d\n", error_code);
-                break;
-        }
+	switch (error_code) {
+	case MSG_NO_ERROR:
+		printk("No error.\n");
+		break;
+	case MSG_INTER_ERROR:
+		printk("Error: Interrupt handling error occurred.\n");
+		break;
+	case MSG_MEM_ERROR:
+		printk("Error: Memory management error occurred.\n");
+		break;
+	case MSG_FS_ERROR:
+		printk("Error: Filesystem error occurred.\n");
+		break;
+	case MSG_IO_ERROR:
+		printk("Error: I/O operation error occurred.\n");
+		break;
+	default:
+		printk("Error: Unknown error code %d\n", error_code);
+		break;
+	}
 }

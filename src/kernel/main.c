@@ -53,9 +53,9 @@ void kmain() {
 	new_line();
 
 	printk("Startup process complete :D\n");
-        printk("initializing shell...\n");
+	printk("initializing shell...\n");
 
-        init_full_shell();
+	init_full_shell();
 
 	while (1) {
 		kloop();
@@ -80,7 +80,7 @@ void kloop() {
 		event_count++;
 	}
 
-        shell_readline_and_execute();
+	shell_readline_and_execute();
 
 	/* 何も処理しなかった場合はCPUを休止（次の割り込みまで） */
 	if (!activity) {

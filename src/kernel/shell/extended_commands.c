@@ -44,7 +44,8 @@ static int cmd_ls(int argc, char **argv) {
 	struct ext2_inode dir_inode;
 	int result = ext2_read_inode(g_ext2_sb, current_dir_inode, &dir_inode);
 	if (result != 0) {
-		printk("Error: Failed to read directory inode (error=%d)\n", result);
+		printk("Error: Failed to read directory inode (error=%d)\n",
+		       result);
 		return -1;
 	}
 
@@ -135,9 +136,9 @@ static int cmd_uptime(int argc, char **argv) {
 	}
 
 	uint64_t uptime_ms = apic_get_uptime_ms();
-	uint32_t uptime_ms_low = (uint32_t)uptime_ms;  /* 下位32bitを取得 */
-	uint32_t total_seconds = uptime_ms_low / 1000UL;  /* ミリ秒を秒に変換 */
-	
+	uint32_t uptime_ms_low = (uint32_t)uptime_ms; /* 下位32bitを取得 */
+	uint32_t total_seconds = uptime_ms_low / 1000UL; /* ミリ秒を秒に変換 */
+
 	uint32_t days = total_seconds / 86400UL;
 	uint32_t hours = (total_seconds % 86400UL) / 3600UL;
 	uint32_t minutes = (total_seconds % 3600UL) / 60UL;
@@ -186,16 +187,17 @@ static int cmd_change_dir(int argc, char **argv) {
 		// 相対パス
 		// 現在のパスと結合
 		int i = 0, j = 0;
-		
+
 		// ".." の処理
-		if (path[0] == '.' && path[1] == '.' && (path[2] == '\0' || path[2] == '/')) {
+		if (path[0] == '.' && path[1] == '.' &&
+		    (path[2] == '\0' || path[2] == '/')) {
 			// 親ディレクトリへ移動
 			if (current_path[0] == '/' && current_path[1] == '\0') {
 				// すでにルートにいる場合
 				printk("already at root directory :P\n");
 				return 0;
 			}
-			
+
 			// 現在のパスから最後の '/' を見つける
 			int last_slash = -1;
 			for (i = 0; current_path[i]; i++) {
@@ -203,7 +205,7 @@ static int cmd_change_dir(int argc, char **argv) {
 					last_slash = i;
 				}
 			}
-			
+
 			if (last_slash <= 0) {
 				// ルートに戻る
 				new_path[0] = '/';
@@ -215,7 +217,8 @@ static int cmd_change_dir(int argc, char **argv) {
 				}
 				new_path[i] = '\0';
 			}
-		} else if (path[0] == '.' && (path[1] == '\0' || path[1] == '/')) {
+		} else if (path[0] == '.' &&
+			   (path[1] == '\0' || path[1] == '/')) {
 			// "." - 現在のディレクトリ（何もしない）
 			return 0;
 		} else {
@@ -224,21 +227,22 @@ static int cmd_change_dir(int argc, char **argv) {
 			for (i = 0; current_path[i]; i++) {
 				new_path[i] = current_path[i];
 			}
-			
+
 			// 末尾が '/' でない場合は追加
 			if (i > 0 && new_path[i - 1] != '/') {
 				new_path[i++] = '/';
 			}
-			
+
 			// 新しいディレクトリ名を追加
 			for (j = 0; path[j] && i < 255; j++, i++) {
 				new_path[i] = path[j];
 			}
 			new_path[i] = '\0';
 		}
-		
+
 		// 新しいパスを解決
-		int result = ext2_resolve_path(g_ext2_sb, new_path, &target_inode);
+		int result =
+			ext2_resolve_path(g_ext2_sb, new_path, &target_inode);
 		if (result != 0) {
 			printk("cd: %s: No such directory\n", path);
 			return -1;
@@ -247,7 +251,8 @@ static int cmd_change_dir(int argc, char **argv) {
 
 	// inodeを読み取ってディレクトリかどうか確認
 	struct ext2_inode target_inode_data;
-	int result = ext2_read_inode(g_ext2_sb, target_inode, &target_inode_data);
+	int result =
+		ext2_read_inode(g_ext2_sb, target_inode, &target_inode_data);
 	if (result != 0) {
 		printk("cd: Failed to read inode\n");
 		return -1;
@@ -261,7 +266,7 @@ static int cmd_change_dir(int argc, char **argv) {
 
 	// カレントディレクトリを更新
 	current_dir_inode = target_inode;
-	
+
 	// パスを更新
 	int i = 0;
 	while (new_path[i] && i < 255) {

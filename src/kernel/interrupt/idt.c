@@ -77,7 +77,7 @@ void irq_handler_c(uint32_t vec) {
 	if (vec >= 32 && vec < 32 + 16) {
 		uint32_t irq = vec - 32;
 		interrupt_raise((irq << 16) | 0u);
-		
+
 		if (irq >= 8)
 			outb(PIC2_COMMAND, 0x20);
 		outb(PIC1_COMMAND, 0x20);

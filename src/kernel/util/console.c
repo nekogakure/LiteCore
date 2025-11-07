@@ -319,7 +319,8 @@ int printk(const char *fmt, ...) {
 				for (k = n - 1;
 				     k >= 0 && j < (int)sizeof(buffer) - 1; k--)
 					buffer[j++] = numbuf[k];
-			} else if (spec == 'l' && fmt[i + 1] == 'l' && fmt[i + 2] == 'u') {
+			} else if (spec == 'l' && fmt[i + 1] == 'l' &&
+				   fmt[i + 2] == 'u') {
 				i += 2;
 				uint64_t val = va_arg(args, uint64_t);
 				char numbuf[32];

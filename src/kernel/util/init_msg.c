@@ -24,9 +24,9 @@ void kernel_init() {
 	printk("=== KERNEL INIT ===\n");
 	printk("> MEMORY INIT\n");
 #endif
-        memory_init();
+	memory_init();
 #ifdef INIT_MSG
-        printk("ok\n");
+	printk("ok\n");
 #endif
 
 #ifdef INIT_MSG
@@ -36,8 +36,8 @@ void kernel_init() {
 
 	idt_init();
 	interrupt_init();
-#ifdef INIT_MSG	
-        printk("ok\n");
+#ifdef INIT_MSG
+	printk("ok\n");
 #endif
 
 	// タイマー割り込み（IRQ 0）を登録
@@ -58,7 +58,7 @@ void kernel_init() {
 	printk("> APIC TIMER INIT\n");
 #endif
 
-        // タイマー割り込みハンドラを登録 (IRQ 48)
+	// タイマー割り込みハンドラを登録 (IRQ 48)
 	interrupt_register(48, apic_timer_tick, NULL);
 	int apic_result = apic_timer_init();
 	if (apic_result != 0) {

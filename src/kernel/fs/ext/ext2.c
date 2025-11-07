@@ -885,7 +885,8 @@ int ext2_list_dir(struct ext2_super *sb, struct ext2_inode *dir_inode) {
 		/* ブロックデータを読み取る（キャッシュ対応） */
 		uint8_t block_data[4096]; /* 最大ブロックサイズ */
 		if (sb->cache) {
-			if (block_cache_read(sb->cache, block_num, block_data) != 0)
+			if (block_cache_read(sb->cache, block_num,
+					     block_data) != 0)
 				break;
 		} else {
 			uint32_t block_offset = block_num * sb->block_size;
@@ -933,8 +934,8 @@ int ext2_list_dir(struct ext2_super *sb, struct ext2_inode *dir_inode) {
 					file_size = file_inode.i_size;
 				}
 
-				printk("  %-20s [%-7s] size: %u\n",
-				       name, type_str, inode, file_size);
+				printk("  %-20s [%-7s] size: %u\n", name,
+				       type_str, inode, file_size);
 			}
 
 			offset += rec_len;

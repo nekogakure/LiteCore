@@ -24,7 +24,6 @@ static void busy_wait(uint32_t loops) {
  * @brief APIC Timerのテスト
  */
 void apic_timer_test(void) {
-
 	if (!apic_timer_available()) {
 		printk("[FAIL] APIC timer is not available\n");
 		printk("  (CPU may not support APIC or initialization failed)\n");
@@ -71,8 +70,9 @@ void apic_timer_test(void) {
 		busy_wait(500000);
 		uint64_t curr_us = apic_get_uptime_us();
 		uint32_t delta = (uint32_t)(curr_us - prev_us);
-		
-		printk("  [%d] %u us (delta: %u us)\n", i, (uint32_t)curr_us, delta);
+
+		printk("  [%d] %u us (delta: %u us)\n", i, (uint32_t)curr_us,
+		       delta);
 
 		if (curr_us <= prev_us) {
 			monotonic = 0;
@@ -106,21 +106,25 @@ void apic_timer_test(void) {
 	printk("\n--- Consistency Check ---\n");
 	uint64_t us = apic_get_uptime_us();
 	uint64_t ms = apic_get_uptime_ms();
-	
+
 	// 32bitにキャスト
 	uint32_t us_low = (uint32_t)us;
 	uint32_t ms_from_us = us_low / 1000UL;
 	uint32_t ms_direct = (uint32_t)ms;
-	
-	printk("Uptime: %u ms (direct), %u ms (from us)\n", ms_direct, ms_from_us);
-	
+
+	printk("Uptime: %u ms (direct), %u ms (from us)\n", ms_direct,
+	       ms_from_us);
+
 	int32_t diff = ms_direct - ms_from_us;
-	if (diff < 0) diff = -diff;
-	
+	if (diff < 0)
+		diff = -diff;
+
 	if (diff <= 1) {
-		printk("[PASS] us and ms values are consistent (diff=%d ms)\n", diff);
+		printk("[PASS] us and ms values are consistent (diff=%d ms)\n",
+		       diff);
 	} else {
-		printk("[FAIL] us and ms values are inconsistent (diff=%d ms)\n", diff);
+		printk("[FAIL] us and ms values are inconsistent (diff=%d ms)\n",
+		       diff);
 	}
 }
 
