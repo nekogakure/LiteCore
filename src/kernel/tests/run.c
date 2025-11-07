@@ -56,4 +56,16 @@ void run_test() {
 	ext2_test();
 	new_line();
 #endif
+
+#ifdef ACPI_TIMER_TEST
+	printk("> ACPI TIMER TEST\n");
+	acpi_timer_test();
+	new_line();
+#endif
+
+#ifdef APIC_TIMER_TEST
+	printk("> APIC TIMER TEST\n");
+	apic_timer_test();
+	new_line();
+#endif
 }

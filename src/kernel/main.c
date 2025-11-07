@@ -4,6 +4,7 @@
 #include <device/keyboard.h>
 #include <interrupt/irq.h>
 #include <interrupt/idt.h>
+#include <util/commands.h>
 #include <util/shell.h>
 #include <util/shell_integration.h>
 #include <util/io.h>
@@ -39,9 +40,7 @@ void kmain() {
 
 	new_line();
 
-#ifdef INIT_MSG
 	kernel_init();
-#endif /* INIT_MSG */
 
 #ifdef TEST_TRUE
 	new_line();

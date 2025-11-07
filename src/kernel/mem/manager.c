@@ -44,10 +44,11 @@ void mem_init(uint32_t start, uint32_t end) {
 	free_list = (block_header_t *)start;
 	free_list->size = end - start;
 	free_list->next = NULL;
-
+#ifdef INIT_MSG
 	printk("Memory initialized: heap %x - %x (size=%u)\n",
 	       (unsigned int)start, (unsigned int)end,
 	       (unsigned int)(end - start));
+#endif
 }
 
 /**

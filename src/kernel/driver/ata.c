@@ -74,8 +74,9 @@ static void ata_get_base(uint8_t drive, uint16_t *base, uint8_t *drive_sel) {
  * @brief ATAドライバを初期化する
  */
 int ata_init(void) {
+#ifdef INIT_MSG
 	printk("ATA: Initializing ATA driver\n");
-
+#endif
 	/* 試すドライブのリスト */
 	const struct {
 		uint16_t base;
@@ -112,17 +113,23 @@ int ata_init(void) {
 
 		/* ドライブが存在しない */
 		if (status == 0 || status == 0xFF) {
+#ifdef INIT_MSG
 			printk("ATA:   No drive (status=0x%x)\n", status);
+#endif
 			continue;
 		}
 
 		/* エラーチェック */
 		if (status & ATA_SR_ERR) {
 			uint8_t err = inb(drives[i].base + 1);
+#ifdef INIT_MSG
 			printk("ATA:   Error detected (err=0x%x)\n", err);
+#endif
 			/* ATAPI デバイスの場合はスキップ */
 			if (err == 0x01) {
+#ifdef INIT_MSG
 				printk("ATA:   ATAPI device (not supported)\n");
+#endif
 			}
 			continue;
 		}
@@ -156,15 +163,17 @@ int ata_init(void) {
 			       drives[i].base);
 			continue;
 		}
-
+#ifdef INIT_MSG
 		/* IDENTIFYデータを読み取る（256ワード = 512バイト）*/
 		printk("ATA:   reading IDENTIFY data from base 0x%x\n",
 		       drives[i].base);
+#endif
 		for (int j = 0; j < 256; j++) {
 			(void)inw(drives[i].base);
 		}
-
+#ifdef INIT_MSG
 		printk("ATA: %s detected successfully!\n", drives[i].name);
+#endif
 		return 0;
 	}
 
@@ -229,7 +238,7 @@ int ata_read_sectors(uint8_t drive, uint32_t lba, uint8_t sectors,
 		for (int i = 0; i < 4; i++) {
 			inb(base + 7);
 		}
-		
+
 		/* セクタ読み取り後に割り込みを処理 */
 		interrupt_dispatch_all();
 	}

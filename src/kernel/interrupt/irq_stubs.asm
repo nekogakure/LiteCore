@@ -164,3 +164,12 @@ isr47:
         add esp, 4
         popa
         iretd
+
+global isr48
+isr48:
+        pusha
+        push dword 48
+        call irq_handler_c
+        add esp, 4
+        popa
+        iretd

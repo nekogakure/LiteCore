@@ -158,8 +158,9 @@ static void kbd_process(uint32_t sc_payload, void *ctx) {
 void keyboard_init(void) {
 	// 同期側の処理ハンドラを登録 (FIFOイベントの処理)
 	interrupt_register(1, kbd_process, NULL);
-
+#ifdef INIT_MSG
 	printk("Keyboard initialize success\n");
+#endif
 }
 
 void keyboard_poll(void) {

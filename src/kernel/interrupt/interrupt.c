@@ -4,8 +4,8 @@
 
 typedef void (*irq_handler_t)(uint32_t irq, void *ctx);
 
-/* 最大IRQ数 */
-#define MAX_IRQS 16
+/* 最大IRQ数 (IRQ 0-15: PIC, IRQ 32+: APIC/その他) */
+#define MAX_IRQS 256
 /* 1 IRQ に登録できるハンドラ数（簡易実装） */
 #define MAX_HANDLERS_PER_IRQ 4
 

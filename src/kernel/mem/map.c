@@ -74,9 +74,10 @@ void memmap_init(uint32_t start, uint32_t end) {
 		}
 		spin_unlock_irqrestore(&memmap_lock_storage, flags);
 	}
-
+#ifdef INIT_MSG
 	printk("MemoryMap initialized: frames=%u start_frame=%u\n",
 	       (unsigned int)memmap.frames, (unsigned int)memmap.start_frame);
+#endif
 }
 
 /**

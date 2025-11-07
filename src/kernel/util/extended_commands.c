@@ -2,6 +2,7 @@
 #include <util/console.h>
 #include <mem/manager.h>
 #include <fs/ext/ext2.h>
+#include <driver/timer/apic.h>
 #include <stdint.h>
 
 // 外部宣言: main.cで定義されているグローバル変数
@@ -114,9 +115,26 @@ static int cmd_uptime(int argc, char **argv) {
 	(void)argc;
 	(void)argv;
 
-	// TODO: タイマーから起動時間を取得
-	printk("System uptime:\n");
-	printk("  (Timer not yet implemented)\n");
+	if (!apic_timer_available()) {
+		printk("Uptime: APIC timer not available\n");
+		return 0;
+	}
+
+	uint64_t uptime_ms = apic_get_uptime_ms();
+	/* 32bit演算で時間を計算 */
+	uint32_t uptime_ms_low = (uint32_t)uptime_ms;  /* 下位32bitを取得 */
+	uint32_t total_seconds = uptime_ms_low / 1000UL;  /* ミリ秒を秒に変換 */
+	
+	uint32_t days = total_seconds / 86400UL;
+	uint32_t hours = (total_seconds % 86400UL) / 3600UL;
+	uint32_t minutes = (total_seconds % 3600UL) / 60UL;
+	uint32_t seconds = total_seconds % 60UL;
+
+	printk("System uptime: ");
+	if (days > 0) {
+		printk("%u days, ", days);
+	}
+	printk("%02u:%02u:%02u\n", hours, minutes, seconds);
 
 	return 0;
 }

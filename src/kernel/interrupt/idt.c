@@ -77,9 +77,12 @@ void irq_handler_c(uint32_t vec) {
 	if (vec >= 32 && vec < 32 + 16) {
 		uint32_t irq = vec - 32;
 		interrupt_raise((irq << 16) | 0u);
+		
 		if (irq >= 8)
 			outb(PIC2_COMMAND, 0x20);
 		outb(PIC1_COMMAND, 0x20);
+	} else if (vec >= 32) {
+		interrupt_raise((vec << 16) | 0u);
 	}
 }
 
@@ -138,6 +141,7 @@ void idt_init(void) {
 	extern void isr45(void);
 	extern void isr46(void);
 	extern void isr47(void);
+	extern void isr48(void);
 
 	idt_set_gate(14, (uint32_t)isr14); /* page fault */
 	idt_set_gate(32, (uint32_t)isr32);
@@ -156,6 +160,7 @@ void idt_init(void) {
 	idt_set_gate(45, (uint32_t)isr45);
 	idt_set_gate(46, (uint32_t)isr46);
 	idt_set_gate(47, (uint32_t)isr47);
+	idt_set_gate(48, (uint32_t)isr48); /* APIC Timer */
 
 	idtp.limit = sizeof(struct idt_entry) * IDT_ENTRIES - 1;
 	idtp.base = (uint32_t)&idt;

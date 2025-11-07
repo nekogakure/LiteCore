@@ -318,7 +318,7 @@ int ext2_list_root(struct ext2_super *sb) {
 	     block_idx++) {
 		uint32_t block_num = root_inode.i_block[block_idx];
 
-		uint8_t block_data[4096];  /* 最大ブロックサイズ */
+		uint8_t block_data[4096]; /* 最大ブロックサイズ */
 		if (sb->cache) {
 			if (block_cache_read(sb->cache, block_num,
 					     block_data) != 0)
@@ -360,8 +360,8 @@ int ext2_list_root(struct ext2_super *sb) {
 				else if (file_type == EXT2_FT_SYMLINK)
 					type_str = "SYMLINK";
 
-				printk("  %-20s [%-4s]\n", name,
-				       type_str, inode);
+				printk("  %-20s [%-4s]\n", name, type_str,
+				       inode);
 				entry_count++;
 			}
 
