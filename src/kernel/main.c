@@ -54,7 +54,9 @@ void kmain() {
 	new_line();
 
 	printk("Startup process complete :D\n");
-	printk("Please press any key to continue to shell...\n");
+        printk("initializing shell...\n");
+
+        init_full_shell();
 
 	while (1) {
 		kloop();
@@ -67,7 +69,7 @@ void kmain() {
  */
 void kloop() {
 	int activity =
-		0; // このループで何か処理したかフラグ（分かりづらい仕事しろ、いいえ私ではない。そうだこの変数だ）
+		0; // このループで何か処理したかフラグ（分かりづらい仕事しろ、そうだこの変数だ）
 
 	/* ポーリングによるフォールバック: キーボードのscancodeを回収 */
 	keyboard_poll();
@@ -79,23 +81,7 @@ void kloop() {
 		event_count++;
 	}
 
-	/* シェルが開始されていない場合は、キー入力待ち */
-	if (!shell_started) {
-		char c = keyboard_getchar_poll();
-		if (c != 0) {
-			/* 何かキーが押されたらシェルを開始 */
-			shell_started = 1;
-			printk("\n");
-			init_full_shell();
-			activity = 1;
-		}
-	} else {
-		/* シェル実行中 */
-		int processed = shell_readline_and_execute();
-		if (processed != 0) {
-			activity = 1;
-		}
-	}
+        shell_readline_and_execute();
 
 	/* 何も処理しなかった場合はCPUを休止（次の割り込みまで） */
 	if (!activity) {
