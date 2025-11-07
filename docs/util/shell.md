@@ -1,5 +1,5 @@
 この章では、シェル機能について記述します。
-実装されているファイルは[shell.c](../../src/kernel/util/shell.c), [shell.h](../../src/include/util/shell.h)です。
+実装されているファイルは[shell.c](../../src/kernel/util/shell.c), [shell.h](../../src/include/shell/shell.h)です。
 
 ## 概要
 シェルモジュールは、対話型コマンドラインインターフェースを提供します。ユーザー入力の読み取り、バッファ管理、コマンドの実行、プロンプト表示を行います。バックスペース、Enterキー、制御文字の処理をサポートします。

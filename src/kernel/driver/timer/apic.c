@@ -72,36 +72,60 @@ static uint32_t get_apic_base(void) {
 }
 
 /**
- * @brief PIT (8254 タイマー) を使ってAPICタイマーをキャリブレーション
+ * @brief ACPI PM Timerのポート（通常0x608または0xb008）
+ */
+#define ACPI_PM_TIMER_PORT 0x608
+
+/**
+ * @brief ACPI PM Timerの周波数（固定）
+ */
+#define ACPI_PM_TIMER_FREQ 3579545  /* 3.579545 MHz */
+
+/**
+ * @brief ACPI PM Timerから現在のカウント値を読み取る
+ */
+static inline uint32_t read_acpi_pm_timer(void) {
+	uint32_t value;
+	__asm__ volatile("inl %1, %0" : "=a"(value) : "d"((uint16_t)ACPI_PM_TIMER_PORT));
+	return value & 0x00FFFFFF;
+}
+
+/**
+ * @brief ACPI PM Timerを使ってAPICタイマーをキャリブレーション
  */
 static uint32_t calibrate_apic_timer(void) {
-	/* 10msの測定時間 */
-	uint16_t pit_reload = 11932; /* 1193182 / 100 ≒ 11932 (10ms) */
+	uint32_t target_ticks = ACPI_PM_TIMER_FREQ / 100; /* 10ms */
 	
-	__asm__ volatile("outb %0, $0x43" : : "a"((uint8_t)0x34)); /* ch0, lobyte/hibyte, mode 2 */
-	__asm__ volatile("outb %0, $0x40" : : "a"((uint8_t)(pit_reload & 0xFF)));
-	__asm__ volatile("outb %0, $0x40" : : "a"((uint8_t)((pit_reload >> 8) & 0xFF)));
-	
-	/* APIC Timer を分周比1、最大値で開始 */
-	apic_write(APIC_TIMER_DIV, APIC_TIMER_DIV_1);
+	/* APIC Timer を分周比16、最大値で開始 */
+	apic_write(APIC_TIMER_DIV, APIC_TIMER_DIV_16);
 	apic_write(APIC_TIMER_INIT, 0xFFFFFFFF);
 	
-	/* PITが1回カウントダウンするのを待つ（約10ms） */
-	/* 簡易的にbusy loopで待機 */
-	for (volatile uint32_t i = 0; i < 200000; i++) {
-		__asm__ volatile("nop");
+	/* ACPI PM Timerの開始値を読み取る */
+	uint32_t pm_start = read_acpi_pm_timer();
+	uint32_t pm_end = (pm_start + target_ticks) & 0x00FFFFFF; /* 24bitでラップアラウンド */
+	
+	/* ACPI PM Timerが目標値に達するまで待機 */
+	uint32_t pm_current;
+	if (pm_end > pm_start) {
+		/* ラップアラウンドなし */
+		do {
+			pm_current = read_acpi_pm_timer();
+		} while (pm_current < pm_end && pm_current >= pm_start);
+	} else {
+		/* ラップアラウンドあり */
+		do {
+			pm_current = read_acpi_pm_timer();
+		} while (pm_current >= pm_start || pm_current < pm_end);
 	}
 	
 	/* APICタイマーのカウントを読み取り */
 	uint32_t apic_elapsed = 0xFFFFFFFF - apic_read(APIC_TIMER_CURRENT);
 	
-	/* 測定時間が約10msと仮定して、周波数を計算 */
-	/* Hz = ticks / 0.01 = ticks * 100 */
 	uint32_t freq = apic_elapsed * 100;
 	
-	/* 測定値の妥当性チェック */
 	if (freq < 100000 || freq > 100000000) {
 		/* 異常値の場合はデフォ値 */
+		printk("APIC Timer: Calibration failed (freq=%u), using default\n", freq);
 		return 2000000; /* 2 MHz */
 	}
 	
@@ -154,7 +178,7 @@ int apic_timer_init(void) {
 	printk("APIC Timer: LVT configured = 0x%08x\n", lvt);
 #endif
 	/* 1000Hz (1ms間隔) で動作するように設定 */
-	uint32_t init_count = (apic_timer_frequency / 16) / 1000; /* 分周比16, 1000Hz */
+	uint32_t init_count = apic_timer_frequency / 1000; /* 1000Hz */
 	apic_write(APIC_TIMER_INIT, init_count);
 
 #ifdef INIT_MSG
@@ -190,23 +214,6 @@ void apic_timer_tick(uint32_t irq, void *context) {
 	if (!apic_initialized) return;
 	
 	current_tick_count++;
-	
-	/* 周波数校正用: 10000 tick (10秒) ごとに出力 */
-	static uint32_t calibration_start = 0;
-	static uint32_t last_print = 0;
-	uint32_t current = (uint32_t)current_tick_count;
-	
-	if (calibration_start == 0 && current == 1000) {
-		calibration_start = current;
-		last_print = current;
-		printk("\n[CALIBRATION] Starting at tick %u - Please time 10 seconds from NOW\n", current);
-	}
-	if (calibration_start > 0 && (current - last_print) >= 10000) {
-		uint32_t elapsed_ticks = current - calibration_start;
-		printk("[CALIBRATION] %u ticks elapsed (should be %u seconds)\n", 
-		       elapsed_ticks, elapsed_ticks / 1000);
-		last_print = current;
-	}
 	
 	/* EOI (End of Interrupt) を送信 */
 	if (apic_base) {

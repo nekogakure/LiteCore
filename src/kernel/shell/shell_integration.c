@@ -1,6 +1,6 @@
-#include <util/shell_integration.h>
-#include <util/shell.h>
-#include <util/commands.h>
+#include <shell/shell_integration.h>
+#include <shell/shell.h>
+#include <shell/commands.h>
 
 /**
  * @brief シェルシステム全体を初期化（すべてのコマンドを登録）

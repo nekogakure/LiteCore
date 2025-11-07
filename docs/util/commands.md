@@ -1,5 +1,5 @@
 この章では、コマンドシステムについて記述します。
-実装されているファイルは[commands.c](../../src/kernel/util/commands.c), [commands.h](../../src/include/util/commands.h)です。
+実装されているファイルは[commands.c](../../src/kernel/util/commands.c), [commands.h](../../src/include/shell/commands.h)です。
 
 ## 概要
 コマンドシステムは、シェルで実行可能なコマンドの登録と実行を管理します。コマンドラインの解析、引数の分割、コマンドハンドラの呼び出しを行います。最大32個のコマンドを登録でき、各コマンドには名前、説明、実行関数が関連付けられます。

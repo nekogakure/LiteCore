@@ -40,7 +40,7 @@ LiteCoreカーネルのドキュメントの目次
 - [入出力ユーティリティ](./util/io)
 - [シェル機能](./util/shell)
 - [コマンドシステム](./util/commands)
-- [拡張コマンド](./util/extended_commands)
+- [拡張コマンド](./shell/extended_commands.h)
 - [シェル統合](./util/shell_integration)
 - [カーネル初期化](./util/init_msg)
 

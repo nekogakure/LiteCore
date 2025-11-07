@@ -1,6 +1,6 @@
-#include <util/shell.h>
-#include <util/commands.h>
-#include <util/commands.h>
+#include <shell/shell.h>
+#include <shell/commands.h>
+#include <shell/commands.h>
 #include <util/console.h>
 #include <device/keyboard.h>
 #include <fs/fs.h>

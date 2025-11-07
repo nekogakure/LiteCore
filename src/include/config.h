@@ -4,7 +4,7 @@
 #define VERSION "0.1"
 
 // 初期化メッセージを表示するかどうか
-#define INIT_MSG
+//#define INIT_MSG
 
 #ifndef NULL
 #define NULL ((void *)0)
@@ -39,5 +39,11 @@ typedef unsigned short uint16_t;
  * @brief 32bit符号なし整数型
  */
 typedef unsigned int uint32_t;
+
+/**
+ * @typedef uint64_t
+ * @brief 64bit符号なし整数型
+ */
+typedef unsigned long long uint64_t;
 
 #endif /* _CONFIG_H */

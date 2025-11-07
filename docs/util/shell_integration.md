@@ -1,5 +1,5 @@
 この章では、シェル統合機能について記述します。
-実装されているファイルは[shell_integration.c](../../src/kernel/util/shell_integration.c), [shell_integration.h](../../src/include/util/shell_integration.h)です。
+実装されているファイルは[shell_integration.c](../../src/kernel/util/shell_integration.c), [shell_integration.h](../../src/include/shell/shell_integration.h)です。
 
 ## 概要
 シェル統合モジュールは、シェルシステム全体の初期化を簡素化します。標準シェル、組み込みコマンド、拡張コマンドを一括で初期化します。

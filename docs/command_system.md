@@ -23,8 +23,8 @@
 ### 初期化
 
 ```c
-#include <util/shell.h>
-#include <util/commands.h>
+#include <shell/shell.h>
+#include <shell/commands.h>
 
 // カーネルのmain関数などで
 init_shell();  // シェルとコマンドシステムを初期化
@@ -35,7 +35,7 @@ init_shell();  // シェルとコマンドシステムを初期化
 ### 1. コマンド関数の実装
 
 ```c
-#include <util/commands.h>
+#include <shell/commands.h>
 #include <util/console.h>
 
 static int cmd_mycommand(int argc, char **argv) {

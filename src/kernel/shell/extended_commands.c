@@ -1,4 +1,4 @@
-#include <util/commands.h>
+#include <shell/commands.h>
 #include <util/console.h>
 #include <mem/manager.h>
 #include <fs/ext/ext2.h>

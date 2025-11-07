@@ -1,5 +1,5 @@
 この章では、拡張コマンドについて記述します。
-実装されているファイルは[extended_commands.c](../../src/kernel/util/extended_commands.c)です。
+実装されているファイルは[extended_commands.c](../../src/kernel/shell/extended_commands.h.c)です。
 
 ## 概要
 拡張コマンドモジュールは、ファイルシステム操作やシステム情報表示などの高度なシェルコマンドを提供します。ext2ファイルシステムの操作、メモリ情報の表示、PCIデバイスの列挙などが含まれます。

@@ -4,9 +4,9 @@
 #include <device/keyboard.h>
 #include <interrupt/irq.h>
 #include <interrupt/idt.h>
-#include <util/commands.h>
-#include <util/shell.h>
-#include <util/shell_integration.h>
+#include <shell/commands.h>
+#include <shell/shell.h>
+#include <shell/shell_integration.h>
 #include <util/io.h>
 #include <util/init_msg.h>
 #include <mem/map.h>
@@ -14,6 +14,7 @@
 #include <mem/segment.h>
 #include <driver/ata.h>
 #include <fs/ext/ext2.h>
+#include <driver/timer/timer.h>
 
 #include <tests/define.h>
 #include <tests/run.h>
@@ -51,6 +52,7 @@ void kmain() {
 	new_line();
 
 	new_line();
+
 	printk("Startup process complete :D\n");
 	printk("Please press any key to continue to shell...\n");
 

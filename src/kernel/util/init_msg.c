@@ -5,8 +5,8 @@
 #include <driver/timer/apic.h>
 #include <interrupt/irq.h>
 #include <interrupt/idt.h>
-#include <util/shell.h>
-#include <util/shell_integration.h>
+#include <shell/shell.h>
+#include <shell/shell_integration.h>
 #include <util/io.h>
 #include <util/init_msg.h>
 #include <mem/map.h>
