@@ -1,5 +1,4 @@
-この章では、開発ツールについて記述します。
-実装されているファイルは[fmt.sh](../../tools/fmt.sh), [mk_ext2_image.py](../../tools/mk_ext2_image.py), [mk_fat12_image.py](../../tools/mk_fat12_image.py)です。
+この章では、開発に便利なツールについて記述します。
 
 ## fmt.sh
 
