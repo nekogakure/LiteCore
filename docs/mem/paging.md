@@ -63,9 +63,11 @@
 
 ## 定数 / 定義
 
-- `PAGING_PRESENT`: 0x1 - ページが存在する
-- `PAGING_RW`: 0x2 - 読み書き可能
-- `PAGING_USER`: 0x4 - ユーザーモードからアクセス可能
+- `PAGING_PRESENT`: 0x1 - ページが存在する（このフラグがないとページフォルトが発生）
+- `PAGING_RW`: 0x2 - 読み書き可能（このフラグがないと読み取り専用）
+- `PAGING_USER`: 0x4 - ユーザーモードからアクセス可能（このフラグがないとカーネルモードのみ）
+
+これらのフラグはビット OR で組み合わせて使用できます：`PAGING_PRESENT | PAGING_RW | PAGING_USER`
 
 ## 構造体
 
