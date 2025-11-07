@@ -6,7 +6,6 @@
 #include <fs/fs.h>
 
 #define SHELL_BUFFER_SIZE 256
-#define SHELL_PROMPT "LiteCore> "
 
 static char input_buffer[SHELL_BUFFER_SIZE];
 static int buffer_pos = 0;
@@ -15,7 +14,22 @@ static int buffer_pos = 0;
  * @brief シェルプロンプトを表示
  */
 static void show_prompt(void) {
-	printk(SHELL_PROMPT);
+	const char *cwd = get_current_directory();
+	
+	// パスから最後のディレクトリ名を抽出
+	const char *dir_name = cwd;
+	for (int i = 0; cwd[i] != '\0'; i++) {
+		if (cwd[i] == '/' && cwd[i + 1] != '\0') {
+			dir_name = &cwd[i + 1];
+		}
+	}
+	
+	// ルートディレクトリの場合
+	if (cwd[0] == '/' && cwd[1] == '\0') {
+		printk("LiteCore@/ $ ");
+	} else {
+		printk("LiteCore@%s $ ", dir_name);
+	}
 }
 
 /**

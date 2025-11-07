@@ -874,8 +874,6 @@ int ext2_list_dir(struct ext2_super *sb, struct ext2_inode *dir_inode) {
 	uint32_t read_offset = 0;
 	uint32_t block_idx = 0;
 
-	printk("Directory contents:\n");
-
 	while (read_offset < dir_size) {
 		/* ブロック番号を取得 */
 		uint32_t block_num;
@@ -884,11 +882,21 @@ int ext2_list_dir(struct ext2_super *sb, struct ext2_inode *dir_inode) {
 		if (r != 0 || block_num == 0)
 			break;
 
-		uint32_t block_offset = block_num * sb->block_size;
-		if (block_offset + sb->block_size > sb->image_size)
-			break;
+		/* ブロックデータを読み取る（キャッシュ対応） */
+		uint8_t block_data[4096]; /* 最大ブロックサイズ */
+		if (sb->cache) {
+			if (block_cache_read(sb->cache, block_num, block_data) != 0)
+				break;
+		} else {
+			uint32_t block_offset = block_num * sb->block_size;
+			if (block_offset + sb->block_size > sb->image_size)
+				break;
+			const uint8_t *src = sb->image + block_offset;
+			for (uint32_t i = 0; i < sb->block_size; i++) {
+				block_data[i] = src[i];
+			}
+		}
 
-		const uint8_t *block_data = sb->image + block_offset;
 		uint32_t offset = 0;
 
 		while (offset < sb->block_size && read_offset < dir_size) {
@@ -925,7 +933,7 @@ int ext2_list_dir(struct ext2_super *sb, struct ext2_inode *dir_inode) {
 					file_size = file_inode.i_size;
 				}
 
-				printk("  %-20s [%-7s] inode=%u size=%u\n",
+				printk("  %-20s [%-7s] size: %u\n",
 				       name, type_str, inode, file_size);
 			}
 

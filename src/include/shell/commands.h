@@ -59,4 +59,10 @@ void register_builtin_commands(void);
  */
 void register_extended_commands(void);
 
+/**
+ * @brief 現在のディレクトリパスを取得
+ * @return 現在のディレクトリパス
+ */
+const char *get_current_directory(void);
+
 #endif // _UTIL_COMMANDS_H

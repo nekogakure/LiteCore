@@ -20,7 +20,6 @@
 #include <tests/run.h>
 
 void kloop();
-static int shell_started = 0;
 
 // グローバルext2ハンドル
 struct ext2_super *g_ext2_sb = NULL;
