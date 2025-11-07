@@ -16,7 +16,7 @@ IMG_OUT_DIR = $(OUT_DIR)
 CFLAGS     = -O2 -Wimplicit-function-declaration -Wunused-but-set-variable -ffreestanding -m32 -c -Wall -Wextra -I$(INCLUDE)
 LDFLAGS    = -m elf_i386
 NFLAGS     = -f bin
-QEMU_FLAGS = -monitor stdio -no-reboot -d int,guest_errors -D kernel.log
+QEMU_FLAGS = -serial stdio -display none -monitor none
 QEMU_SERIAL = -serial file:kernel_console.log -display none
 CONSOLE    = -display curses
 

@@ -4,21 +4,53 @@
 #include <stdint.h>
 #include <interrupt/irq.h>
 
-/* unused function lol
+/**
+ * @brief シリアルポート（COM1）を初期化
+ */
 static void serial_init(void) {
-        outb(0x3f8 + 1, 0x00); // すべての割り込みを無効化
-        outb(0x3f8 + 3, 0x80); // DLABを有効化
-        outb(0x3f8 + 0, 0x03); // 分周値下位バイト (38400ボーレート)
-        outb(0x3f8 + 1, 0x00); // 分周値上位バイト
-        outb(0x3f8 + 3, 0x03); // 8ビット、パリティなし、ストップビット1
-        outb(0x3f8 + 2, 0xC7); // FIFO有効化
-        outb(0x3f8 + 4, 0x0B); // IRQ有効化、RTS/DSRセット
+	outb(0x3f8 + 1, 0x00); // すべての割り込みを無効化
+	outb(0x3f8 + 3, 0x80); // DLABを有効化
+	outb(0x3f8 + 0, 0x03); // 分周値下位バイト (38400ボーレート)
+	outb(0x3f8 + 1, 0x00); // 分周値上位バイト
+	outb(0x3f8 + 3, 0x03); // 8ビット、パリティなし、ストップビット1
+	outb(0x3f8 + 2, 0xC7); // FIFO有効化
+	outb(0x3f8 + 4, 0x0B); // IRQ有効化、RTS/DSRセット
 }
-*/
+
+/**
+ * @brief シリアルポートに1文字出力
+ */
 static void serial_putc(char c) {
 	while ((inb(0x3f8 + 5) & 0x20) == 0) {
 	}
 	outb(0x3f8, (uint8_t)c);
+}
+
+/**
+ * @brief シリアルポートからデータが利用可能かチェック
+ */
+int serial_received(void) {
+	return inb(0x3f8 + 5) & 1;
+}
+
+/**
+ * @brief シリアルポートから1文字読み取る
+ */
+char serial_getc(void) {
+	while (serial_received() == 0) {
+	}
+	return inb(0x3f8);
+}
+
+/**
+ * @brief シリアルポートから1文字読み取る（ノンブロッキング）
+ * @return 文字、またはデータがない場合は0
+ */
+char serial_getc_nonblock(void) {
+	if (serial_received()) {
+		return inb(0x3f8);
+	}
+	return 0;
 }
 
 /** 
@@ -55,6 +87,7 @@ static int history_lines = 0;
 static int history_offset = 0;
 
 void console_init() {
+	serial_init(); // シリアルポートを初期化
 	clear_screen();
 	cursor_row = 0;
 	cursor_col = 0;

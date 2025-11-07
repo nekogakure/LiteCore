@@ -165,6 +165,13 @@ void keyboard_init(void) {
 
 void keyboard_poll(void) {
 	kbd_isr(0, NULL);
+	
+	// シリアル入力もポーリング
+	char c;
+	while ((c = serial_getc_nonblock()) != 0) {
+		// シリアル入力をバッファに追加
+		buffer_put(c);
+	}
 }
 
 /**
