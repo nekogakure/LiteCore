@@ -94,24 +94,17 @@ All tests completed!
 1. `src/kernel/tests/`に新しいテストファイルを作成
 2. `src/include/tests/define.h`に制御マクロを追加
 3. `src/kernel/tests/run.c`にテスト関数呼び出しを追加
-4. `Makefile`にテストファイルを追加
-
+4. 
 ### テスト関数の形式
 
 ```c
 #include <config.h>
+#include <tests/define.h>
 #include <util/console.h>
 
-#ifdef MY_NEW_TEST
 void my_new_test() {
-    printk("Running my new test...\n");
-    
-    // テストコード
-    // アサーションやチェック
-    
-    printk("My new test passed!\n");
+    // テストコード    
 }
-#endif
 ```
 
 ## 注意事項
