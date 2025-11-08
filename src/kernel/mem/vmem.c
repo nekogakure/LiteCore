@@ -35,8 +35,8 @@ uint32_t vmem_virt_to_phys(uint32_t virt) {
 		return phys;
 	}
 
-	uint32_t cr3;
-	asm volatile("mov %%cr3, %%eax" : "=a"(cr3));
+	uint64_t cr3;
+	asm volatile("mov %%cr3, %0" : "=r"(cr3));
 	uint32_t pd_phys = cr3 & 0xFFFFF000;
 	uint32_t pd_virt = phys2virt(pd_phys);
 	if (pd_virt == 0) {

@@ -181,10 +181,10 @@ int map_range(uint32_t phys_start, uint32_t virt_start, size_t size,
 }
 
 void page_fault_handler_ex(uint32_t vec, uint32_t error_code, uint32_t eip) {
-	uint32_t fault_addr;
+	uint64_t fault_addr;
 	asm volatile("mov %%cr2, %0" : "=r"(fault_addr));
-	printk("PAGE FAULT: vec=%u err=0x%x eip=0x%x cr2=0x%x\n", (unsigned)vec,
-	       (unsigned)error_code, (unsigned)eip, (unsigned)fault_addr);
+	printk("PAGE FAULT: vec=%u err=0x%x eip=0x%x cr2=0x%lx\n", (unsigned)vec,
+	       (unsigned)error_code, (unsigned)eip, (unsigned long)fault_addr);
 	while (1) {
 	}
 }
@@ -206,19 +206,19 @@ void paging_enable(void) {
 		       (unsigned)pd_phys);
 		return;
 	}
-	asm volatile("mov %%eax, %%cr3" ::"a"(pd_phys));
+	asm volatile("mov %0, %%cr3" ::"r"((uint64_t)pd_phys));
 	// CR0のPGビットを有効化
-	uint32_t cr0;
-	asm volatile("mov %%cr0, %%eax" : "=a"(cr0));
+	uint64_t cr0;
+	asm volatile("mov %%cr0, %0" : "=r"(cr0));
 	cr0 |= 0x80000000u; // PGビットをセット
-	asm volatile("mov %%eax, %%cr0" ::"a"(cr0));
+	asm volatile("mov %0, %%cr0" ::"r"(cr0));
 }
 
 void page_fault_handler(uint32_t vec) {
 	(void)vec;
-	uint32_t fault_addr;
+	uint64_t fault_addr;
 	asm volatile("mov %%cr2, %0" : "=r"(fault_addr));
-	printk("PAGE FAULT at 0x%x\n", (unsigned)fault_addr);
+	printk("PAGE FAULT at 0x%lx\n", (unsigned long)fault_addr);
 	while (1) {
 	}
 }

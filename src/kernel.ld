@@ -1,5 +1,5 @@
 ENTRY(kernel_entry)
-OUTPUT_ARCH(i386)
+OUTPUT_ARCH(i386:x86-64)
 
 SECTIONS {
         . = 0x10000;

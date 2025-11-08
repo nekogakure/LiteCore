@@ -2,5 +2,5 @@
 
 void load_idt(void *ptr, unsigned size) {
 	(void)size;
-	__asm__ volatile("lidtl (%0)" : : "r"(ptr));
+	__asm__ volatile("lidt (%0)" : : "r"(ptr));
 }

@@ -3,8 +3,8 @@
 
 #include <util/config.h>
 
-uint32_t irq_save(void);
-void irq_restore(uint32_t flags);
+uint64_t irq_save(void);
+void irq_restore(uint64_t flags);
 
 int interrupt_register(uint32_t irq, void (*handler)(uint32_t, void *),
 		       void *ctx);

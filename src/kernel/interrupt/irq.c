@@ -2,11 +2,11 @@
 
 /**
  * @fn irq_save
- * Save EFLAGS and disable interrupts.
+ * Save RFLAGS and disable interrupts.
  */
-uint32_t irq_save(void) {
-	uint32_t flags;
-	asm volatile("pushf\n\t"
+uint64_t irq_save(void) {
+	uint64_t flags;
+	asm volatile("pushfq\n\t"
 		     "pop %0\n\t"
 		     : "=r"(flags)
 		     :
@@ -17,11 +17,11 @@ uint32_t irq_save(void) {
 
 /**
  * @fn irq_restore
- * Restore EFLAGS.
+ * Restore RFLAGS.
  */
-void irq_restore(uint32_t flags) {
+void irq_restore(uint64_t flags) {
 	asm volatile("push %0\n\t"
-		     "popf\n\t"
+		     "popfq\n\t"
 		     :
 		     : "r"(flags)
 		     : "memory");

@@ -1,5 +1,5 @@
 # LiteCore
-x86_64で動作するシンプルなOS
+x86_64, UEFI環境で動作するシンプルなOS
 
 ### ドキュメント
 [こちら](https://core.nekogakure.jp)にあります

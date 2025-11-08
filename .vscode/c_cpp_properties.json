@@ -1,0 +1,21 @@
+{
+    "configurations": [
+        {
+            "name": "Linux",
+            "includePath": [
+                "${workspaceFolder}/src/include",
+                "/usr/include/efi",
+                "/usr/include/efi/x86_64",
+                "/usr/include"
+            ],
+            "defines": [
+                "GNU_EFI_USE_MS_ABI"
+            ],
+            "compilerPath": "/usr/bin/gcc",
+            "cStandard": "c11",
+            "cppStandard": "c++17",
+            "intelliSenseMode": "linux-gcc-x64"
+        }
+    ],
+    "version": 4
+}
