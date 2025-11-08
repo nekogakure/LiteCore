@@ -68,4 +68,10 @@ void run_test() {
 	apic_timer_test();
 	new_line();
 #endif
+
+#ifdef XHCI_TEST
+	printk("> XHCI USB TEST\n");
+	xhci_test();
+	new_line();
+#endif
 }

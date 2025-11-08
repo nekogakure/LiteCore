@@ -16,8 +16,8 @@ IMG_OUT_DIR = $(OUT_DIR)
 CFLAGS     = -O2 -Wimplicit-function-declaration -Wunused-but-set-variable -ffreestanding -m32 -c -Wall -Wextra -I$(INCLUDE)
 LDFLAGS    = -m elf_i386
 NFLAGS     = -f bin
-QEMU_FLAGS = -serial stdio -display none -monitor none
-QEMU_SERIAL = -serial file:kernel_console.log -display none
+QEMU_FLAGS = -serial stdio -display none -monitor none -device qemu-xhci,id=xhci
+QEMU_VGA   = -display curses -device qemu-xhci,id=xhci
 CONSOLE    = -display curses
 
 SOURCES    = $(shell find $(SRC_KERNEL) -name "*.c")
@@ -33,7 +33,7 @@ LINKER     = $(SRC_DIR)/kernel.ld
 
 CALC_SCRIPT = $(SRC_BOOT)/config.inc
 
-.PHONY: all run run-console run-serial clean calculate-sectors
+.PHONY: all run run-console run-vga clean calculate-sectors
 .DEFAULT_GOAL := all
 
 calculate-sectors: $(KERNEL)
@@ -77,15 +77,15 @@ $(LITECORE_IMG):
 
 run: $(K_OUT_DIR) $(B_OUT_DIR) $(IMG) $(LITECORE_IMG)
 	make all
-	$(QEMU) $(QEMU_FLAGS) -drive file=$(IMG),format=raw,if=floppy -drive file=$(LITECORE_IMG),format=raw,if=ide
+	$(QEMU) $(QEMU_FLAGS) -drive file=$(IMG),format=raw,if=floppy -drive file=$(LITECORE_IMG),format=raw,if=ide -nographic
 
 run-console: $(K_OUT_DIR) $(B_OUT_DIR) $(IMG) $(LITECORE_IMG)
 	make all
-	$(QEMU) $(CONSOLE) -drive file=$(IMG),format=raw,if=floppy -drive file=$(LITECORE_IMG),format=raw,if=ide
+	$(QEMU) $(CONSOLE) -device qemu-xhci,id=xhci -drive file=$(IMG),format=raw,if=floppy -drive file=$(LITECORE_IMG),format=raw,if=ide
 
-run-serial: $(K_OUT_DIR) $(B_OUT_DIR) $(IMG) $(LITECORE_IMG)
+run-vga: $(K_OUT_DIR) $(B_OUT_DIR) $(IMG) $(LITECORE_IMG)
 	make all
-	$(QEMU) $(QEMU_SERIAL) -drive file=$(IMG),format=raw,if=floppy -drive file=$(LITECORE_IMG),format=raw,if=ide
+	$(QEMU) $(QEMU_VGA) -drive file=$(IMG),format=raw,if=floppy -drive file=$(LITECORE_IMG),format=raw,if=ide
 
 clean:
 	rm -rf $(OUT_DIR)
