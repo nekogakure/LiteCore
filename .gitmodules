@@ -1,3 +1,6 @@
 [submodule "src/newlib"]
 	path = src/newlib
 	url = https://sourceware.org/git/newlib-cygwin.git
+[submodule "uefi"]
+	path = uefi
+	url = https://github.com/tianocore/edk2.git
