@@ -1,4 +1,4 @@
-#include <config.h>
+#include <util/config.h>
 
 /**
  * @fn irq_save

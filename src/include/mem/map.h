@@ -1,7 +1,7 @@
 #ifndef _MEM_MAP_H
 #define _MEM_MAP_H
 
-#include <config.h>
+#include <util/config.h>
 
 // 4KB
 #define FRAME_SIZE 4096

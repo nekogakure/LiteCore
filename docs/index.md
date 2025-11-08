@@ -4,7 +4,7 @@ LiteCoreカーネルのドキュメントの目次
 
 ### カーネルコア
 - [カーネルメイン関数とエントリポイント](./kernel/main)
-- [設定ファイル (config.h)](./config)
+- [設定ファイル (util/config.h)](./config)
 
 ### メモリ管理
 - [メモリ管理概要](./memory)

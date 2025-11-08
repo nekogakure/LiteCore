@@ -1,4 +1,4 @@
-#include <config.h>
+#include <util/config.h>
 #include <stdint.h>
 #include <stddef.h>
 #include <mem/segment.h>

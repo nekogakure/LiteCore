@@ -2,7 +2,7 @@
 
 #ifdef APIC_TIMER_TEST
 
-#include <config.h>
+#include <util/config.h>
 #include <driver/timer/apic.h>
 #include <util/console.h>
 

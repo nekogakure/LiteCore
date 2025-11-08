@@ -98,7 +98,7 @@ All tests completed!
 ### テスト関数の形式
 
 ```c
-#include <config.h>
+#include <util/config.h>
 #include <tests/define.h>
 #include <util/console.h>
 

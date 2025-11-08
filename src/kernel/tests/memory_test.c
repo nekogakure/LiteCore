@@ -2,7 +2,7 @@
 
 #ifdef MEM_TEST
 
-#include <config.h>
+#include <util/config.h>
 #include <mem/manager.h>
 #include <mem/map.h>
 #include <util/console.h>

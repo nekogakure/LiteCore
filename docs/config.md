@@ -1,8 +1,8 @@
 この章では、設定ファイルについて記述します。
-実装されているファイルは[config.h](../../src/include/config.h)です。
+実装されているファイルは[util/config.h](../../src/include/util/config.h)です。
 
 ## 概要
-config.hは、カーネル全体で使用されるグローバル設定と定数を定義するヘッダファイルです。バージョン情報、メモリレイアウト、VGA設定などが含まれます。
+util/config.hは、カーネル全体で使用されるグローバル設定と定数を定義するヘッダファイルです。バージョン情報、メモリレイアウト、VGA設定などが含まれます。
 
 ## 定数 / 定義
 
@@ -22,10 +22,10 @@ config.hは、カーネル全体で使用されるグローバル設定と定数
 
 ## 使用方法
 
-すべてのソースファイルの先頭で`#include <config.h>`をインクルードすることで、これらの設定にアクセスできます。
+すべてのソースファイルの先頭で`#include <util/config.h>`をインクルードすることで、これらの設定にアクセスできます。
 
 ```c
-#include <config.h>
+#include <util/config.h>
 
 void some_function() {
     uint8_t *video = (uint8_t *)VIDEO_MEMORY;

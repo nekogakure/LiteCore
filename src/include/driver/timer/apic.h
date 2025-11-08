@@ -1,7 +1,7 @@
 #ifndef _DRIVER_TIMER_APIC_H
 #define _DRIVER_TIMER_APIC_H
 
-#include <config.h>
+#include <util/config.h>
 #include <stdint.h>
 
 /* APIC レジスタのベースアドレス (デフォルト) */

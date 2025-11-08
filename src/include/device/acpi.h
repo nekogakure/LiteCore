@@ -1,7 +1,7 @@
 #ifndef _DEVICE_ACPI_H
 #define _DEVICE_ACPI_H
 
-#include <config.h>
+#include <util/config.h>
 #include <stdint.h>
 
 /**

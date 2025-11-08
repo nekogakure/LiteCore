@@ -1,7 +1,7 @@
 #ifndef _MEM_MANAGER_H
 #define _MEM_MANAGER_H
 
-#include <config.h>
+#include <util/config.h>
 
 /**
  * @enum mem_type

@@ -1,4 +1,4 @@
-#include <config.h>
+#include <util/config.h>
 #include <util/console.h>
 
 #define MSG_NO_ERROR 0

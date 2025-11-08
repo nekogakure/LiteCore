@@ -1,4 +1,4 @@
-#include <config.h>
+#include <util/config.h>
 #include <util/io.h>
 
 void _write(const char *string) {

@@ -1,4 +1,4 @@
-#include <config.h>
+#include <util/config.h>
 #include <util/io.h>
 #include <util/console.h>
 #include <stdint.h>

@@ -1,4 +1,4 @@
-#include <config.h>
+#include <util/config.h>
 #include <interrupt/irq.h>
 #include <util/io.h>
 

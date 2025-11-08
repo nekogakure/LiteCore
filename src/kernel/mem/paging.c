@@ -1,4 +1,4 @@
-#include <config.h>
+#include <util/config.h>
 #include <stdint.h>
 #include <mem/paging.h>
 #include <mem/map.h>

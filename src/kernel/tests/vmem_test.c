@@ -1,4 +1,4 @@
-#include <config.h>
+#include <util/config.h>
 #include <util/console.h>
 #include <mem/vmem.h>
 #include <mem/map.h>

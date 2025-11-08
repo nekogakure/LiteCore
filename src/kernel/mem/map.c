@@ -3,7 +3,7 @@
  * @brief ビットマップ方式のフレームアロケータ（シンプル実装）
  */
 
-#include <config.h>
+#include <util/config.h>
 #include <mem/map.h>
 #include <util/console.h>
 #include <util/io.h>

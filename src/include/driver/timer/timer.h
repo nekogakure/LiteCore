@@ -1,7 +1,7 @@
 #ifndef _TIMER_H
 #define _TIMER_H
 
-#include <config.h>
+#include <util/config.h>
 
 int kwait(uint32_t us);
 

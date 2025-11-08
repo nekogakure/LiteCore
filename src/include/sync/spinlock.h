@@ -1,7 +1,7 @@
 #ifndef _SYNC_SPINLOCK_H
 #define _SYNC_SPINLOCK_H
 
-#include <config.h>
+#include <util/config.h>
 #include <stdint.h>
 
 typedef struct spinlock {
