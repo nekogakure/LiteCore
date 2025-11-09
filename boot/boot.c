@@ -8,6 +8,8 @@
 #include <Guid/FileInfo.h>
 #include "boot_info.h"
 
+#define _BOOT_MSG
+
 // カーネルエントリーポイントの型定義
 typedef void (*KernelEntry)(BOOT_INFO *BootInfo);
 
@@ -28,8 +30,10 @@ LiteCoreBootManagerMain(IN EFI_HANDLE ImageHandle,
 	BOOT_INFO BootInfo;
 	EFI_GRAPHICS_OUTPUT_PROTOCOL *Gop = NULL;
 
+#ifdef _BOOT_MSG
 	Print(L"### LiteCoreBootManager ###\n");
 	Print(L"Loading kernel...\n");
+#endif
 
 	// LoadedImageプロトコルを取得
 	Status = gBS->HandleProtocol(ImageHandle, &gEfiLoadedImageProtocolGuid,
@@ -66,8 +70,9 @@ LiteCoreBootManagerMain(IN EFI_HANDLE ImageHandle,
 		return Status;
 	}
 
+#ifdef _BOOT_MSG
 	Print(L"Kernel file opened\n");
-
+#endif
 	// ファイルサイズを取得
 	FileInfoSize = 0;
 	Status = KernelFile->GetInfo(KernelFile, &gEfiFileInfoGuid,
@@ -92,8 +97,12 @@ LiteCoreBootManagerMain(IN EFI_HANDLE ImageHandle,
 	}
 
 	KernelSize = (UINTN)FileInfo->FileSize;
+
+#ifdef _BOOT_MSG
 	Print(L"Kernel size: %lu bytes\n", KernelSize);
-	FreePool(FileInfo);
+#endif
+
+        FreePool(FileInfo);
 
 	// カーネルを0x10000番地にロード
 	UINTN KernelPages = (KernelSize + 0xFFF) / 0x1000;
@@ -121,7 +130,9 @@ LiteCoreBootManagerMain(IN EFI_HANDLE ImageHandle,
 		return Status;
 	}
 
+#ifdef _BOOT_MSG
 	Print(L"Kernel loaded at 0x%lx\n", KernelAddress);
+#endif
 
 	// ファイルをクローズ
 	KernelFile->Close(KernelFile);
@@ -147,7 +158,9 @@ LiteCoreBootManagerMain(IN EFI_HANDLE ImageHandle,
 		Print(L"No graphics output available (serial console mode)\n");
 	}
 
+#ifdef _BOOT_MSG
 	Print(L"Exiting boot services...\n");
+#endif
 
 	// ブートサービスを終了
 	UINTN MapKey;

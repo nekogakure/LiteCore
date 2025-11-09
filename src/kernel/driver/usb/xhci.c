@@ -307,12 +307,15 @@ static int xhci_probe_pci_device(uint8_t bus, uint8_t device,
 #endif
 
 	/* ポート状態をチェック */
+	printk("xHCI: Scanning %u ports for devices...\n", hc->max_ports);
 	for (uint32_t port = 1; port <= hc->max_ports; port++) {
 		uint32_t portsc = xhci_get_port_status(hc, port);
+		printk("xHCI: Port %u status: 0x%08x (CCS=%d, PED=%d)\n", 
+		       port, portsc, 
+		       (portsc & XHCI_PORTSC_CCS) ? 1 : 0,
+		       (portsc & XHCI_PORTSC_PED) ? 1 : 0);
 		if (portsc & XHCI_PORTSC_CCS) {
-#ifdef XHCI_DEBUG
 			printk("xHCI: Device detected on port %u at init\n", port);
-#endif
 			xhci_handle_port_status_change(hc, port);
 		}
 	}
@@ -933,14 +936,13 @@ void xhci_handle_port_status_change(struct xhci_hc *hc, uint8_t port) {
 		/* 最初に列挙されたデバイスをキーボードとして扱う（簡易実装） */
 		if (hc->keyboard_slot_id == 0) {
 			hc->keyboard_slot_id = slot_id;
-#ifdef XHCI_DEBUG
 			printk("xHCI: Device on slot %u registered as keyboard\n", slot_id);
-#endif
+		} else {
+			printk("xHCI: Device on slot %u enumerated (keyboard already registered on slot %u)\n", 
+			       slot_id, hc->keyboard_slot_id);
 		}
 
-#ifdef XHCI_DEBUG
 		printk("xHCI: Device enumeration completed on port %u\n", port);
-#endif
 	} else {
 		/* デバイス切断 */
 #ifdef XHCI_DEBUG

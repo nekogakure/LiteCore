@@ -19,14 +19,14 @@ K_OUT_DIR  = $(OUT_DIR)/kernel
 B_OUT_DIR  = $(OUT_DIR)/boot
 IMG_OUT_DIR = $(OUT_DIR)
 
-# Kernel flags (64-bit)
 CFLAGS     = -O2 -Wimplicit-function-declaration -Wunused-but-set-variable -ffreestanding -m64 -c -Wall -Wextra -I$(INCLUDE) -mcmodel=large -mno-red-zone -fno-pic
 LDFLAGS    = -m elf_x86_64 -z max-page-size=0x1000
 
 NFLAGS     = -f bin
 QEMU_FLAGS = -serial stdio -display none -monitor none -device qemu-xhci,id=xhci \
+             -device usb-kbd,bus=xhci.0 \
              -bios /usr/share/ovmf/OVMF.fd -d int -D qemu.log --no-reboot
-QEMU_VGA   = -display curses -device qemu-xhci,id=xhci -bios /usr/share/ovmf/OVMF.fd
+QEMU_VGA   = -display curses -device qemu-xhci,id=xhci -device usb-kbd,bus=xhci.0 -bios /usr/share/ovmf/OVMF.fd
 CONSOLE    = -display curses
 
 SOURCES    = $(shell find $(SRC_KERNEL) -name "*.c")
@@ -49,7 +49,6 @@ all: bootloader kernel $(ESP_IMG) $(EXT2_IMG)
 $(K_OUT_DIR):
 	@mkdir -p $(K_OUT_DIR)
 
-# UEFI Bootloader build with EDK2
 bootloader: $(BOOTX64)
 
 $(BOOTX64): $(SRC_BOOT)/boot.c $(SRC_BOOT)/Boot.inf $(BOOT_PKG)
@@ -59,7 +58,6 @@ $(BOOTX64): $(SRC_BOOT)/boot.c $(SRC_BOOT)/Boot.inf $(BOOT_PKG)
 	@cp $(EDK2_BUILD) $(BOOTX64)
 	@echo "created: $(BOOTX64)"
 
-# Kernel build (64-bit)
 kernel: $(KERNEL)
 
 $(KERNEL_ELF): $(K_OUT_DIR) $(OBJECTS) $(LINKER)
@@ -69,7 +67,6 @@ $(KERNEL): $(KERNEL_ELF)
 	@$(OBJCOPY) -O binary $< $@
 	@echo "Kernel size: $$(wc -c < $@) bytes"
 
-# Kernel object files
 $(K_OUT_DIR)/%.o: $(SRC_KERNEL)/%.c
 	@mkdir -p $(dir $@)
 	@$(CC) $(CFLAGS) -c $< -o $@
@@ -78,7 +75,6 @@ $(K_OUT_DIR)/%.o: $(SRC_KERNEL)/%.asm
 	@mkdir -p $(dir $@)
 	@$(NASM) -f elf64 $< -o $@
 
-# Create ESP (EFI System Partition) image
 $(ESP_IMG): $(BOOTX64) $(KERNEL)
 	@echo "Creating UEFI ESP image..."
 	@rm -f $(ESP_IMG)
@@ -99,9 +95,9 @@ $(EXT2_IMG): $(KERNEL)
 	@cp -r bin/kernel/*.bin bin/fs_tmp/kernel/ 2>/dev/null || true
 	@cp -r bin/kernel/*.elf bin/fs_tmp/kernel/ 2>/dev/null || true
 	@cp -r bin/boot/*.EFI bin/fs_tmp/boot/ 2>/dev/null || true
-	@cp -r bin/LiteCore.img bin/fs_tmp 2>/dev/null || true 
+	@cp -r bin/LiteCore.img bin/fs_tmp 2>/dev/null || true nt/ || true
 	@python3 tools/mk_ext2_image.py $(EXT2_IMG) 2048 bin/fs_tmp
-	@rm -rf bin/fs_tmp
+	@rm -rf bin/fs_tmp/fs_content
 	@echo "ext2 image created: $(EXT2_IMG)"
 
 run: $(ESP_IMG) $(EXT2_IMG)

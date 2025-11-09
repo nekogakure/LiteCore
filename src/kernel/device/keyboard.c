@@ -163,8 +163,8 @@ void keyboard_init(void) {
 #ifdef UEFI_MODE
 	// UEFI環境ではUSBキーボードを優先
 	if (usb_keyboard_init() == 0) {
-		printk("USB Keyboard initialized (primary)\n");
-		printk("PS/2 Keyboard (fallback)\n");
+		// USB初期化成功（メッセージはusb_keyboard.cで出力済み）
+		printk("PS/2 Keyboard available as fallback\n");
 	} else {
 		printk("USB Keyboard not available, using PS/2\n");
 	}
