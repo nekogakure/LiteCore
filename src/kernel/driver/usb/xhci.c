@@ -14,7 +14,7 @@
 #include <mem/manager.h>
 
 /* デバッグ出力を有効化 */
-#define XHCI_DEBUG 1
+//#define XHCI_DEBUG 1
 
 /* グローバルなxHCIコントローラインスタンス */
 static struct xhci_hc g_xhci_controller;
