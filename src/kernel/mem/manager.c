@@ -5,6 +5,7 @@
 #include <util/console.h>
 #include <interrupt/irq.h>
 #include <sync/spinlock.h>
+#include <stdint.h>
 
 // ブロックヘッダは8バイト境界
 typedef struct block_header {
@@ -14,8 +15,8 @@ typedef struct block_header {
 
 // ヒープの先頭とフリーリストのヘッド
 static block_header_t *free_list = NULL;
-static uint32_t heap_start_addr = 0;
-static uint32_t heap_end_addr = 0;
+static uintptr_t heap_start_addr = 0;
+static uintptr_t heap_end_addr = 0;
 static spinlock_t heap_lock = { 0 };
 
 #define ALIGN 8
@@ -41,7 +42,7 @@ void mem_init(uint32_t start, uint32_t end) {
 	heap_end_addr = end;
 
 	// 最初のフリーブロック
-	free_list = (block_header_t *)start;
+	free_list = (block_header_t *)(uintptr_t)start;
 	free_list->size = end - start;
 	free_list->next = NULL;
 #ifdef INIT_MSG
@@ -79,7 +80,7 @@ void *kmalloc(uint32_t size) {
 			if (cur->size >=
 			    total_size + sizeof(block_header_t) + ALIGN) {
 				// 分割可能 -> 残りを新しいフリーブロックにする
-				uint32_t cur_addr = (uint32_t)cur;
+				uintptr_t cur_addr = (uintptr_t)cur;
 				block_header_t *next_block =
 					(block_header_t *)(cur_addr +
 							   total_size);
@@ -104,7 +105,7 @@ void *kmalloc(uint32_t size) {
 			}
 
 			// ユーザ領域はヘッダの直後
-			void *user_ptr = (void *)((uint32_t)cur +
+			void *user_ptr = (void *)((uintptr_t)cur +
 						  sizeof(block_header_t));
 			spin_unlock_irqrestore(&heap_lock, flags);
 			return user_ptr;
@@ -135,10 +136,10 @@ void kfree(void *ptr) {
 
 	// ヘッダはユーザポインタの前にある
 	block_header_t *hdr =
-		(block_header_t *)((uint32_t)ptr - sizeof(block_header_t));
+		(block_header_t *)((uintptr_t)ptr - sizeof(block_header_t));
 
 	// 範囲チェック
-	uint32_t hdr_addr = (uint32_t)hdr;
+	uintptr_t hdr_addr = (uintptr_t)hdr;
 	if (hdr_addr < heap_start_addr ||
 	    hdr_addr + hdr->size > heap_end_addr) {
 		// 範囲外のポインタは無視
@@ -161,8 +162,8 @@ void kfree(void *ptr) {
 
 	block_header_t *cur = free_list;
 	while (cur && cur->next) {
-		uint32_t cur_end = (uint32_t)cur + cur->size;
-		uint32_t next_addr = (uint32_t)cur->next;
+		uintptr_t cur_end = (uintptr_t)cur + cur->size;
+		uintptr_t next_addr = (uintptr_t)cur->next;
 		if (cur_end == next_addr) {
 			// 連続している -> 併合
 			cur->size += cur->next->size;
@@ -237,22 +238,22 @@ void memory_init() {
 
 	extern uint32_t __end;
 	const memmap_t *mm = memmap_get();
-	uint32_t base_end = (uint32_t)&__end;
-	uint32_t bitmap_end = base_end;
+	uintptr_t base_end = (uintptr_t)&__end;
+	uintptr_t bitmap_end = base_end;
 	// mm、mm->bitmap、mm->max_framesが有効か確認
 	if (mm && mm->bitmap && mm->max_frames) {
 		// bitmapはmemmap内でバイト配列として格納されているので、その終了アドレスを計算
 		uint32_t bitmap_bytes = (mm->max_frames + 7) / 8;
-		bitmap_end = (uint32_t)mm->bitmap + bitmap_bytes;
+		bitmap_end = (uintptr_t)mm->bitmap + bitmap_bytes;
 	}
 	// kernelの終了アドレスとbitmapの終了アドレスの大きい方を選択
-	uint32_t heap_start = (base_end > bitmap_end) ? base_end : bitmap_end;
+	uintptr_t heap_start = (base_end > bitmap_end) ? base_end : bitmap_end;
 	// 4KBページ境界に切り上げてアライン
 	heap_start = (heap_start + 0x0FFF) & ~0x0FFF;
 	/* 増やす: ブロックキャッシュなどで大きな動的確保が必要になるためヒープを256KBに拡張 */
-	uint32_t heap_end = heap_start + 0x40000; // 256KBのヒープ領域
-	mem_init(heap_start, heap_end);
-	memmap_reserve(heap_start, heap_end);
+	uintptr_t heap_end = heap_start + 0x40000; // 256KBのヒープ領域
+	mem_init((uint32_t)heap_start, (uint32_t)heap_end);
+	memmap_reserve((uint32_t)heap_start, (uint32_t)heap_end);
 }
 
 /**
@@ -268,7 +269,7 @@ void *stack_alloc(uint32_t size) {
 	void *p = kmalloc(wanted);
 	if (!p)
 		return NULL;
-	return (void *)((uint32_t)p + wanted);
+	return (void *)((uintptr_t)p + wanted);
 }
 
 /**
@@ -282,7 +283,7 @@ void stack_free(void *top, uint32_t size) {
 		return;
 	uint32_t wanted = align_up(size);
 	/* top は p + wanted なので p = top - wanted */
-	uint32_t p = (uint32_t)top - wanted;
+	uintptr_t p = (uintptr_t)top - wanted;
 	kfree((void *)p);
 }
 
