@@ -501,17 +501,21 @@ int xhci_setup_event_ring(struct xhci_hc *hc) {
 	hc->intr_regs = (volatile struct xhci_intr_regs *)
 		((uintptr_t)hc->runtime_regs + 0x20);
 
-	/* ERSTSZ: Event Ring Segment Tableのサイズ */
-	xhci_write32(&hc->intr_regs->erstsz, 1);
+	/* ERSTSZ: Event Ring Segment Tableのサイズ (offset 0x08) */
+	volatile uint32_t *erstsz_ptr = (volatile uint32_t *)((uintptr_t)hc->intr_regs + 0x08);
+	xhci_write32(erstsz_ptr, 1);
 
-	/* ERSTBA: Event Ring Segment Tableのベースアドレス */
-	xhci_write64(&hc->intr_regs->erstba, (uint64_t)(uintptr_t)hc->erst);
+	/* ERSTBA: Event Ring Segment Tableのベースアドレス (offset 0x10) */
+	volatile uint64_t *erstba_ptr = (volatile uint64_t *)((uintptr_t)hc->intr_regs + 0x10);
+	xhci_write64(erstba_ptr, (uint64_t)(uintptr_t)hc->erst);
 
-	/* ERDP: Event Ring Dequeue Pointer (初期値はEvent Ringの先頭) */
-	xhci_write64(&hc->intr_regs->erdp, (uint64_t)(uintptr_t)hc->event_ring);
+	/* ERDP: Event Ring Dequeue Pointer (offset 0x18) */
+	volatile uint64_t *erdp_ptr = (volatile uint64_t *)((uintptr_t)hc->intr_regs + 0x18);
+	xhci_write64(erdp_ptr, (uint64_t)(uintptr_t)hc->event_ring);
 
-	/* IMAN: Interrupt Management (割り込み有効化) */
-	xhci_write32(&hc->intr_regs->iman, XHCI_IMAN_IE | XHCI_IMAN_IP);
+	/* IMAN: Interrupt Management (offset 0x00) */
+	volatile uint32_t *iman_ptr = (volatile uint32_t *)((uintptr_t)hc->intr_regs + 0x00);
+	xhci_write32(iman_ptr, XHCI_IMAN_IE | XHCI_IMAN_IP);
 
 #ifdef XHCI_DEBUG
 	printk("xHCI: Event Ring initialized at 0x%08x%08x\n",
@@ -556,9 +560,10 @@ int xhci_wait_for_event(struct xhci_hc *hc, struct xhci_trb *event_trb, uint32_t
 				hc->event_ring_cycle ^= 1;
 			}
 
-			/* ERDP を更新 */
+			/* ERDP を更新 (offset 0x18) */
 			uint64_t erdp = (uint64_t)(uintptr_t)&hc->event_ring[hc->event_ring_index];
-			xhci_write64(&hc->intr_regs->erdp, erdp | (1 << 3)); /* EHB=1 */
+			volatile uint64_t *erdp_ptr = (volatile uint64_t *)((uintptr_t)hc->intr_regs + 0x18);
+			xhci_write64(erdp_ptr, erdp | (1 << 3)); /* EHB=1 */
 
 			return 0;
 		}

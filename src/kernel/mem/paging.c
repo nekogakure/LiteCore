@@ -80,7 +80,7 @@ int map_page(uint32_t phys, uint32_t virt, uint32_t flags) {
 	}
 
 	pt[pt_idx] = (phys & 0xFFFFF000) | (flags & 0xFFF);
-	invlpg((void *)virt);
+	invlpg((void *)(uintptr_t)virt);
 	return 0;
 }
 
@@ -108,7 +108,7 @@ int unmap_page(uint32_t virt) {
 	if ((pt[pt_idx] & PAGING_PRESENT) == 0)
 		return -1;
 	pt[pt_idx] = 0;
-	invlpg((void *)virt);
+	invlpg((void *)(uintptr_t)virt);
 
 	/* check if the page table became empty -> free it and clear PDE */
 	int empty = 1;

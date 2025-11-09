@@ -101,7 +101,7 @@ void *alloc_frame(void) {
 		if (!bitmap_test(i)) {
 			bitmap_set(i);
 			uint32_t frame_no = memmap.start_frame + i;
-			void *addr = (void *)(frame_no * FRAME_SIZE);
+			void *addr = (void *)(uintptr_t)(frame_no * FRAME_SIZE);
 			if (addr == NULL) {
 				printk("alloc_frame: computed addr is NULL frame_no=%u\n",
 				       (unsigned)frame_no);
@@ -128,10 +128,10 @@ void free_frame(void *addr) {
 		return;
 	}
 
-	uint32_t a = (uint32_t)addr;
+	uintptr_t a = (uintptr_t)addr;
 	if (a % FRAME_SIZE != 0) {
 		// 境界不正
-		printk("MemoryMap: border is invalid: %d", a);
+		printk("MemoryMap: border is invalid: %lx", (unsigned long)a);
 		return;
 	}
 

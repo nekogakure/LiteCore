@@ -149,7 +149,7 @@ int apic_timer_init(void) {
 
 	/* APICベースアドレスを取得 */
 	uint32_t base_addr = get_apic_base();
-	apic_base = (volatile uint32_t *)base_addr;
+	apic_base = (volatile uint32_t *)(uintptr_t)base_addr;
 #ifdef INIT_MSG
 	printk("APIC Timer: Base address = 0x%08x\n", base_addr);
 #endif

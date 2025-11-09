@@ -14,7 +14,7 @@ void paging_test(void) {
 		printk("alloc_frame failed\n");
 		return;
 	}
-	uint32_t phys = (uint32_t)frame;
+	uint32_t phys = (uint32_t)(uintptr_t)frame;
 	printk("allocated phys frame=0x%x\n", (unsigned)phys);
 
 	// アイデンティティ領域の上に未マップと思われる仮想アドレスを選択
@@ -33,7 +33,7 @@ void paging_test(void) {
 	printk("paging enabled\n");
 
 	// 新たにマップした仮想アドレスへアクセス
-	volatile uint32_t *p = (uint32_t *)virt;
+	volatile uint32_t *p = (uint32_t *)(uintptr_t)virt;
 	*p = 0xdeadbeef;
 	uint32_t v = *p;
 	printk("write/read virt 0x%x -> 0x%x\n", (unsigned)virt, (unsigned)v);
@@ -53,7 +53,7 @@ void paging_test(void) {
 	}
 	printk("remapped phys 0x%x -> virt 0x%x\n", (unsigned)phys,
 	       (unsigned)virt2);
-	volatile uint32_t *p2 = (uint32_t *)virt2;
+	volatile uint32_t *p2 = (uint32_t *)(uintptr_t)virt2;
 	uint32_t v2 =
 		*p2; // キャッシュが一貫していれば前回の書き込みが反映されているはず
 	printk("read virt2 0x%x -> 0x%x\n", (unsigned)virt2, (unsigned)v2);
