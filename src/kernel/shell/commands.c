@@ -197,7 +197,6 @@ void list_commands(void) {
  */
 void init_commands(void) {
 	command_count = 0;
-	printk("Command system initialized\n");
 }
 
 // 組み込みコマンドの実装
