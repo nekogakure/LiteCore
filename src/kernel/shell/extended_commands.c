@@ -1,6 +1,7 @@
 #include <shell/commands.h>
 #include <util/console.h>
 #include <mem/manager.h>
+#include <mem/map.h>
 #include <fs/ext/ext2.h>
 #include <driver/timer/apic.h>
 #include <device/pci.h>
@@ -22,9 +23,41 @@ static int cmd_mem(int argc, char **argv) {
 	(void)argc;
 	(void)argv;
 
-	// TODO: メモリマネージャーから統計情報を取得
 	printk("Memory information:\n");
-	printk("  (Memory statistics not yet implemented)\n");
+
+	const memmap_t *mm = memmap_get();
+	if (!mm || mm->frames == 0) {
+		printk("Physical frame map: not initialized\n");
+	} else {
+		uint32_t total_frames = mm->frames;
+		uint32_t used_frames = 0;
+		for (uint32_t i = 0; i < total_frames; ++i) {
+			uint32_t word = mm->bitmap[i / 32];
+			uint32_t bit = (word >> (i % 32)) & 1u;
+			if (bit)
+				used_frames++;
+		}
+		uint32_t free_frames = total_frames - used_frames;
+
+		uint32_t total_bytes = total_frames * FRAME_SIZE;
+		uint32_t used_bytes = used_frames * FRAME_SIZE;
+		uint32_t free_bytes = free_frames * FRAME_SIZE;
+
+		printk("Physical frames: total=%u (%.2fMB) used=%u (%.2fMB) free=%u (%.2fMB)\n",
+			   total_frames, (double)total_bytes / (1024.0 * 1024.0),
+			   used_frames, (double)used_bytes / (1024.0 * 1024.0),
+			   free_frames, (double)free_bytes / (1024.0 * 1024.0));
+	}
+
+	/* Heap statistics */
+	uint32_t heap_total = heap_total_bytes();
+	uint32_t heap_free = heap_free_bytes();
+	uint32_t heap_largest = heap_largest_free_block();
+
+	printk("total=%u bytes (%.2fKB) free=%u bytes (%.2fKB) largest_free=%u bytes\n",
+		   heap_total, (double)heap_total / 1024.0,
+		   heap_free, (double)heap_free / 1024.0,
+		   heap_largest);
 
 	return 0;
 }

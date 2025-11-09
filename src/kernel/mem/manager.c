@@ -285,3 +285,45 @@ void stack_free(void *top, uint32_t size) {
 	uint32_t p = (uint32_t)top - wanted;
 	kfree((void *)p);
 }
+
+/* Heap statistics helpers (外部から利用可能にする) */
+uint32_t heap_total_bytes(void) {
+	if (heap_end_addr > heap_start_addr) {
+		return heap_end_addr - heap_start_addr;
+	}
+	return 0;
+}
+
+uint32_t heap_free_bytes(void) {
+	uint32_t total_free = 0;
+	uint32_t flags = 0;
+	spin_lock_irqsave(&heap_lock, &flags);
+	block_header_t *cur = free_list;
+	while (cur) {
+		uint32_t user_bytes = 0;
+		if (cur->size > sizeof(block_header_t)) {
+			user_bytes = cur->size - sizeof(block_header_t);
+		}
+		total_free += user_bytes;
+		cur = cur->next;
+	}
+	spin_unlock_irqrestore(&heap_lock, flags);
+	return total_free;
+}
+
+uint32_t heap_largest_free_block(void) {
+	uint32_t largest = 0;
+	uint32_t flags = 0;
+	spin_lock_irqsave(&heap_lock, &flags);
+	block_header_t *cur = free_list;
+	while (cur) {
+		if (cur->size > sizeof(block_header_t)) {
+			uint32_t user_bytes = cur->size - sizeof(block_header_t);
+			if (user_bytes > largest)
+				largest = user_bytes;
+		}
+		cur = cur->next;
+	}
+	spin_unlock_irqrestore(&heap_lock, flags);
+	return largest;
+}

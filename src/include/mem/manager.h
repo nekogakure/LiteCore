@@ -26,4 +26,9 @@ void *stack_alloc(uint32_t size);
  */
 void stack_free(void *top, uint32_t size);
 
+/* ヒープ統計取得API */
+uint32_t heap_total_bytes(void);
+uint32_t heap_free_bytes(void);
+uint32_t heap_largest_free_block(void);
+
 #endif /* _MEM_MANAGER_H */
