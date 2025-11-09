@@ -45,12 +45,26 @@ void xhci_test() {
 					printk("  BAR0 = 0x%x\n", bar0);
 
 					if ((bar0 & 0x1) == 0) { // Memory Space
-						uint32_t base_addr = bar0 &
-								     0xFFFFFFF0;
-						printk("  MMIO Base Address = 0x%x\n",
-						       base_addr);
+						uintptr_t base_addr;
+						
+					/* 64-bit BARかチェック（bits 2:1 = 10b） */
+					if ((bar0 & 0x6) == 0x4) {
+						/* 64-bit BAR: BAR0とBAR1を合わせて読む */
+						uint32_t bar1 = pci_read_config_dword(
+							bus, dev, func, 0x14);
+						uint64_t bar64 = ((uint64_t)bar1 << 32) | (bar0 & 0xFFFFFFF0);
+						base_addr = (uintptr_t)bar64;
+						printk("  64-bit BAR: BAR1 = 0x%x, Address = 0x%08x%08x\n",
+						       bar1, (uint32_t)(base_addr >> 32), (uint32_t)(base_addr & 0xFFFFFFFF));
+					} else {
+						/* 32-bit BAR */
+						base_addr = bar0 & 0xFFFFFFF0;
+						printk("  32-bit BAR: Address = 0x%x\n",
+						       (uint32_t)base_addr);
+					}
 
-						/* Capabilityレジスタを読み取る */
+					printk("  MMIO Base Address = 0x%08x%08x\n",
+					       (uint32_t)(base_addr >> 32), (uint32_t)(base_addr & 0xFFFFFFFF));						/* Capabilityレジスタを読み取る */
 						volatile struct xhci_cap_regs
 							*cap_regs =
 								(volatile struct xhci_cap_regs

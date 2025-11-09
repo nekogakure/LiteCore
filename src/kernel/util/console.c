@@ -343,6 +343,32 @@ int printk(const char *fmt, ...) {
 				for (k = n - 1;
 				     k >= 0 && j < (int)sizeof(buffer) - 1; k--)
 					buffer[j++] = numbuf[k];
+			} else if (spec == 'l' && (fmt[i + 1] == 'x' || fmt[i + 1] == 'X')) {
+				i++;
+				uint64_t val = va_arg(args, uint64_t);
+				char numbuf[32];
+				int n = 0, k = 0;
+				const char *hex = (fmt[i] == 'x') ?
+							  "0123456789abcdef" :
+							  "0123456789ABCDEF";
+				if (val == 0) {
+					numbuf[n++] = '0';
+				} else {
+					while (val && n < (int)sizeof(numbuf)) {
+						numbuf[n++] = hex[val & 0xF];
+						val >>= 4;
+					}
+				}
+				if (width > n) {
+					int pad = width - n;
+					while (pad-- > 0 &&
+					       j < (int)sizeof(buffer) - 1)
+						buffer[j++] = pad_zero ? '0' :
+									 ' ';
+				}
+				for (k = n - 1;
+				     k >= 0 && j < (int)sizeof(buffer) - 1; k--)
+					buffer[j++] = numbuf[k];
 			} else if (spec == 'x' || spec == 'X') {
 				unsigned int val = va_arg(args, unsigned int);
 				char numbuf[32];

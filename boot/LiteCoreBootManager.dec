@@ -1,0 +1,5 @@
+[Defines]
+  DEC_SPECIFICATION              = 0x00010005
+  PACKAGE_NAME                   = LiteCoreBootManager
+  PACKAGE_GUID                   = 3b853a5e-c8cc-48d5-add3-4b83aba28beb
+  PACKAGE_VERSION                = 0.1

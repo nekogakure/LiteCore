@@ -5,6 +5,10 @@
 #include <stdbool.h>
 #include <interrupt/irq.h>
 
+#ifdef UEFI_MODE
+#include <driver/usb/usb_keyboard.h>
+#endif
+
 #define KEY_BUFFER_SIZE 256
 static char key_buffer[KEY_BUFFER_SIZE];
 static volatile int buffer_read_pos = 0;
@@ -47,8 +51,8 @@ static const char scancode_map_shift[128] = {
 	'B', 'N', 'M',	'<',  '>',  '?', 0,   '*', 0,	' ',
 };
 
-/* 上位16bit: IRQ番号, 下位16bit: scancodewoエンコードしてraiseする */
-#define KBD_EVENT(irq, sc) (((irq) << 16) | ((sc) & 0xFFFF))
+/* 上位16bit: ベクタ番号, 下位16bit: scancodeをエンコードしてraiseする */
+#define KBD_EVENT(vec, sc) (((vec) << 16) | ((sc) & 0xFFFF))
 
 /* IRQ1のISR: scancodeを読み取ってイベントをenqueueするだけ */
 static void kbd_isr(uint32_t unused, void *ctx) {
@@ -60,8 +64,8 @@ static void kbd_isr(uint32_t unused, void *ctx) {
 	uint8_t sc = inb(KBD_DATA_PORT);
 	if (sc == 0)
 		return;
-	/* IRQ 1 */
-	interrupt_raise(KBD_EVENT(1, sc));
+	/* IRQ 1 = ベクタ 33 */
+	interrupt_raise(KBD_EVENT(33, sc));
 }
 
 /* 実際にscancodeを処理して表示するハンドラ */
@@ -156,14 +160,36 @@ static void kbd_process(uint32_t sc_payload, void *ctx) {
  * @brief キーボードドライバを初期化
  */
 void keyboard_init(void) {
+#ifdef UEFI_MODE
+	// UEFI環境ではUSBキーボードを優先
+	if (usb_keyboard_init() == 0) {
+		printk("USB Keyboard initialized (primary)\n");
+		printk("PS/2 Keyboard (fallback)\n");
+	} else {
+		printk("USB Keyboard not available, using PS/2\n");
+	}
+#endif
+
 	// 同期側の処理ハンドラを登録 (FIFOイベントの処理)
-	interrupt_register(1, kbd_process, NULL);
+	// IRQ 1 = ベクタ 33
+	interrupt_register(33, kbd_process, NULL);
 #ifdef INIT_MSG
 	printk("Keyboard initialize success\n");
 #endif
 }
 
 void keyboard_poll(void) {
+#ifdef UEFI_MODE
+	// USBキーボードを優先してポーリング
+	if (usb_keyboard_available()) {
+		char c;
+		while ((c = usb_keyboard_getc()) != 0) {
+			buffer_put(c);
+		}
+	}
+#endif
+
+	// PS/2キーボードをポーリング
 	kbd_isr(0, NULL);
 
 	// シリアル入力もポーリング

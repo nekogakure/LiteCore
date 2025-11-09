@@ -13,14 +13,24 @@ gdt_install_lgdt:
 
 ; jump + reload data segments
 gdt_install_jump:
-        ; In 64-bit mode, use a simple approach
-        ; Load data segments with selector 0x10
+        ; Reload data segments with selector 0x10 (kernel data)
         mov ax, 0x10
         mov ds, ax
         mov es, ax
         mov fs, ax
         mov gs, ax
         mov ss, ax
+        
+        ; Reload CS with selector 0x08 (kernel code) using far return
+        ; Push new CS selector
+        push 0x08
+        ; Push return address (next instruction)
+        lea rax, [rel .reload_cs]
+        push rax
+        ; Perform far return to reload CS
+        retfq
+        
+.reload_cs:
         ret
 
 ; default wrapper: perform lgdt and then reload segments

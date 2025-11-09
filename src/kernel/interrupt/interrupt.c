@@ -55,8 +55,8 @@ static inline int fifo_pop(fifo_t *f, uint32_t *out) {
 
 /**
  * @fn interrupt_register
- * @brief IRQ 番号に対してハンドラを登録する（簡易）
- * @param irq 0..(MAX_IRQS-1)
+ * @brief ベクタ番号に対してハンドラを登録する（簡易）
+ * @param irq ベクタ番号 0..(MAX_IRQS-1)
  * @param handler ハンドラ関数
  * @param ctx ハンドラに渡すコンテキストポインタ
  * @return 0=成功, -1=範囲外
@@ -103,6 +103,7 @@ int interrupt_unregister(uint32_t irq) {
 /**
  * @fn interrupt_raise
  * @brief 割り込みイベントを FIFO に入れる（割り込みハンドラから呼べる）
+ * @param event 上位16bit: ベクタ番号, 下位16bit: payload
  */
 int interrupt_raise(uint32_t event) {
 	// 割り込み中でも呼べるように短時間だけ割り込みを無効化してpush
@@ -133,19 +134,22 @@ int interrupt_dispatch_one(void) {
 	}
 	irq_restore(flags);
 
-	/* evt のレイアウト: 上位16bit = irq番号, 下位16bit = payload */
-	uint32_t irq = (evt >> 16) & 0xFFFF;
+	/* evt のレイアウト: 上位16bit = ベクタ番号, 下位16bit = payload */
+	uint32_t vec = (evt >> 16) & 0xFFFF;
 	uint32_t payload = evt & 0xFFFF;
 
-	if (irq < MAX_IRQS && irq_count[irq] > 0) {
-		for (uint32_t i = 0; i < irq_count[irq]; ++i) {
-			if (irq_table[irq][i]) {
-				irq_table[irq][i](payload, irq_ctx[irq][i]);
+	if (vec < MAX_IRQS && irq_count[vec] > 0) {
+		for (uint32_t i = 0; i < irq_count[vec]; ++i) {
+			if (irq_table[vec][i]) {
+				// ハンドラに渡す第1引数はpayload（キーボードの場合はscancode等）
+				// ベクタ番号はハンドラが必要なら ctx 経由で渡す
+				irq_table[vec][i](payload, irq_ctx[vec][i]);
 			}
 		}
 	} else {
-		printk("Unhandled IRQ event: irq=%u payload=%u\n",
-		       (unsigned)irq, (unsigned)payload);
+		// デバッグ出力は最小限に（大量の未処理割り込みでログが埋まるのを防ぐ）
+		// printk("Unhandled IRQ event: vec=%u payload=%u\n",
+		//        (unsigned)vec, (unsigned)payload);
 	}
 	return 1;
 }

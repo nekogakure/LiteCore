@@ -1,0 +1,28 @@
+[Defines]
+  INF_VERSION                    = 0x00010006
+  BASE_NAME                      = LiteCoreBootManager
+  FILE_GUID                      = 9b957fd6-a546-4faf-88da-3bf93131c271
+  MODULE_TYPE                    = UEFI_APPLICATION
+  VERSION_STRING                 = 0.1
+  ENTRY_POINT                    = LiteCoreBootManagerMain
+
+[Sources]
+  boot.c
+  boot_info.h
+
+[Packages]
+  MdePkg/MdePkg.dec
+
+[LibraryClasses]
+  UefiLib
+  UefiApplicationEntryPoint
+  MemoryAllocationLib
+  UefiBootServicesTableLib
+
+[Protocols]
+  gEfiSimpleFileSystemProtocolGuid
+  gEfiLoadedImageProtocolGuid
+  gEfiGraphicsOutputProtocolGuid
+
+[Guids]
+  gEfiFileInfoGuid

@@ -40,18 +40,20 @@ static void pic_remap(void) {
 
 extern void load_idt(void *ptr, unsigned size);
 
-/* Minimal IDT entry struct */
+/* 64-bit IDT entry struct (16 bytes) */
 struct idt_entry {
-	uint16_t base_lo;
-	uint16_t sel;
-	uint8_t always0;
-	uint8_t flags;
-	uint16_t base_hi;
+	uint16_t base_lo;    // Offset bits 0-15
+	uint16_t sel;        // Segment selector
+	uint8_t ist;         // Interrupt Stack Table (usually 0)
+	uint8_t flags;       // Type and DPL
+	uint16_t base_mid;   // Offset bits 16-31
+	uint32_t base_hi;    // Offset bits 32-63
+	uint32_t reserved;   // Reserved (must be 0)
 } __attribute__((packed));
 
 struct idt_ptr {
 	uint16_t limit;
-	uint32_t base;
+	uint64_t base;       // 64-bit base address
 } __attribute__((packed));
 
 extern void isr_stub_table(void); /* assembly stubs */
@@ -61,12 +63,14 @@ extern void isr14(void);
 static struct idt_entry idt[IDT_ENTRIES];
 static struct idt_ptr idtp;
 
-static void idt_set_gate(int n, uint32_t handler) {
+static void idt_set_gate(int n, uint64_t handler) {
 	idt[n].base_lo = handler & 0xFFFF;
-	idt[n].sel = 0x08; // code segment
-	idt[n].always0 = 0;
-	idt[n].flags = 0x8E;
-	idt[n].base_hi = (handler >> 16) & 0xFFFF;
+	idt[n].sel = 0x08; // code segment (was 0x38 in 64-bit, but 0x08 is standard)
+	idt[n].ist = 0;    // No separate interrupt stack
+	idt[n].flags = 0x8E; // Present, DPL=0, Type=Interrupt Gate
+	idt[n].base_mid = (handler >> 16) & 0xFFFF;
+	idt[n].base_hi = (handler >> 32) & 0xFFFFFFFF;
+	idt[n].reserved = 0;
 }
 
 /**
@@ -76,7 +80,8 @@ static void idt_set_gate(int n, uint32_t handler) {
 void irq_handler_c(uint32_t vec) {
 	if (vec >= 32 && vec < 32 + 16) {
 		uint32_t irq = vec - 32;
-		interrupt_raise((irq << 16) | 0u);
+		// ベクタ番号をそのまま渡す（interrupt_registerもベクタ番号で登録される）
+		interrupt_raise((vec << 16) | 0u);
 
 		if (irq >= 8)
 			outb(PIC2_COMMAND, 0x20);
@@ -143,26 +148,26 @@ void idt_init(void) {
 	extern void isr47(void);
 	extern void isr48(void);
 
-	idt_set_gate(14, (uint32_t)isr14); /* page fault */
-	idt_set_gate(32, (uint32_t)isr32);
-	idt_set_gate(33, (uint32_t)isr33);
-	idt_set_gate(34, (uint32_t)isr34);
-	idt_set_gate(35, (uint32_t)isr35);
-	idt_set_gate(36, (uint32_t)isr36);
-	idt_set_gate(37, (uint32_t)isr37);
-	idt_set_gate(38, (uint32_t)isr38);
-	idt_set_gate(39, (uint32_t)isr39);
-	idt_set_gate(40, (uint32_t)isr40);
-	idt_set_gate(41, (uint32_t)isr41);
-	idt_set_gate(42, (uint32_t)isr42);
-	idt_set_gate(43, (uint32_t)isr43);
-	idt_set_gate(44, (uint32_t)isr44);
-	idt_set_gate(45, (uint32_t)isr45);
-	idt_set_gate(46, (uint32_t)isr46);
-	idt_set_gate(47, (uint32_t)isr47);
-	idt_set_gate(48, (uint32_t)isr48); /* APIC Timer */
+	idt_set_gate(14, (uint64_t)isr14); /* page fault */
+	idt_set_gate(32, (uint64_t)isr32);
+	idt_set_gate(33, (uint64_t)isr33);
+	idt_set_gate(34, (uint64_t)isr34);
+	idt_set_gate(35, (uint64_t)isr35);
+	idt_set_gate(36, (uint64_t)isr36);
+	idt_set_gate(37, (uint64_t)isr37);
+	idt_set_gate(38, (uint64_t)isr38);
+	idt_set_gate(39, (uint64_t)isr39);
+	idt_set_gate(40, (uint64_t)isr40);
+	idt_set_gate(41, (uint64_t)isr41);
+	idt_set_gate(42, (uint64_t)isr42);
+	idt_set_gate(43, (uint64_t)isr43);
+	idt_set_gate(44, (uint64_t)isr44);
+	idt_set_gate(45, (uint64_t)isr45);
+	idt_set_gate(46, (uint64_t)isr46);
+	idt_set_gate(47, (uint64_t)isr47);
+	idt_set_gate(48, (uint64_t)isr48); /* APIC Timer */
 
 	idtp.limit = sizeof(struct idt_entry) * IDT_ENTRIES - 1;
-	idtp.base = (uint32_t)&idt;
+	idtp.base = (uint64_t)&idt;
 	load_idt(&idtp, sizeof(idtp));
 }

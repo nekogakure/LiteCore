@@ -1,13 +1,18 @@
 #include <driver/timer/apic.h>
+#include <driver/timer/uefi_timer.h>
 #include <interrupt/irq.h>
 #include <util/console.h>
 
 /**
  * @brief 指定されたマイクロ秒だけ待つ
  * @param us 待機時間（マイクロ秒）
- * @return 0 成功, -1 APICタイマー未初期化
+ * @return 0 成功, -1 タイマー未初期化
  */
 int kwait(uint32_t us) {
+#ifdef UEFI_MODE
+	uefi_wait_us(us);
+	return 0;
+#else
 	if (!apic_timer_available()) {
 		return -1;
 	}
@@ -20,4 +25,5 @@ int kwait(uint32_t us) {
 	}
 
 	return 0;
+#endif
 }

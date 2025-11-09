@@ -5,8 +5,11 @@
 
 #define VERSION "0.1"
 
+// UEFI環境でのビルド
+#define UEFI_MODE
+
 // 初期化メッセージを表示するかどうか
-//#define INIT_MSG
+#define INIT_MSG
 
 #ifndef NULL
 #define NULL ((void *)0)

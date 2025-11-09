@@ -2,7 +2,6 @@
 #include <util/console.h>
 #include <device/pci.h>
 #include <device/keyboard.h>
-#include <driver/timer/apic.h>
 #include <interrupt/irq.h>
 #include <interrupt/idt.h>
 #include <shell/shell.h>
@@ -13,9 +12,14 @@
 #include <mem/manager.h>
 #include <mem/segment.h>
 #include <driver/ata.h>
-#include <driver/timer/apic.h>
 #include <fs/ext/ext2.h>
 #include <fs/block_cache.h>
+
+#ifdef UEFI_MODE
+#include <driver/timer/uefi_timer.h>
+#else
+#include <driver/timer/apic.h>
+#endif
 
 extern struct ext2_super *g_ext2_sb;
 
@@ -40,9 +44,6 @@ void kernel_init() {
 	printk("ok\n");
 #endif
 
-	// タイマー割り込み（IRQ 0）を登録
-	interrupt_register(0, timer_handler, NULL);
-
 #ifdef INIT_MSG
 	new_line();
 	printk("> DEVICE INIT\n");
@@ -53,23 +54,30 @@ void kernel_init() {
 #endif
 
 #ifdef INIT_MSG
-	// APIC Timer初期化
 	new_line();
-	printk("> APIC TIMER INIT\n");
+	printk("> TIMER INIT\n");
 #endif
 
-	// タイマー割り込みハンドラを登録 (IRQ 48)
+#ifdef UEFI_MODE
+	// UEFI環境ではPITタイマーを使用
+	int timer_result = uefi_timer_init();
+	if (timer_result != 0) {
+		printk("UEFI Timer initialization failed\n");
+	}
+	// タイマー割り込み（IRQ 0）を登録
+	interrupt_register(32, uefi_timer_tick, NULL);
+#else
+	// レガシーBIOS環境ではAPIC Timerを使用
 	interrupt_register(48, apic_timer_tick, NULL);
-	int apic_result = apic_timer_init();
-	if (apic_result != 0) {
+	int timer_result = apic_timer_init();
+	if (timer_result != 0) {
 		printk("APIC Timer initialization failed\n");
 	}
+#endif
+
 #ifdef INIT_MSG
 	printk("ok\n");
 #endif
-
-	// 割り込みを有効化
-	__asm__ volatile("sti");
 
 #ifdef INIT_MSG
 	new_line();
@@ -85,7 +93,7 @@ void kernel_init() {
 #endif
 
 		// ブロックキャッシュを初期化 (drive=1, block_size=4096, num_entries=32)
-		struct block_cache *cache = block_cache_init(0, 4096, 32);
+		struct block_cache *cache = block_cache_init(1, 4096, 32);
 		if (cache == NULL) {
 			printk("Error: Failed to initialize block cache\n");
 		} else {

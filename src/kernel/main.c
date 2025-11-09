@@ -15,6 +15,7 @@
 #include <driver/ata.h>
 #include <fs/ext/ext2.h>
 #include <driver/timer/timer.h>
+#include <boot_info.h>
 
 #include <tests/define.h>
 #include <tests/run.h>
@@ -24,14 +25,20 @@ void kloop();
 // グローバルext2ハンドル
 struct ext2_super *g_ext2_sb = NULL;
 
+// グローバルブート情報
+static BOOT_INFO *g_boot_info = NULL;
+
 /**
  * @fn kmain
  * @brief LiteCoreのメイン関数（kernel_entryより）
  */
-void kmain() {
+void kmain(BOOT_INFO *boot_info) {
+	g_boot_info = boot_info;
+
 	console_init();
 	gdt_build();
 	gdt_install_lgdt();
+	gdt_install_jump();  // セグメントレジスタの更新も実行
 
 	printk("Welcome to Litecore kernel!\n");
 	printk("    Version : %s\n", VERSION);
@@ -56,6 +63,8 @@ void kmain() {
 	printk("initializing shell...\n");
 
 	init_full_shell();
+
+	__asm__ volatile("sti");
 
 	while (1) {
 		kloop();
@@ -86,6 +95,4 @@ void kloop() {
 	if (!activity) {
 		cpu_halt();
 	}
-
-	// TODO: もっといい感じの処理にしなければならないなと思った
 }
