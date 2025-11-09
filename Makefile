@@ -76,6 +76,7 @@ $(K_OUT_DIR)/%.o: $(SRC_KERNEL)/%.asm
 	@$(NASM) -f elf64 $< -o $@
 
 $(ESP_IMG): $(BOOTX64) $(KERNEL)
+	@rm -f $(ESP_IMG)
 	@echo "Creating UEFI ESP image..."
 	@rm -f $(ESP_IMG)
 	@dd if=/dev/zero of=$(ESP_IMG) bs=1M count=64 2>/dev/null
@@ -90,13 +91,11 @@ $(ESP_IMG): $(BOOTX64) $(KERNEL)
 	@echo "ESP image created: $(ESP_IMG)"
 
 $(EXT2_IMG): $(KERNEL)
+	@rm -f $(EXT2_IMG)
 	@echo "Creating ext2 filesystem image..."
 	@mkdir -p bin/fs_tmp
-	@cp -r bin/kernel/*.bin bin/fs_tmp/kernel/ 2>/dev/null || true
-	@cp -r bin/kernel/*.elf bin/fs_tmp/kernel/ 2>/dev/null || true
-	@cp -r bin/boot/*.EFI bin/fs_tmp/boot/ 2>/dev/null || true
-	@cp -r bin/LiteCore.img bin/fs_tmp 2>/dev/null || true nt/ || true
-	@python3 tools/mk_ext2_image.py $(EXT2_IMG) 2048 bin/fs_tmp
+	@find bin -type f -not -name "*.o" -not -name "fs.img" -not -path "*/fs_tmp/*" -exec bash -c 'dest="bin/fs_tmp/$${1#bin/}"; mkdir -p "$$(dirname "$$dest")"; cp "$$1" "$$dest"' _ {} \;
+	@python3 tools/mk_ext2_image.py $(EXT2_IMG) 256000 bin/fs_tmp
 	@rm -rf bin/fs_tmp/fs_content
 	@echo "ext2 image created: $(EXT2_IMG)"
 
