@@ -3,6 +3,7 @@
 #include <mem/manager.h>
 #include <fs/ext/ext2.h>
 #include <driver/timer/apic.h>
+#include <device/pci.h>
 #include <stdint.h>
 
 // 外部宣言: main.cで定義されているグローバル変数
@@ -297,6 +298,162 @@ const char *get_current_directory(void) {
 }
 
 /**
+ * @brief PCIクラスコードから説明文字列を取得
+ */
+static const char *pci_get_class_name(uint8_t base_class, uint8_t sub_class) {
+	switch (base_class) {
+	case 0x00:
+		return "Unclassified";
+	case 0x01:
+		switch (sub_class) {
+		case 0x01: return "IDE Controller";
+		case 0x05: return "ATA Controller";
+		case 0x06: return "SATA Controller";
+		case 0x08: return "NVME Controller";
+		default: return "Mass Storage Controller";
+		}
+	case 0x02:
+		return "Network Controller";
+	case 0x03:
+		switch (sub_class) {
+		case 0x00: return "VGA Controller";
+		case 0x01: return "XGA Controller";
+		default: return "Display Controller";
+		}
+	case 0x04:
+		return "Multimedia Controller";
+	case 0x05:
+		return "Memory Controller";
+	case 0x06:
+		switch (sub_class) {
+		case 0x00: return "Host Bridge";
+		case 0x01: return "ISA Bridge";
+		case 0x04: return "PCI-to-PCI Bridge";
+		default: return "Bridge Device";
+		}
+	case 0x07:
+		return "Communication Controller";
+	case 0x08:
+		return "System Peripheral";
+	case 0x09:
+		return "Input Device";
+	case 0x0A:
+		return "Docking Station";
+	case 0x0B:
+		return "Processor";
+	case 0x0C:
+		switch (sub_class) {
+		case 0x00: return "FireWire Controller";
+		case 0x03: return "USB Controller";
+		default: return "Serial Bus Controller";
+		}
+	case 0x0D:
+		return "Wireless Controller";
+	case 0x0E:
+		return "Intelligent I/O Controller";
+	case 0x0F:
+		return "Satellite Controller";
+	case 0x10:
+		return "Encryption/Decryption Controller";
+	case 0x11:
+		return "Data Acquisition Controller";
+	default:
+		return "Unknown Device";
+	}
+}
+
+/**
+ * @brief ベンダーIDから名前を取得（主要なベンダーのみ）
+ */
+static const char *pci_get_vendor_name(uint16_t vendor_id) {
+	switch (vendor_id) {
+	case 0x8086: return "Intel";
+	case 0x1234: return "QEMU";
+	case 0x1b36: return "Red Hat";
+	case 0x1022: return "AMD";
+	case 0x10de: return "NVIDIA";
+	case 0x1002: return "ATI/AMD";
+	default: return "Unknown";
+	}
+}
+
+/**
+ * @brief devicesコマンド - 接続されているデバイス一覧を表示
+ */
+static int cmd_devices(int argc, char **argv) {
+	int verbose = 0;
+	
+	// -v オプションで詳細表示
+	if (argc > 1 && argv[1][0] == '-' && argv[1][1] == 'v') {
+		verbose = 1;
+	}
+
+	printk("Scanning PCI devices...\n");
+	printk("================================================================================\n");
+	if (verbose) {
+		printk("Bus:Dev.Fn  Vendor:Device  Class  Description\n");
+	} else {
+		printk("Bus  Dev  Func  Vendor  Device  Class  Description\n");
+	}
+	printk("================================================================================\n");
+
+	int device_count = 0;
+
+	for (uint16_t bus = 0; bus < 256; ++bus) {
+		for (uint8_t device = 0; device < 32; ++device) {
+			for (uint8_t func = 0; func < 8; ++func) {
+				uint32_t data = pci_read_config_dword(
+					(uint8_t)bus, device, func, 0);
+				uint16_t vendor = (uint16_t)(data & 0xFFFF);
+				if (vendor == 0xFFFF) {
+					continue; // デバイスなし
+				}
+
+				uint16_t device_id =
+					(uint16_t)((data >> 16) & 0xFFFF);
+				uint32_t class_rev = pci_read_config_dword(
+					(uint8_t)bus, device, func, 0x08);
+				uint8_t base_class = (class_rev >> 24) & 0xFF;
+				uint8_t sub_class = (class_rev >> 16) & 0xFF;
+
+				const char *class_name = pci_get_class_name(base_class, sub_class);
+
+				if (verbose) {
+					const char *vendor_name = pci_get_vendor_name(vendor);
+					printk("%02x:%02x.%x     %s [%04x:%04x]  0x%02x   %s\n",
+					       bus, device, func, vendor_name,
+					       vendor, device_id, base_class, class_name);
+				} else {
+					printk("%3d  %3d  %4d  0x%04x  0x%04x  0x%02x   %s\n",
+					       bus, device, func, vendor, device_id,
+					       base_class, class_name);
+				}
+
+				device_count++;
+
+				// マルチファンクションデバイスでなければ funcループを抜ける
+				if (func == 0) {
+					uint32_t hdr0 = pci_read_config_dword(
+						(uint8_t)bus, device, func,
+						0x0C);
+					if (((hdr0 >> 16) & 0x80) == 0) {
+						break; // single function device
+					}
+				}
+			}
+		}
+	}
+
+	printk("================================================================================\n");
+	printk("Total devices found: %d\n", device_count);
+	if (!verbose) {
+		printk("Tip: Use 'devices -v' for verbose output\n");
+	}
+
+	return 0;
+}
+
+/**
  * @brief 拡張コマンドを登録
  */
 void register_extended_commands(void) {
@@ -307,4 +464,5 @@ void register_extended_commands(void) {
 	register_command("uptime", "Display system uptime", cmd_uptime);
 	register_command("cd", "Change directory", cmd_change_dir);
 	register_command("pwd", "Print working directory", cmd_pwd);
+	register_command("devices", "List connected devices", cmd_devices);
 }

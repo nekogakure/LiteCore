@@ -95,12 +95,13 @@ $(ESP_IMG): $(BOOTX64) $(KERNEL)
 
 $(EXT2_IMG): $(KERNEL)
 	@echo "Creating ext2 filesystem image..."
-	@mkdir -p bin/fs_content
-	@cp -r bin/kernel/*.bin bin/fs_content/ 2>/dev/null || true
-	@cp -r bin/kernel/*.elf bin/fs_content/ 2>/dev/null || true
-	@[ -d bin/tests ] && cp -r bin/tests bin/fs_content/ || true
-	@python3 tools/mk_ext2_image.py $(EXT2_IMG) 16384 bin/fs_content/
-	@rm -rf bin/fs_content
+	@mkdir -p bin/fs_tmp
+	@cp -r bin/kernel/*.bin bin/fs_tmp/kernel/ 2>/dev/null || true
+	@cp -r bin/kernel/*.elf bin/fs_tmp/kernel/ 2>/dev/null || true
+	@cp -r bin/boot/*.EFI bin/fs_tmp/boot/ 2>/dev/null || true
+	@cp -r bin/LiteCore.img bin/fs_tmp 2>/dev/null || true 
+	@python3 tools/mk_ext2_image.py $(EXT2_IMG) 2048 bin/fs_tmp
+	@rm -rf bin/fs_tmp
 	@echo "ext2 image created: $(EXT2_IMG)"
 
 run: $(ESP_IMG) $(EXT2_IMG)
