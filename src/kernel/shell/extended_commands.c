@@ -43,10 +43,15 @@ static int cmd_mem(int argc, char **argv) {
 		uint32_t used_bytes = used_frames * FRAME_SIZE;
 		uint32_t free_bytes = free_frames * FRAME_SIZE;
 
-		printk("Physical frames: total=%u (%.2fMB) used=%u (%.2fMB) free=%u (%.2fMB)\n",
-			   total_frames, (double)total_bytes / (1024.0 * 1024.0),
-			   used_frames, (double)used_bytes / (1024.0 * 1024.0),
-			   free_frames, (double)free_bytes / (1024.0 * 1024.0));
+		// 整数演算でMB表示（小数点2桁）: bytes * 100 / (1024*1024) = x.yz MB
+		uint32_t total_mb_x100 = (total_bytes * 100) / (1024 * 1024);
+		uint32_t used_mb_x100 = (used_bytes * 100) / (1024 * 1024);
+		uint32_t free_mb_x100 = (free_bytes * 100) / (1024 * 1024);
+
+		printk("Physical frames: total=%u (%u.%02uMB) used=%u (%u.%02uMB) free=%u (%u.%02uMB)\n",
+			   total_frames, total_mb_x100 / 100, total_mb_x100 % 100,
+			   used_frames, used_mb_x100 / 100, used_mb_x100 % 100,
+			   free_frames, free_mb_x100 / 100, free_mb_x100 % 100);
 	}
 
 	/* Heap statistics */
@@ -54,9 +59,13 @@ static int cmd_mem(int argc, char **argv) {
 	uint32_t heap_free = heap_free_bytes();
 	uint32_t heap_largest = heap_largest_free_block();
 
-	printk("total=%u bytes (%.2fKB) free=%u bytes (%.2fKB) largest_free=%u bytes\n",
-		   heap_total, (double)heap_total / 1024.0,
-		   heap_free, (double)heap_free / 1024.0,
+	// 整数演算でKB表示（小数点2桁）: bytes * 100 / 1024 = x.yz KB
+	uint32_t total_kb_x100 = (heap_total * 100) / 1024;
+	uint32_t free_kb_x100 = (heap_free * 100) / 1024;
+
+	printk("Kernel heap: total=%u bytes (%u.%02uKB) free=%u bytes (%u.%02uKB) largest_free=%u bytes\n",
+		   heap_total, total_kb_x100 / 100, total_kb_x100 % 100,
+		   heap_free, free_kb_x100 / 100, free_kb_x100 % 100,
 		   heap_largest);
 
 	return 0;
