@@ -22,19 +22,21 @@ IDTを初期化します。256個のエントリを設定し、PICを再マッ�
 ## 構造体
 
 #### `struct idt_entry`（内部定義）
-IDTエントリを表す構造体です。
+IDTエントリを表す構造体です（64ビット形式）。
 
-- `base_lo(uint16_t)`: ハンドラアドレスの下位16ビット
+- `base_lo(uint16_t)`: ハンドラアドレスの下位16ビット（bits 0-15）
 - `sel(uint16_t)`: コードセグメントセレクタ（0x08=カーネルコード）
-- `always0(uint8_t)`: 常に0
-- `flags(uint8_t)`: フラグバイト（0x8E=32ビット割り込みゲート、DPL=0）
-- `base_hi(uint16_t)`: ハンドラアドレスの上位16ビット
+- `ist(uint8_t)`: Interrupt Stack Table（通常は0）
+- `flags(uint8_t)`: フラグバイト（0x8E=割り込みゲート、DPL=0、Present）
+- `base_mid(uint16_t)`: ハンドラアドレスの中位16ビット（bits 16-31）
+- `base_hi(uint32_t)`: ハンドラアドレスの上位32ビット（bits 32-63）
+- `reserved(uint32_t)`: 予約領域（0でなければならない）
 
 #### `struct idt_ptr`（内部定義）
 IDTポインタ構造体です。
 
 - `limit(uint16_t)`: IDTのサイズ-1
-- `base(uint32_t)`: IDTのベースアドレス
+- `base(uint64_t)`: IDTのベースアドレス（64ビット）
 
 ### PICの再マッピング
 
