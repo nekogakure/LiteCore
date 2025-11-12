@@ -13,10 +13,12 @@ EDK2_BUILD = $(EDK2_DIR)/bin/boot/DEBUG_GCC5/X64/LiteCoreBootManager.efi
 SRC_DIR    = src
 SRC_BOOT   = boot
 SRC_KERNEL = $(SRC_DIR)/kernel
+FONTS      = $(SRC_KERNEL)/fonts/ter-u12b.bdf
 INCLUDE    = $(SRC_DIR)/include
 OUT_DIR    = bin
 K_OUT_DIR  = $(OUT_DIR)/kernel
 B_OUT_DIR  = $(OUT_DIR)/boot
+F_OUT_DIR  = $(K_OUT_DIR)/fonts
 IMG_OUT_DIR = $(OUT_DIR)
 
 CFLAGS     = -O2 -Wimplicit-function-declaration -Wunused-but-set-variable -ffreestanding -m64 -c -Wall -Wextra -I$(INCLUDE) -mcmodel=large -mno-red-zone -fno-pic
@@ -26,7 +28,7 @@ NFLAGS     = -f bin
 QEMU_FLAGS = -serial stdio -display none -monitor none -device qemu-xhci,id=xhci \
              -device usb-kbd,bus=xhci.0 \
              -bios /usr/share/ovmf/OVMF.fd -d int -D qemu.log --no-reboot
-QEMU_VGA   = -display curses -device qemu-xhci,id=xhci -device usb-kbd,bus=xhci.0 -bios /usr/share/ovmf/OVMF.fd
+QEMU_VGA   = -device qemu-xhci,id=xhci -device usb-kbd,bus=xhci.0
 CONSOLE    = -display curses
 
 SOURCES    = $(shell find $(SRC_KERNEL) -name "*.c")
@@ -44,7 +46,7 @@ ESP_DIR    = esp
 .PHONY: all run run-console run-vga clean bootloader kernel ext2
 .DEFAULT_GOAL := all
 
-all: bootloader kernel $(ESP_IMG) $(EXT2_IMG)
+all: bootloader kernel $(F_OUT_DIR)/ter-u12b.bdf $(ESP_IMG) $(EXT2_IMG)
 
 $(K_OUT_DIR):
 	@mkdir -p $(K_OUT_DIR)
@@ -75,6 +77,10 @@ $(K_OUT_DIR)/%.o: $(SRC_KERNEL)/%.asm
 	@mkdir -p $(dir $@)
 	@$(NASM) -f elf64 $< -o $@
 
+$(F_OUT_DIR)/ter-u12b.bdf: $(FONTS)
+	@mkdir -p $(F_OUT_DIR)
+	@cp $< $@
+
 $(ESP_IMG): $(BOOTX64) $(KERNEL)
 	@rm -f $(ESP_IMG)
 	@echo "Creating UEFI ESP image..."
@@ -93,8 +99,11 @@ $(ESP_IMG): $(BOOTX64) $(KERNEL)
 $(EXT2_IMG): $(KERNEL)
 	@rm -f $(EXT2_IMG)
 	@echo "Creating ext2 filesystem image..."
-	@mkdir -p bin/fs_tmp
-	@find bin -type f -not -name "*.o" -not -name "fs.img" -not -path "*/fs_tmp/*" -exec bash -c 'dest="bin/fs_tmp/$${1#bin/}"; mkdir -p "$$(dirname "$$dest")"; cp "$$1" "$$dest"' _ {} \;
+	@find bin -type f \
+		-not -name "*.o" \
+		-not -name "fs.img" \
+		-not -path "bin/fs_tmp/*" \
+		-exec bash -c 'dest="bin/fs_tmp/$${1#bin/}"; mkdir -p "$$(dirname "$$dest")"; cp "$$1" "$$dest"' _ {} \;
 	@python3 tools/mk_ext2_image.py $(EXT2_IMG) 256000 bin/fs_tmp
 	@rm -rf bin/fs_tmp/fs_content
 	@echo "ext2 image created: $(EXT2_IMG)"
@@ -106,7 +115,7 @@ run-console: $(ESP_IMG) $(EXT2_IMG)
 	$(QEMU) -bios /usr/share/ovmf/OVMF.fd $(CONSOLE) $(QEMU_USB) -drive file=$(ESP_IMG),format=raw -drive file=$(EXT2_IMG),format=raw,if=ide
 
 run-vga: $(ESP_IMG) $(EXT2_IMG)
-	$(QEMU) -bios /usr/share/ovmf/OVMF.fd $(QEMU_VGA) -drive file=$(ESP_IMG),format=raw -drive file=$(EXT2_IMG),format=raw,if=ide
+	$(QEMU) -bios /usr/share/ovmf/OVMF.fd $(QEMU_VGA) -drive file=$(ESP_IMG),format=raw -drive file=$(EXT2_IMG),format=raw,if=ide -d int -D qemu.log --no-reboot
 
 clean:
 	rm -rf $(OUT_DIR) $(ESP_DIR)
