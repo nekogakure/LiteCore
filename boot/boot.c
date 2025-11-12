@@ -102,7 +102,7 @@ LiteCoreBootManagerMain(IN EFI_HANDLE ImageHandle,
 	Print(L"Kernel size: %lu bytes\n", KernelSize);
 #endif
 
-        FreePool(FileInfo);
+	FreePool(FileInfo);
 
 	// カーネルを0x10000番地にロード
 	UINTN KernelPages = (KernelSize + 0xFFF) / 0x1000;
