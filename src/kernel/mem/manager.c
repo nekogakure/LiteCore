@@ -319,7 +319,8 @@ uint32_t heap_largest_free_block(void) {
 	block_header_t *cur = free_list;
 	while (cur) {
 		if (cur->size > sizeof(block_header_t)) {
-			uint32_t user_bytes = cur->size - sizeof(block_header_t);
+			uint32_t user_bytes =
+				cur->size - sizeof(block_header_t);
 			if (user_bytes > largest)
 				largest = user_bytes;
 		}

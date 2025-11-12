@@ -90,13 +90,15 @@ static void process_keyboard_report(struct hid_keyboard_report *report) {
 	}
 
 	/* Shiftキーが押されているか確認 */
-	bool shift = (report->modifier & (HID_MOD_LEFT_SHIFT | HID_MOD_RIGHT_SHIFT)) != 0;
-	bool ctrl = (report->modifier & (HID_MOD_LEFT_CTRL | HID_MOD_RIGHT_CTRL)) != 0;
+	bool shift = (report->modifier &
+		      (HID_MOD_LEFT_SHIFT | HID_MOD_RIGHT_SHIFT)) != 0;
+	bool ctrl = (report->modifier &
+		     (HID_MOD_LEFT_CTRL | HID_MOD_RIGHT_CTRL)) != 0;
 
 	/* 新しく押されたキーを検出 */
 	for (int i = 0; i < 6; i++) {
 		uint8_t keycode = report->keycode[i];
-		
+
 		if (keycode == 0) {
 			continue; /* 空のスロット */
 		}
@@ -113,7 +115,7 @@ static void process_keyboard_report(struct hid_keyboard_report *report) {
 		if (!was_pressed) {
 			/* 新しいキー押下 */
 			char c = usb_scancode_to_ascii(keycode, shift);
-			
+
 			if (c != 0) {
 				if (ctrl) {
 					/* Ctrl+キーの処理 */
@@ -185,7 +187,8 @@ int usb_keyboard_init(void) {
  * 定期的に呼び出してキーボード入力を処理
  */
 void usb_keyboard_poll(void) {
-	if (!usb_kb_initialized || !usb_kb_available || !usb_hc || usb_kb_slot_id == 0) {
+	if (!usb_kb_initialized || !usb_kb_available || !usb_hc ||
+	    usb_kb_slot_id == 0) {
 		return;
 	}
 
@@ -193,7 +196,8 @@ void usb_keyboard_poll(void) {
 	uint8_t report_buffer[8];
 	if (xhci_poll_keyboard(usb_hc, usb_kb_slot_id, report_buffer) == 0) {
 		/* レポートを処理 */
-		struct hid_keyboard_report *report = (struct hid_keyboard_report *)report_buffer;
+		struct hid_keyboard_report *report =
+			(struct hid_keyboard_report *)report_buffer;
 		process_keyboard_report(report);
 	}
 }

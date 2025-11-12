@@ -1,5 +1,6 @@
 #include <util/config.h>
 #include <util/console.h>
+#include <util/bdf.h>
 #include <device/pci.h>
 #include <device/keyboard.h>
 #include <interrupt/irq.h>
@@ -14,6 +15,7 @@
 #include <driver/ata.h>
 #include <fs/ext/ext2.h>
 #include <fs/block_cache.h>
+#include <task/multi_task.h>
 
 #ifdef UEFI_MODE
 #include <driver/timer/uefi_timer.h>
@@ -123,4 +125,24 @@ void kernel_init() {
 #ifdef INIT_MSG
 	printk("ok\n");
 #endif
+
+#ifdef INIT_MSG
+        new_line();
+        printk("> MULTI TASK INIT\n");
+#endif
+        task_init();
+#ifdef INIT_MSG
+        printk("ok\n");
+#endif
+}
+
+void init_font() {
+	if (g_ext2_sb != NULL) {
+		if (bdf_init("kernel/fonts/ter-u12b.bdf")) {
+		} else {
+			printk("Warning: Failed to load BDF font\n");
+		}
+	} else {
+		printk("Warning: Filesystem not available, skipping font loading\n");
+	}
 }

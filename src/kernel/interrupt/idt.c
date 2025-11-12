@@ -42,18 +42,18 @@ extern void load_idt(void *ptr, unsigned size);
 
 /* 64-bit IDT entry struct (16 bytes) */
 struct idt_entry {
-	uint16_t base_lo;    // Offset bits 0-15
-	uint16_t sel;        // Segment selector
-	uint8_t ist;         // Interrupt Stack Table (usually 0)
-	uint8_t flags;       // Type and DPL
-	uint16_t base_mid;   // Offset bits 16-31
-	uint32_t base_hi;    // Offset bits 32-63
-	uint32_t reserved;   // Reserved (must be 0)
+	uint16_t base_lo; // Offset bits 0-15
+	uint16_t sel; // Segment selector
+	uint8_t ist; // Interrupt Stack Table (usually 0)
+	uint8_t flags; // Type and DPL
+	uint16_t base_mid; // Offset bits 16-31
+	uint32_t base_hi; // Offset bits 32-63
+	uint32_t reserved; // Reserved (must be 0)
 } __attribute__((packed));
 
 struct idt_ptr {
 	uint16_t limit;
-	uint64_t base;       // 64-bit base address
+	uint64_t base; // 64-bit base address
 } __attribute__((packed));
 
 extern void isr_stub_table(void); /* assembly stubs */
@@ -65,8 +65,9 @@ static struct idt_ptr idtp;
 
 static void idt_set_gate(int n, uint64_t handler) {
 	idt[n].base_lo = handler & 0xFFFF;
-	idt[n].sel = 0x08; // code segment (was 0x38 in 64-bit, but 0x08 is standard)
-	idt[n].ist = 0;    // No separate interrupt stack
+	idt[n].sel =
+		0x08; // code segment (was 0x38 in 64-bit, but 0x08 is standard)
+	idt[n].ist = 0; // No separate interrupt stack
 	idt[n].flags = 0x8E; // Present, DPL=0, Type=Interrupt Gate
 	idt[n].base_mid = (handler >> 16) & 0xFFFF;
 	idt[n].base_hi = (handler >> 32) & 0xFFFFFFFF;

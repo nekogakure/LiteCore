@@ -20,7 +20,6 @@ static inline uint16_t read_ds(void) {
 void gdt_test() {
 	uint16_t cs = read_cs();
 	uint16_t ds = read_ds();
-	printk("> GDT TEST\n");
 	printk("CS = 0x%x\n", (unsigned)cs);
 	printk("DS = 0x%x\n", (unsigned)ds);
 	/* check expected values: kernel code=0x08, data=0x10 */

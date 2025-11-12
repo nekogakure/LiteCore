@@ -2,7 +2,7 @@
 #define _TESTS_CONFIG_H
 
 // テストを実行するかどうか
-//#define TEST_TRUE
+#define TEST_TRUE
 
 #ifdef TEST_TRUE
 // メモリマップとメモリのテスト
@@ -24,11 +24,13 @@
 // ext2 test
 #define EXT2_TEST
 // ACPI Timer test
-#define ACPI_TIMER_TEST
+// #define ACPI_TIMER_TEST
 // APIC Timer test
 // #define APIC_TIMER_TEST
 // xHCI USB test
 #define XHCI_TEST
+// Multi Task test
+#define MULTI_TASK_TEST
 
 /* -------- 宣言 -------- */
 #ifdef MEM_TEST
@@ -77,6 +79,10 @@ void apic_timer_test();
 
 #ifdef XHCI_TEST
 void xhci_test();
+#endif
+
+#ifdef MULTI_TASK_TEST
+void multi_task_test();
 #endif
 
 #endif /* TEST_TRUE */

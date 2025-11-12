@@ -1,8 +1,96 @@
 #include <util/config.h>
 #include <util/io.h>
+#include <util/bdf.h>
 #include <stdarg.h>
 #include <stdint.h>
 #include <interrupt/irq.h>
+#include <boot_info.h>
+
+// GOP フレームバッファ情報
+static uint32_t *framebuffer = NULL;
+static uint32_t fb_width = 0;
+static uint32_t fb_height = 0;
+static uint32_t fb_pitch = 0;
+static int use_framebuffer = 0;
+
+static uint32_t fb_fg_color = 0xFFFFFF; // 白
+static uint32_t fb_bg_color = 0x000000; // 黒
+
+/**
+ * @brief GOPフレームバッファ情報を設定
+ */
+void console_set_framebuffer(BOOT_INFO *boot_info) {
+	if (boot_info && boot_info->FramebufferBase != 0) {
+		framebuffer = (uint32_t *)(uintptr_t)boot_info->FramebufferBase;
+		fb_width = boot_info->HorizontalResolution;
+		fb_height = boot_info->VerticalResolution;
+		fb_pitch = boot_info->PixelsPerScanLine;
+		use_framebuffer = 1;
+	} else {
+		use_framebuffer = 0;
+	}
+}
+
+/**
+ * @brief フレームバッファの色を設定
+ * @param fg 前景色（RGB形式: 0xRRGGBB）
+ * @param bg 背景色（RGB形式: 0xRRGGBB）
+ */
+void console_set_colors(uint32_t fg, uint32_t bg) {
+	fb_fg_color = fg;
+	fb_bg_color = bg;
+}
+
+/**
+ * @brief フレームバッファの色を取得
+ * @param fg 前景色を格納するポインタ
+ * @param bg 背景色を格納するポインタ
+ */
+void console_get_colors(uint32_t *fg, uint32_t *bg) {
+	if (fg) {
+		*fg = fb_fg_color;
+	}
+	if (bg) {
+		*bg = fb_bg_color;
+	}
+}
+
+/**
+ * @brief フレームバッファに文字を描画
+ */
+static void draw_char_fb(int x, int y, char c) {
+	if (!use_framebuffer) {
+		return;
+	}
+
+	const bdf_glyph_t *glyph = bdf_get_glyph((uint32_t)(unsigned char)c);
+	if (!glyph) {
+		return;
+	}
+
+	const bdf_font_t *font_info = bdf_get_font();
+	if (!font_info) {
+		return;
+	}
+
+	int char_width = font_info->width;
+	int char_height = font_info->height;
+
+	for (int row = 0; row < glyph->height && row < char_height; row++) {
+		uint8_t bits = glyph->bitmap[row];
+		for (int col = 0; col < 8; col++) {
+			uint32_t pixel_x = x * char_width + col;
+			uint32_t pixel_y = y * char_height + row;
+
+			if (pixel_x < fb_width && pixel_y < fb_height) {
+				uint32_t offset = pixel_y * fb_pitch + pixel_x;
+				framebuffer[offset] = (bits & (0x80 >> col)) ?
+							      fb_fg_color :
+							      fb_bg_color;
+			}
+		}
+	}
+}
 
 /**
  * @brief シリアルポート（COM1）を初期化
@@ -88,7 +176,24 @@ static int history_offset = 0;
 
 void console_init() {
 	serial_init(); // シリアルポートを初期化
-	clear_screen();
+
+	// VGA テキストモードをクリア
+	uint8_t *video = (uint8_t *)VIDEO_MEMORY;
+	uint8_t attr = COLOR;
+	for (int i = 0; i < 80 * 25; i++) {
+		*video++ = ' ';
+		*video++ = attr;
+	}
+
+	// GOP フレームバッファをクリア（黒で塗りつぶし）
+	if (use_framebuffer) {
+		for (uint32_t y = 0; y < fb_height; y++) {
+			for (uint32_t x = 0; x < fb_width; x++) {
+				framebuffer[y * fb_pitch + x] = 0x000000;
+			}
+		}
+	}
+
 	cursor_row = 0;
 	cursor_col = 0;
 	history_lines = 0;
@@ -175,6 +280,12 @@ static void console_putc(char ch) {
 	int pos = (cursor_row * CONSOLE_COLS + cursor_col) * 2;
 	video[pos] = (uint8_t)ch;
 	video[pos + 1] = attr;
+
+	// GOP フレームバッファに出力
+	if (use_framebuffer) {
+		draw_char_fb(cursor_col, cursor_row, ch);
+	}
+
 	cursor_col++;
 	serial_putc(ch);
 	if (cursor_col >= CONSOLE_COLS) {
@@ -343,7 +454,8 @@ int printk(const char *fmt, ...) {
 				for (k = n - 1;
 				     k >= 0 && j < (int)sizeof(buffer) - 1; k--)
 					buffer[j++] = numbuf[k];
-			} else if (spec == 'l' && (fmt[i + 1] == 'x' || fmt[i + 1] == 'X')) {
+			} else if (spec == 'l' &&
+				   (fmt[i + 1] == 'x' || fmt[i + 1] == 'X')) {
 				i++;
 				uint64_t val = va_arg(args, uint64_t);
 				char numbuf[32];

@@ -1,0 +1,114 @@
+; void task_switch(registers_t *old_regs, registers_t *new_regs)
+global task_switch
+
+section .text
+bits 64
+
+; registers_t 構造体のオフセット
+%define REG_RAX 0
+%define REG_RBX 8
+%define REG_RCX 16
+%define REG_RDX 24
+%define REG_RSI 32
+%define REG_RDI 40
+%define REG_RBP 48
+%define REG_RSP 56
+%define REG_R8 64
+%define REG_R9 72
+%define REG_R10 80
+%define REG_R11 88
+%define REG_R12 96
+%define REG_R13 104
+%define REG_R14 112
+%define REG_R15 120
+%define REG_RIP 128
+%define REG_RFLAGS 136
+%define REG_CR3 144
+
+task_switch:
+    ; rdi = old_regs, rsi = new_regs
+    
+    ; いまのコンテキストを保存
+    mov [rdi + REG_RAX], rax
+    mov [rdi + REG_RBX], rbx
+    mov [rdi + REG_RCX], rcx
+    mov [rdi + REG_RDX], rdx
+    mov [rdi + REG_RSI], rsi
+    mov [rdi + REG_RDI], rdi
+    mov [rdi + REG_RBP], rbp
+    
+    ; RSP は現在のスタックポインタを保存（call 後なので +8）
+    mov rax, rsp
+    add rax, 8                      ; return address分を調整
+    mov [rdi + REG_RSP], rax
+    
+    mov [rdi + REG_R8], r8
+    mov [rdi + REG_R9], r9
+    mov [rdi + REG_R10], r10
+    mov [rdi + REG_R11], r11
+    mov [rdi + REG_R12], r12
+    mov [rdi + REG_R13], r13
+    mov [rdi + REG_R14], r14
+    mov [rdi + REG_R15], r15
+    
+    ; RIP（戻りアドレス）を保存
+    mov rax, [rsp]
+    mov [rdi + REG_RIP], rax
+    
+    ; RFLAGS を保存
+    pushfq
+    pop rax
+    mov [rdi + REG_RFLAGS], rax
+    
+    ; CR3 を保存
+    mov rax, cr3
+    mov [rdi + REG_CR3], rax
+    
+    ; === 新しいコンテキストに切り替える準備 ===
+    ; new_regsのアドレスをr15に退避（r15は後で復元される）
+    mov r15, rsi
+    
+    ; 新しいRIPとRSPを先に取得（CR3切り替え前）
+    mov r14, [r15 + REG_RIP]
+    mov r13, [r15 + REG_RSP]
+    
+    ; 新しい CR3 をロード（ページテーブル切り替え）
+    mov rax, [r15 + REG_CR3]
+    mov rbx, cr3
+    cmp rax, rbx
+    je .skip_cr3_load           ; 同じなら CR3 の再ロードはスキップ
+    mov cr3, rax
+.skip_cr3_load:
+    
+    ; RFLAGS を復元
+    mov rax, [r15 + REG_RFLAGS]
+    push rax
+    popfq
+    
+    ; 汎用レジスタを復元（r13, r14, r15は後で）
+    mov rax, [r15 + REG_RAX]
+    mov rbx, [r15 + REG_RBX]
+    mov rcx, [r15 + REG_RCX]
+    mov rdx, [r15 + REG_RDX]
+    mov rbp, [r15 + REG_RBP]
+    mov r8,  [r15 + REG_R8]
+    mov r9,  [r15 + REG_R9]
+    mov r10, [r15 + REG_R10]
+    mov r11, [r15 + REG_R11]
+    mov r12, [r15 + REG_R12]
+    
+    ; RSI, RDI を復元
+    mov rsi, [r15 + REG_RSI]
+    mov rdi, [r15 + REG_RDI]
+    
+    ; 新しいスタックに切り替えてから戻り先をプッシュ
+    mov rsp, r13
+    push r14                    ; 新しいRIPをスタックにプッシュ
+    
+    ; r13, r14, r15 を復元
+    mov r13, [r15 + REG_R13]
+    mov r14, [r15 + REG_R14]
+    mov r15, [r15 + REG_R15]
+    
+    ; 新しいタスクの RIP へジャンプ
+    ret

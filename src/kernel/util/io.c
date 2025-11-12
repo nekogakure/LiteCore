@@ -26,6 +26,9 @@ void cpu_halt(void) {
 void timer_handler(uint32_t payload, void *ctx) {
 	(void)payload;
 	(void)ctx;
+	// TODO: プリエンプティブマルチタスクする
+	// extern void task_schedule(void);
+	// task_schedule();
 }
 
 uint8_t inb(uint16_t port) {

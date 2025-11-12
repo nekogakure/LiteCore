@@ -53,7 +53,7 @@ int uefi_timer_init(void) {
 void uefi_sleep_ms(uint32_t ms) {
 	// タイマーベースのスリープ
 	uint64_t target = timer_ticks + (ms * timer_frequency_hz / 1000);
-	
+
 	while (timer_ticks < target) {
 		// メインループで割り込みディスパッチが行われるので、ここでは何もしない
 		__asm__ volatile("hlt"); // CPUを休止
@@ -78,7 +78,7 @@ void uefi_wait_us(uint32_t us) {
 	if (us > 10000) {
 		us = 10000;
 	}
-	
+
 	volatile uint32_t loops = us * 100;
 	while (loops--) {
 		__asm__ volatile("pause");

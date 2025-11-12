@@ -52,13 +52,13 @@ static inline void xhci_write64(volatile uint64_t *reg, uint64_t value) {
  */
 static void xhci_dump_cap_regs(struct xhci_hc *hc) {
 	uint32_t hcsparams1 = xhci_read32(&hc->cap_regs->hcsparams1);
-	uint32_t hcsparams2 = xhci_read32(&hc->cap_regs->hcsparams2);
 
 	hc->max_slots = (hcsparams1 & 0xFF);
 	hc->max_intrs = ((hcsparams1 >> 8) & 0x7FF);
 	hc->max_ports = ((hcsparams1 >> 24) & 0xFF);
 
 #ifdef XHCI_DEBUG
+	uint32_t hcsparams2 = xhci_read32(&hc->cap_regs->hcsparams2);
 	printk("xHCI: Capability Registers:\n");
 	printk("  HCI Version: %x.%02x\n", hc->hci_version >> 8,
 	       hc->hci_version & 0xFF);
@@ -233,7 +233,8 @@ static int xhci_probe_pci_device(uint8_t bus, uint8_t device,
 		base_addr = (uintptr_t)bar64;
 #ifdef XHCI_DEBUG
 		printk("xHCI: 64-bit BAR: BAR1 = 0x%08x, Address = 0x%08x%08x\n",
-		       bar1, (uint32_t)(base_addr >> 32), (uint32_t)(base_addr & 0xFFFFFFFF));
+		       bar1, (uint32_t)(base_addr >> 32),
+		       (uint32_t)(base_addr & 0xFFFFFFFF));
 #endif
 	} else {
 		/* 32-bit BAR */
@@ -310,12 +311,12 @@ static int xhci_probe_pci_device(uint8_t bus, uint8_t device,
 	printk("xHCI: Scanning %u ports for devices...\n", hc->max_ports);
 	for (uint32_t port = 1; port <= hc->max_ports; port++) {
 		uint32_t portsc = xhci_get_port_status(hc, port);
-		printk("xHCI: Port %u status: 0x%08x (CCS=%d, PED=%d)\n", 
-		       port, portsc, 
-		       (portsc & XHCI_PORTSC_CCS) ? 1 : 0,
+		printk("xHCI: Port %u status: 0x%08x (CCS=%d, PED=%d)\n", port,
+		       portsc, (portsc & XHCI_PORTSC_CCS) ? 1 : 0,
 		       (portsc & XHCI_PORTSC_PED) ? 1 : 0);
 		if (portsc & XHCI_PORTSC_CCS) {
-			printk("xHCI: Device detected on port %u at init\n", port);
+			printk("xHCI: Device detected on port %u at init\n",
+			       port);
 			xhci_handle_port_status_change(hc, port);
 		}
 	}
@@ -394,7 +395,7 @@ void *xhci_alloc_aligned(uint32_t size, uint32_t alignment) {
 	/* アライメント調整 */
 	uintptr_t addr = (uintptr_t)ptr;
 	uintptr_t aligned_addr = (addr + alignment - 1) & ~(alignment - 1);
-	
+
 	return (void *)aligned_addr;
 }
 
@@ -418,7 +419,7 @@ int xhci_setup_command_ring(struct xhci_hc *hc) {
 	/* Command Ringのメモリを確保 (64-byteアライメント) */
 	hc->command_ring = (struct xhci_trb *)xhci_alloc_aligned(
 		COMMAND_RING_SIZE * sizeof(struct xhci_trb), 64);
-	
+
 	if (!hc->command_ring) {
 		printk("xHCI: Error: Failed to allocate Command Ring\n");
 		return -1;
@@ -465,7 +466,7 @@ int xhci_setup_event_ring(struct xhci_hc *hc) {
 	/* Event Ring Segment Table (ERST) を確保 (64-byteアライメント) */
 	hc->erst = (struct xhci_erst_entry *)xhci_alloc_aligned(
 		sizeof(struct xhci_erst_entry), 64);
-	
+
 	if (!hc->erst) {
 		printk("xHCI: Error: Failed to allocate ERST\n");
 		return -1;
@@ -474,7 +475,7 @@ int xhci_setup_event_ring(struct xhci_hc *hc) {
 	/* Event Ringを確保 (64-byteアライメント) */
 	hc->event_ring = (struct xhci_trb *)xhci_alloc_aligned(
 		EVENT_RING_SIZE * sizeof(struct xhci_trb), 64);
-	
+
 	if (!hc->event_ring) {
 		printk("xHCI: Error: Failed to allocate Event Ring\n");
 		xhci_free_aligned(hc->erst);
@@ -498,23 +499,28 @@ int xhci_setup_event_ring(struct xhci_hc *hc) {
 	hc->event_ring_cycle = 1;
 
 	/* Runtime Registers の Interrupter 0 に設定 */
-	hc->intr_regs = (volatile struct xhci_intr_regs *)
-		((uintptr_t)hc->runtime_regs + 0x20);
+	hc->intr_regs =
+		(volatile struct xhci_intr_regs *)((uintptr_t)hc->runtime_regs +
+						   0x20);
 
 	/* ERSTSZ: Event Ring Segment Tableのサイズ (offset 0x08) */
-	volatile uint32_t *erstsz_ptr = (volatile uint32_t *)((uintptr_t)hc->intr_regs + 0x08);
+	volatile uint32_t *erstsz_ptr =
+		(volatile uint32_t *)((uintptr_t)hc->intr_regs + 0x08);
 	xhci_write32(erstsz_ptr, 1);
 
 	/* ERSTBA: Event Ring Segment Tableのベースアドレス (offset 0x10) */
-	volatile uint64_t *erstba_ptr = (volatile uint64_t *)((uintptr_t)hc->intr_regs + 0x10);
+	volatile uint64_t *erstba_ptr =
+		(volatile uint64_t *)((uintptr_t)hc->intr_regs + 0x10);
 	xhci_write64(erstba_ptr, (uint64_t)(uintptr_t)hc->erst);
 
 	/* ERDP: Event Ring Dequeue Pointer (offset 0x18) */
-	volatile uint64_t *erdp_ptr = (volatile uint64_t *)((uintptr_t)hc->intr_regs + 0x18);
+	volatile uint64_t *erdp_ptr =
+		(volatile uint64_t *)((uintptr_t)hc->intr_regs + 0x18);
 	xhci_write64(erdp_ptr, (uint64_t)(uintptr_t)hc->event_ring);
 
 	/* IMAN: Interrupt Management (offset 0x00) */
-	volatile uint32_t *iman_ptr = (volatile uint32_t *)((uintptr_t)hc->intr_regs + 0x00);
+	volatile uint32_t *iman_ptr =
+		(volatile uint32_t *)((uintptr_t)hc->intr_regs + 0x00);
 	xhci_write32(iman_ptr, XHCI_IMAN_IE | XHCI_IMAN_IP);
 
 #ifdef XHCI_DEBUG
@@ -537,7 +543,8 @@ void xhci_ring_doorbell(struct xhci_hc *hc, uint8_t slot_id, uint8_t target) {
 /**
  * @brief Event Ringからイベントを取得
  */
-int xhci_wait_for_event(struct xhci_hc *hc, struct xhci_trb *event_trb, uint32_t timeout_ms) {
+int xhci_wait_for_event(struct xhci_hc *hc, struct xhci_trb *event_trb,
+			uint32_t timeout_ms) {
 	uint32_t elapsed = 0;
 
 	while (elapsed < timeout_ms) {
@@ -561,8 +568,12 @@ int xhci_wait_for_event(struct xhci_hc *hc, struct xhci_trb *event_trb, uint32_t
 			}
 
 			/* ERDP を更新 (offset 0x18) */
-			uint64_t erdp = (uint64_t)(uintptr_t)&hc->event_ring[hc->event_ring_index];
-			volatile uint64_t *erdp_ptr = (volatile uint64_t *)((uintptr_t)hc->intr_regs + 0x18);
+			uint64_t erdp =
+				(uint64_t)(uintptr_t)&hc
+					->event_ring[hc->event_ring_index];
+			volatile uint64_t *erdp_ptr =
+				(volatile uint64_t *)((uintptr_t)hc->intr_regs +
+						      0x18);
 			xhci_write64(erdp_ptr, erdp | (1 << 3)); /* EHB=1 */
 
 			return 0;
@@ -585,8 +596,7 @@ void xhci_handle_events(struct xhci_hc *hc) {
 		uint32_t trb_type = (event.control >> 10) & 0x3F;
 
 		switch (trb_type) {
-		case TRB_TYPE_PORT_STATUS_CHANGE:
-		{
+		case TRB_TYPE_PORT_STATUS_CHANGE: {
 			uint32_t port_id = (event.parameter >> 24) & 0xFF;
 #ifdef XHCI_DEBUG
 			printk("xHCI: Port %u status change\n", port_id);
@@ -639,7 +649,8 @@ int xhci_reset_port(struct xhci_hc *hc, uint8_t port) {
 		if (portsc & XHCI_PORTSC_PRC) {
 			/* Port Reset Change: リセット完了 */
 			/* PRCビットをクリア (W1C: Write 1 to Clear) */
-			xhci_write32(&port_reg->portsc, portsc | XHCI_PORTSC_PRC);
+			xhci_write32(&port_reg->portsc,
+				     portsc | XHCI_PORTSC_PRC);
 #ifdef XHCI_DEBUG
 			printk("xHCI: Port %u reset completed\n", port);
 #endif
@@ -664,8 +675,8 @@ int xhci_enable_slot(struct xhci_hc *hc) {
 	struct xhci_trb *cmd_trb = &hc->command_ring[hc->cmd_ring_index];
 	cmd_trb->parameter = 0;
 	cmd_trb->status = 0;
-	cmd_trb->control = (TRB_TYPE_ENABLE_SLOT << 10) | 
-	                   (hc->cmd_ring_cycle ? TRB_CYCLE : 0);
+	cmd_trb->control = (TRB_TYPE_ENABLE_SLOT << 10) |
+			   (hc->cmd_ring_cycle ? TRB_CYCLE : 0);
 
 	/* インデックスを進める */
 	hc->cmd_ring_index++;
@@ -687,7 +698,7 @@ int xhci_enable_slot(struct xhci_hc *hc) {
 		}
 
 		uint32_t trb_type = (event.control >> 10) & 0x3F;
-		
+
 		/* Port Status Changeイベントは無視（後で処理） */
 		if (trb_type == TRB_TYPE_PORT_STATUS_CHANGE) {
 #ifdef XHCI_DEBUG
@@ -695,15 +706,16 @@ int xhci_enable_slot(struct xhci_hc *hc) {
 #endif
 			continue;
 		}
-		
+
 		/* Command Completionを待つ */
 		if (trb_type == TRB_TYPE_COMMAND_COMPLETION) {
 			break;
 		}
-		
+
 		/* その他の予期しないイベント */
 #ifdef XHCI_DEBUG
-		printk("xHCI: Unexpected event type %u during slot enable\n", trb_type);
+		printk("xHCI: Unexpected event type %u during slot enable\n",
+		       trb_type);
 #endif
 		attempts++;
 	}
@@ -716,7 +728,8 @@ int xhci_enable_slot(struct xhci_hc *hc) {
 	/* Completion Codeを確認 */
 	uint32_t completion_code = (event.status >> 24) & 0xFF;
 	if (completion_code != 1) { /* 1 = Success */
-		printk("xHCI: Error: Enable Slot failed with code %u\n", completion_code);
+		printk("xHCI: Error: Enable Slot failed with code %u\n",
+		       completion_code);
 		return -3;
 	}
 
@@ -740,14 +753,15 @@ int xhci_address_device(struct xhci_hc *hc, uint8_t slot_id, uint8_t port) {
 	}
 
 #ifdef XHCI_DEBUG
-	printk("xHCI: Addressing device on slot %u, port %u...\n", slot_id, port);
+	printk("xHCI: Addressing device on slot %u, port %u...\n", slot_id,
+	       port);
 #endif
 
 	/* Input Contextを作成 (64-byteアライメント) */
-	struct xhci_input_context *input_ctx = 
+	struct xhci_input_context *input_ctx =
 		(struct xhci_input_context *)xhci_alloc_aligned(
 			sizeof(struct xhci_input_context), 64);
-	
+
 	if (!input_ctx) {
 		printk("xHCI: Error: Failed to allocate Input Context\n");
 		return -2;
@@ -759,7 +773,8 @@ int xhci_address_device(struct xhci_hc *hc, uint8_t slot_id, uint8_t port) {
 	}
 
 	/* Input Control Contextを設定 */
-	input_ctx->input_control.add_flags = 0x03; /* Slot Context と EP0 Context を追加 */
+	input_ctx->input_control.add_flags =
+		0x03; /* Slot Context と EP0 Context を追加 */
 
 	/* Slot Contextを設定 */
 	input_ctx->slot.dw0 = (1 << 27); /* Context Entries = 1 (EP0のみ) */
@@ -769,7 +784,7 @@ int xhci_address_device(struct xhci_hc *hc, uint8_t slot_id, uint8_t port) {
 	/* Transfer Ringを確保 (16-byteアライメント) */
 	struct xhci_trb *transfer_ring = (struct xhci_trb *)xhci_alloc_aligned(
 		TRANSFER_RING_SIZE * sizeof(struct xhci_trb), 16);
-	
+
 	if (!transfer_ring) {
 		printk("xHCI: Error: Failed to allocate Transfer Ring\n");
 		xhci_free_aligned(input_ctx);
@@ -787,15 +802,18 @@ int xhci_address_device(struct xhci_hc *hc, uint8_t slot_id, uint8_t port) {
 
 	/* EP0 Context */
 	input_ctx->ep[0].dw0 = 0; /* Interval, MaxPStreams, Mult, etc. */
-	input_ctx->ep[0].dw1 = (EP_TYPE_CONTROL << 3) | (8 << 16); /* EP Type=Control, Max Packet Size=8 */
-	input_ctx->ep[0].tr_dequeue_pointer = (uint64_t)(uintptr_t)transfer_ring | 1; /* DCS=1 */
+	input_ctx->ep[0].dw1 =
+		(EP_TYPE_CONTROL << 3) |
+		(8 << 16); /* EP Type=Control, Max Packet Size=8 */
+	input_ctx->ep[0].tr_dequeue_pointer =
+		(uint64_t)(uintptr_t)transfer_ring | 1; /* DCS=1 */
 	input_ctx->ep[0].dw4 = (8 << 16); /* Average TRB Length=8 */
 
 	/* Device Contextを確保 */
-	struct xhci_device_context *device_ctx = 
+	struct xhci_device_context *device_ctx =
 		(struct xhci_device_context *)xhci_alloc_aligned(
 			sizeof(struct xhci_device_context), 64);
-	
+
 	if (!device_ctx) {
 		printk("xHCI: Error: Failed to allocate Device Context\n");
 		xhci_free_aligned(transfer_ring);
@@ -810,7 +828,7 @@ int xhci_address_device(struct xhci_hc *hc, uint8_t slot_id, uint8_t port) {
 		/* DCBAARを確保 (64-byteアライメント) */
 		hc->dcbaa = (uint64_t *)xhci_alloc_aligned(
 			(hc->max_slots + 1) * sizeof(uint64_t), 64);
-		
+
 		if (!hc->dcbaa) {
 			printk("xHCI: Error: Failed to allocate DCBAA\n");
 			xhci_free_aligned(device_ctx);
@@ -825,7 +843,8 @@ int xhci_address_device(struct xhci_hc *hc, uint8_t slot_id, uint8_t port) {
 		}
 
 		/* DCBAAPレジスタに設定 */
-		xhci_write64(&hc->op_regs->dcbaap, (uint64_t)(uintptr_t)hc->dcbaa);
+		xhci_write64(&hc->op_regs->dcbaap,
+			     (uint64_t)(uintptr_t)hc->dcbaa);
 	}
 
 	hc->dcbaa[slot_id] = (uint64_t)(uintptr_t)device_ctx;
@@ -834,9 +853,8 @@ int xhci_address_device(struct xhci_hc *hc, uint8_t slot_id, uint8_t port) {
 	struct xhci_trb *cmd_trb = &hc->command_ring[hc->cmd_ring_index];
 	cmd_trb->parameter = (uint64_t)(uintptr_t)input_ctx;
 	cmd_trb->status = 0;
-	cmd_trb->control = (TRB_TYPE_ADDRESS_DEVICE << 10) | 
-	                   (slot_id << 24) |
-	                   (hc->cmd_ring_cycle ? TRB_CYCLE : 0);
+	cmd_trb->control = (TRB_TYPE_ADDRESS_DEVICE << 10) | (slot_id << 24) |
+			   (hc->cmd_ring_cycle ? TRB_CYCLE : 0);
 
 	/* インデックスを進める */
 	hc->cmd_ring_index++;
@@ -858,7 +876,7 @@ int xhci_address_device(struct xhci_hc *hc, uint8_t slot_id, uint8_t port) {
 		}
 
 		uint32_t trb_type = (event.control >> 10) & 0x3F;
-		
+
 		/* Port Status Changeイベントは無視 */
 		if (trb_type == TRB_TYPE_PORT_STATUS_CHANGE) {
 #ifdef XHCI_DEBUG
@@ -866,12 +884,12 @@ int xhci_address_device(struct xhci_hc *hc, uint8_t slot_id, uint8_t port) {
 #endif
 			continue;
 		}
-		
+
 		/* Command Completionを待つ */
 		if (trb_type == TRB_TYPE_COMMAND_COMPLETION) {
 			break;
 		}
-		
+
 		attempts++;
 	}
 
@@ -884,7 +902,8 @@ int xhci_address_device(struct xhci_hc *hc, uint8_t slot_id, uint8_t port) {
 	/* Completion Codeを確認 */
 	uint32_t completion_code = (event.status >> 24) & 0xFF;
 	if (completion_code != 1) { /* 1 = Success */
-		printk("xHCI: Error: Address Device failed with code %u\n", completion_code);
+		printk("xHCI: Error: Address Device failed with code %u\n",
+		       completion_code);
 		xhci_free_aligned(input_ctx);
 		return -7;
 	}
@@ -941,9 +960,10 @@ void xhci_handle_port_status_change(struct xhci_hc *hc, uint8_t port) {
 		/* 最初に列挙されたデバイスをキーボードとして扱う（簡易実装） */
 		if (hc->keyboard_slot_id == 0) {
 			hc->keyboard_slot_id = slot_id;
-			printk("xHCI: Device on slot %u registered as keyboard\n", slot_id);
+			printk("xHCI: Device on slot %u registered as keyboard\n",
+			       slot_id);
 		} else {
-			printk("xHCI: Device on slot %u enumerated (keyboard already registered on slot %u)\n", 
+			printk("xHCI: Device on slot %u enumerated (keyboard already registered on slot %u)\n",
 			       slot_id, hc->keyboard_slot_id);
 		}
 
@@ -957,7 +977,8 @@ void xhci_handle_port_status_change(struct xhci_hc *hc, uint8_t port) {
 
 	/* Connect Status Changeビットをクリア */
 	if (portsc & XHCI_PORTSC_CSC) {
-		volatile struct xhci_port_regs *port_reg = &hc->port_regs[port - 1];
+		volatile struct xhci_port_regs *port_reg =
+			&hc->port_regs[port - 1];
 		xhci_write32(&port_reg->portsc, portsc | XHCI_PORTSC_CSC);
 	}
 }
@@ -966,11 +987,10 @@ void xhci_handle_port_status_change(struct xhci_hc *hc, uint8_t port) {
  * @brief コントロール転送を実行
  */
 int xhci_control_transfer(struct xhci_hc *hc, uint8_t slot_id,
-	uint8_t request_type, uint8_t request,
-	uint16_t value, uint16_t index,
-	void *data, uint16_t length) {
-	
-	if (slot_id == 0 || slot_id > hc->max_slots || !hc->slot_allocated[slot_id]) {
+			  uint8_t request_type, uint8_t request, uint16_t value,
+			  uint16_t index, void *data, uint16_t length) {
+	if (slot_id == 0 || slot_id > hc->max_slots ||
+	    !hc->slot_allocated[slot_id]) {
 		return -1;
 	}
 
@@ -1002,8 +1022,9 @@ int xhci_control_transfer(struct xhci_hc *hc, uint8_t slot_id,
 	struct xhci_trb *setup_trb = &transfer_ring[tr_index];
 	setup_trb->parameter = *(uint64_t *)&setup_packet;
 	setup_trb->status = 8; /* Transfer Length = 8 bytes */
-	setup_trb->control = (TRB_TYPE_SETUP << 10) | TRB_IDT | (cycle ? TRB_CYCLE : 0);
-	
+	setup_trb->control = (TRB_TYPE_SETUP << 10) | TRB_IDT |
+			     (cycle ? TRB_CYCLE : 0);
+
 	/* TRT (Transfer Type): 0=No Data, 2=OUT, 3=IN */
 	if (length > 0) {
 		if (request_type & 0x80) {
@@ -1024,8 +1045,9 @@ int xhci_control_transfer(struct xhci_hc *hc, uint8_t slot_id,
 		struct xhci_trb *data_trb = &transfer_ring[tr_index];
 		data_trb->parameter = (uint64_t)(uintptr_t)data;
 		data_trb->status = length | (0 << 22); /* TD Size = 0 */
-		data_trb->control = (TRB_TYPE_DATA << 10) | (cycle ? TRB_CYCLE : 0);
-		
+		data_trb->control = (TRB_TYPE_DATA << 10) |
+				    (cycle ? TRB_CYCLE : 0);
+
 		if (request_type & 0x80) {
 			data_trb->control |= TRB_DIR_IN; /* IN */
 		}
@@ -1041,8 +1063,9 @@ int xhci_control_transfer(struct xhci_hc *hc, uint8_t slot_id,
 	struct xhci_trb *status_trb = &transfer_ring[tr_index];
 	status_trb->parameter = 0;
 	status_trb->status = 0;
-	status_trb->control = (TRB_TYPE_STATUS << 10) | TRB_IOC | (cycle ? TRB_CYCLE : 0);
-	
+	status_trb->control = (TRB_TYPE_STATUS << 10) | TRB_IOC |
+			      (cycle ? TRB_CYCLE : 0);
+
 	/* Direction: Setup Stageの逆方向 */
 	if (length == 0) {
 		status_trb->control |= TRB_DIR_IN; /* No Data -> Status IN */
@@ -1075,27 +1098,30 @@ int xhci_control_transfer(struct xhci_hc *hc, uint8_t slot_id,
 		}
 
 		uint32_t trb_type = (event.control >> 10) & 0x3F;
-		
+
 		/* Port Status Changeイベントは無視 */
 		if (trb_type == TRB_TYPE_PORT_STATUS_CHANGE) {
 			continue;
 		}
-		
+
 		/* Transfer Eventを待つ */
 		if (trb_type == TRB_TYPE_TRANSFER_EVENT) {
 			/* Completion Codeを確認 */
 			uint32_t completion_code = (event.status >> 24) & 0xFF;
-			if (completion_code == 1 || completion_code == 13) { /* Success or Short Packet */
+			if (completion_code == 1 ||
+			    completion_code ==
+				    13) { /* Success or Short Packet */
 #ifdef XHCI_DEBUG
 				printk("xHCI: Control transfer completed\n");
 #endif
 				return 0;
 			} else {
-				printk("xHCI: Control transfer failed with code %u\n", completion_code);
+				printk("xHCI: Control transfer failed with code %u\n",
+				       completion_code);
 				return -3;
 			}
 		}
-		
+
 		attempts++;
 	}
 
@@ -1106,28 +1132,23 @@ int xhci_control_transfer(struct xhci_hc *hc, uint8_t slot_id,
 /**
  * @brief GET_DESCRIPTORを実行
  */
-int xhci_get_descriptor(struct xhci_hc *hc, uint8_t slot_id,
-	uint8_t desc_type, uint8_t desc_index,
-	void *buffer, uint16_t length) {
-	
-	return xhci_control_transfer(hc, slot_id,
-		0x80, /* Device-to-Host, Standard, Device */
+int xhci_get_descriptor(struct xhci_hc *hc, uint8_t slot_id, uint8_t desc_type,
+			uint8_t desc_index, void *buffer, uint16_t length) {
+	return xhci_control_transfer(
+		hc, slot_id, 0x80, /* Device-to-Host, Standard, Device */
 		0x06, /* GET_DESCRIPTOR */
-		(desc_type << 8) | desc_index,
-		0,
-		buffer, length);
+		(desc_type << 8) | desc_index, 0, buffer, length);
 }
 
 /**
  * @brief SET_CONFIGURATIONを実行
  */
-int xhci_set_configuration(struct xhci_hc *hc, uint8_t slot_id, uint8_t config_value) {
-	return xhci_control_transfer(hc, slot_id,
-		0x00, /* Host-to-Device, Standard, Device */
+int xhci_set_configuration(struct xhci_hc *hc, uint8_t slot_id,
+			   uint8_t config_value) {
+	return xhci_control_transfer(
+		hc, slot_id, 0x00, /* Host-to-Device, Standard, Device */
 		0x09, /* SET_CONFIGURATION */
-		config_value,
-		0,
-		NULL, 0);
+		config_value, 0, NULL, 0);
 }
 
 /**
@@ -1169,8 +1190,8 @@ int xhci_setup_keyboard_polling(struct xhci_hc *hc, uint8_t slot_id) {
 	hc->keyboard_endpoint = 1;
 
 	/* 最初のInterrupt IN Transferを送信 */
-	if (xhci_submit_interrupt_in(hc, slot_id, hc->keyboard_endpoint, 
-	                              hc->keyboard_buffer, 8) != 0) {
+	if (xhci_submit_interrupt_in(hc, slot_id, hc->keyboard_endpoint,
+				     hc->keyboard_buffer, 8) != 0) {
 		printk("xHCI: Failed to submit interrupt IN\n");
 		return -4;
 	}
@@ -1178,7 +1199,7 @@ int xhci_setup_keyboard_polling(struct xhci_hc *hc, uint8_t slot_id) {
 #ifdef XHCI_DEBUG
 	printk("xHCI: Keyboard polling setup complete\n");
 #endif
-	
+
 	return 0;
 }
 
@@ -1186,7 +1207,8 @@ int xhci_setup_keyboard_polling(struct xhci_hc *hc, uint8_t slot_id) {
  * @brief キーボードからのレポートをポーリング
  * @return 0:成功（データあり）、負数:エラーまたはデータなし
  */
-int xhci_poll_keyboard(struct xhci_hc *hc, uint8_t slot_id, uint8_t *report_buffer) {
+int xhci_poll_keyboard(struct xhci_hc *hc, uint8_t slot_id,
+		       uint8_t *report_buffer) {
 	if (!hc || slot_id == 0 || !report_buffer || !hc->keyboard_buffer) {
 		return -1;
 	}
@@ -1198,12 +1220,12 @@ int xhci_poll_keyboard(struct xhci_hc *hc, uint8_t slot_id, uint8_t *report_buff
 	}
 
 	uint32_t trb_type = (event.control >> 10) & 0x3F;
-	
+
 	/* Port Status Changeは無視 */
 	if (trb_type == TRB_TYPE_PORT_STATUS_CHANGE) {
 		return -2;
 	}
-	
+
 	/* Transfer Eventを処理 */
 	if (trb_type == TRB_TYPE_TRANSFER_EVENT) {
 		uint32_t completion_code = (event.status >> 24) & 0xFF;
@@ -1218,43 +1240,48 @@ int xhci_poll_keyboard(struct xhci_hc *hc, uint8_t slot_id, uint8_t *report_buff
 		if (completion_code == 1 || completion_code == 13) {
 			/* キーボードレポートをコピー */
 			for (int i = 0; i < 8; i++) {
-				report_buffer[i] = ((uint8_t *)hc->keyboard_buffer)[i];
+				report_buffer[i] =
+					((uint8_t *)hc->keyboard_buffer)[i];
 			}
 
 			/* 次のInterrupt IN Transferを送信 */
-			xhci_submit_interrupt_in(hc, slot_id, hc->keyboard_endpoint,
-			                         hc->keyboard_buffer, 8);
+			xhci_submit_interrupt_in(hc, slot_id,
+						 hc->keyboard_endpoint,
+						 hc->keyboard_buffer, 8);
 
 			return 0; /* データあり */
 		} else {
 #ifdef XHCI_DEBUG
-			printk("xHCI: Transfer event with code %u\n", completion_code);
+			printk("xHCI: Transfer event with code %u\n",
+			       completion_code);
 #endif
 			/* エラーの場合も次のTransferを送信 */
-			xhci_submit_interrupt_in(hc, slot_id, hc->keyboard_endpoint,
-			                         hc->keyboard_buffer, 8);
+			xhci_submit_interrupt_in(hc, slot_id,
+						 hc->keyboard_endpoint,
+						 hc->keyboard_buffer, 8);
 			return -3;
 		}
 	}
-	
+
 	return -2; /* 関係ないイベント */
 }
 
 /**
  * @brief HID Boot Protocolを設定
  */
-int xhci_set_boot_protocol(struct xhci_hc *hc, uint8_t slot_id, uint8_t interface) {
+int xhci_set_boot_protocol(struct xhci_hc *hc, uint8_t slot_id,
+			   uint8_t interface) {
 #ifdef XHCI_DEBUG
-	printk("xHCI: Setting Boot Protocol for slot %u, interface %u\n", slot_id, interface);
+	printk("xHCI: Setting Boot Protocol for slot %u, interface %u\n",
+	       slot_id, interface);
 #endif
 
 	/* SET_PROTOCOL (Boot Protocol) */
-	return xhci_control_transfer(hc, slot_id,
-		0x21, /* Class, Interface, Host-to-Device */
+	return xhci_control_transfer(
+		hc, slot_id, 0x21, /* Class, Interface, Host-to-Device */
 		0x0B, /* SET_PROTOCOL */
-		0,    /* 0 = Boot Protocol */
-		interface,
-		NULL, 0);
+		0, /* 0 = Boot Protocol */
+		interface, NULL, 0);
 }
 
 /**
@@ -1288,7 +1315,8 @@ int xhci_configure_keyboard(struct xhci_hc *hc, uint8_t slot_id) {
 	}
 
 #ifdef XHCI_DEBUG
-	printk("xHCI: Config descriptor received, bConfigurationValue = %u\n", config_desc[5]);
+	printk("xHCI: Config descriptor received, bConfigurationValue = %u\n",
+	       config_desc[5]);
 #endif
 
 	/* SET_CONFIGURATIONを実行 */
@@ -1318,7 +1346,8 @@ int xhci_configure_keyboard(struct xhci_hc *hc, uint8_t slot_id) {
 /**
  * @brief Interrupt IN Transferを送信
  */
-int xhci_submit_interrupt_in(struct xhci_hc *hc, uint8_t slot_id, uint8_t endpoint, void *buffer, uint16_t length) {
+int xhci_submit_interrupt_in(struct xhci_hc *hc, uint8_t slot_id,
+			     uint8_t endpoint, void *buffer, uint16_t length) {
 	if (!hc || slot_id == 0 || !buffer) {
 		return -1;
 	}
@@ -1335,9 +1364,10 @@ int xhci_submit_interrupt_in(struct xhci_hc *hc, uint8_t slot_id, uint8_t endpoi
 		/* Transfer Ringを新規作成 */
 		transfer_ring = (struct xhci_trb *)xhci_alloc_aligned(
 			TRANSFER_RING_SIZE * sizeof(struct xhci_trb), 16);
-		
+
 		if (!transfer_ring) {
-			printk("xHCI: Failed to allocate Transfer Ring for EP%u\n", endpoint);
+			printk("xHCI: Failed to allocate Transfer Ring for EP%u\n",
+			       endpoint);
 			return -3;
 		}
 
@@ -1362,7 +1392,8 @@ int xhci_submit_interrupt_in(struct xhci_hc *hc, uint8_t slot_id, uint8_t endpoi
 	struct xhci_trb *trb = &transfer_ring[tr_index];
 	trb->parameter = (uint64_t)(uintptr_t)buffer;
 	trb->status = length | (0 << 22); /* TD Size = 0 */
-	trb->control = (TRB_TYPE_NORMAL << 10) | TRB_IOC | TRB_ISP | (cycle ? TRB_CYCLE : 0);
+	trb->control = (TRB_TYPE_NORMAL << 10) | TRB_IOC | TRB_ISP |
+		       (cycle ? TRB_CYCLE : 0);
 
 	tr_index++;
 	if (tr_index >= TRANSFER_RING_SIZE - 1) {

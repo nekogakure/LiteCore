@@ -16,6 +16,7 @@
 #include <fs/ext/ext2.h>
 #include <driver/timer/timer.h>
 #include <boot_info.h>
+#include <task/multi_task.h>
 
 #include <tests/define.h>
 #include <tests/run.h>
@@ -36,9 +37,11 @@ void kmain(BOOT_INFO *boot_info) {
 	g_boot_info = boot_info;
 
 	console_init();
+	console_set_framebuffer(boot_info);
+
 	gdt_build();
 	gdt_install_lgdt();
-	gdt_install_jump();  // セグメントレジスタの更新も実行
+	gdt_install_jump(); // セグメントレジスタの更新も実行
 
 	printk("Welcome to Litecore kernel!\n");
 	printk("    Version : %s\n", VERSION);
@@ -53,6 +56,10 @@ void kmain(BOOT_INFO *boot_info) {
 	new_line();
 	printk("====== TESTS ======\n");
 	run_test();
+
+	// マルチタスクテストを実行
+	new_line();
+	multi_task_test();
 #endif /* TEST_TRUE */
 
 	new_line();

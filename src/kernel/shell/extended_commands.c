@@ -49,9 +49,9 @@ static int cmd_mem(int argc, char **argv) {
 		uint32_t free_mb_x100 = (free_bytes * 100) / (1024 * 1024);
 
 		printk("Physical frames: total=%u (%u.%02uMB) used=%u (%u.%02uMB) free=%u (%u.%02uMB)\n",
-			   total_frames, total_mb_x100 / 100, total_mb_x100 % 100,
-			   used_frames, used_mb_x100 / 100, used_mb_x100 % 100,
-			   free_frames, free_mb_x100 / 100, free_mb_x100 % 100);
+		       total_frames, total_mb_x100 / 100, total_mb_x100 % 100,
+		       used_frames, used_mb_x100 / 100, used_mb_x100 % 100,
+		       free_frames, free_mb_x100 / 100, free_mb_x100 % 100);
 	}
 
 	/* Heap statistics */
@@ -64,9 +64,8 @@ static int cmd_mem(int argc, char **argv) {
 	uint32_t free_kb_x100 = (heap_free * 100) / 1024;
 
 	printk("Kernel heap: total=%u bytes (%u.%02uKB) free=%u bytes (%u.%02uKB) largest_free=%u bytes\n",
-		   heap_total, total_kb_x100 / 100, total_kb_x100 % 100,
-		   heap_free, free_kb_x100 / 100, free_kb_x100 % 100,
-		   heap_largest);
+	       heap_total, total_kb_x100 / 100, total_kb_x100 % 100, heap_free,
+	       free_kb_x100 / 100, free_kb_x100 % 100, heap_largest);
 
 	return 0;
 }
@@ -348,19 +347,27 @@ static const char *pci_get_class_name(uint8_t base_class, uint8_t sub_class) {
 		return "Unclassified";
 	case 0x01:
 		switch (sub_class) {
-		case 0x01: return "IDE Controller";
-		case 0x05: return "ATA Controller";
-		case 0x06: return "SATA Controller";
-		case 0x08: return "NVME Controller";
-		default: return "Mass Storage Controller";
+		case 0x01:
+			return "IDE Controller";
+		case 0x05:
+			return "ATA Controller";
+		case 0x06:
+			return "SATA Controller";
+		case 0x08:
+			return "NVME Controller";
+		default:
+			return "Mass Storage Controller";
 		}
 	case 0x02:
 		return "Network Controller";
 	case 0x03:
 		switch (sub_class) {
-		case 0x00: return "VGA Controller";
-		case 0x01: return "XGA Controller";
-		default: return "Display Controller";
+		case 0x00:
+			return "VGA Controller";
+		case 0x01:
+			return "XGA Controller";
+		default:
+			return "Display Controller";
 		}
 	case 0x04:
 		return "Multimedia Controller";
@@ -368,10 +375,14 @@ static const char *pci_get_class_name(uint8_t base_class, uint8_t sub_class) {
 		return "Memory Controller";
 	case 0x06:
 		switch (sub_class) {
-		case 0x00: return "Host Bridge";
-		case 0x01: return "ISA Bridge";
-		case 0x04: return "PCI-to-PCI Bridge";
-		default: return "Bridge Device";
+		case 0x00:
+			return "Host Bridge";
+		case 0x01:
+			return "ISA Bridge";
+		case 0x04:
+			return "PCI-to-PCI Bridge";
+		default:
+			return "Bridge Device";
 		}
 	case 0x07:
 		return "Communication Controller";
@@ -385,9 +396,12 @@ static const char *pci_get_class_name(uint8_t base_class, uint8_t sub_class) {
 		return "Processor";
 	case 0x0C:
 		switch (sub_class) {
-		case 0x00: return "FireWire Controller";
-		case 0x03: return "USB Controller";
-		default: return "Serial Bus Controller";
+		case 0x00:
+			return "FireWire Controller";
+		case 0x03:
+			return "USB Controller";
+		default:
+			return "Serial Bus Controller";
 		}
 	case 0x0D:
 		return "Wireless Controller";
@@ -409,13 +423,20 @@ static const char *pci_get_class_name(uint8_t base_class, uint8_t sub_class) {
  */
 static const char *pci_get_vendor_name(uint16_t vendor_id) {
 	switch (vendor_id) {
-	case 0x8086: return "Intel";
-	case 0x1234: return "QEMU";
-	case 0x1b36: return "Red Hat";
-	case 0x1022: return "AMD";
-	case 0x10de: return "NVIDIA";
-	case 0x1002: return "ATI/AMD";
-	default: return "Unknown";
+	case 0x8086:
+		return "Intel";
+	case 0x1234:
+		return "QEMU";
+	case 0x1b36:
+		return "Red Hat";
+	case 0x1022:
+		return "AMD";
+	case 0x10de:
+		return "NVIDIA";
+	case 0x1002:
+		return "ATI/AMD";
+	default:
+		return "Unknown";
 	}
 }
 
@@ -424,7 +445,7 @@ static const char *pci_get_vendor_name(uint16_t vendor_id) {
  */
 static int cmd_devices(int argc, char **argv) {
 	int verbose = 0;
-	
+
 	// -v オプションで詳細表示
 	if (argc > 1 && argv[1][0] == '-' && argv[1][1] == 'v') {
 		verbose = 1;
@@ -458,17 +479,21 @@ static int cmd_devices(int argc, char **argv) {
 				uint8_t base_class = (class_rev >> 24) & 0xFF;
 				uint8_t sub_class = (class_rev >> 16) & 0xFF;
 
-				const char *class_name = pci_get_class_name(base_class, sub_class);
+				const char *class_name = pci_get_class_name(
+					base_class, sub_class);
 
 				if (verbose) {
-					const char *vendor_name = pci_get_vendor_name(vendor);
+					const char *vendor_name =
+						pci_get_vendor_name(vendor);
 					printk("%02x:%02x.%x     %s [%04x:%04x]  0x%02x   %s\n",
 					       bus, device, func, vendor_name,
-					       vendor, device_id, base_class, class_name);
+					       vendor, device_id, base_class,
+					       class_name);
 				} else {
 					printk("%3d  %3d  %4d  0x%04x  0x%04x  0x%02x   %s\n",
-					       bus, device, func, vendor, device_id,
-					       base_class, class_name);
+					       bus, device, func, vendor,
+					       device_id, base_class,
+					       class_name);
 				}
 
 				device_count++;

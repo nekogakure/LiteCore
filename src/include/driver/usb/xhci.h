@@ -188,7 +188,6 @@ struct xhci_input_context {
 	struct xhci_endpoint_context ep[31];
 } __attribute__((packed));
 
-
 /* xHCI Host Controller 構造体 */
 struct xhci_hc {
 	/* MMIO Base Address */
@@ -243,7 +242,6 @@ struct xhci_hc {
 
 typedef struct xhci_hc xhci_controller;
 
-
 struct xhci_hc *xhci_find_controller(void);
 int xhci_init(void);
 int xhci_reset_controller(struct xhci_hc *hc);
@@ -254,7 +252,8 @@ uint32_t xhci_get_port_status(struct xhci_hc *hc, uint32_t port_num);
 int xhci_setup_command_ring(struct xhci_hc *hc);
 int xhci_setup_event_ring(struct xhci_hc *hc);
 void xhci_ring_doorbell(struct xhci_hc *hc, uint8_t slot_id, uint8_t target);
-int xhci_wait_for_event(struct xhci_hc *hc, struct xhci_trb *event_trb, uint32_t timeout_ms);
+int xhci_wait_for_event(struct xhci_hc *hc, struct xhci_trb *event_trb,
+			uint32_t timeout_ms);
 void xhci_handle_events(struct xhci_hc *hc);
 
 /* Phase 3: Device Enumeration functions */
@@ -266,24 +265,26 @@ void xhci_handle_port_status_change(struct xhci_hc *hc, uint8_t port);
 
 /* Phase 4: USB Protocol functions */
 int xhci_control_transfer(struct xhci_hc *hc, uint8_t slot_id,
-	uint8_t request_type, uint8_t request,
-	uint16_t value, uint16_t index,
-	void *data, uint16_t length);
-int xhci_get_descriptor(struct xhci_hc *hc, uint8_t slot_id,
-	uint8_t desc_type, uint8_t desc_index,
-	void *buffer, uint16_t length);
-int xhci_set_configuration(struct xhci_hc *hc, uint8_t slot_id, uint8_t config_value);
+			  uint8_t request_type, uint8_t request, uint16_t value,
+			  uint16_t index, void *data, uint16_t length);
+int xhci_get_descriptor(struct xhci_hc *hc, uint8_t slot_id, uint8_t desc_type,
+			uint8_t desc_index, void *buffer, uint16_t length);
+int xhci_set_configuration(struct xhci_hc *hc, uint8_t slot_id,
+			   uint8_t config_value);
 
 /* Helper functions */
 void *xhci_alloc_aligned(uint32_t size, uint32_t alignment);
 void xhci_free_aligned(void *ptr);
 uint8_t xhci_get_keyboard_slot(struct xhci_hc *hc);
 int xhci_setup_keyboard_polling(struct xhci_hc *hc, uint8_t slot_id);
-int xhci_poll_keyboard(struct xhci_hc *hc, uint8_t slot_id, uint8_t *report_buffer);
+int xhci_poll_keyboard(struct xhci_hc *hc, uint8_t slot_id,
+		       uint8_t *report_buffer);
 
 /* HID Keyboard specific */
 int xhci_configure_keyboard(struct xhci_hc *hc, uint8_t slot_id);
-int xhci_set_boot_protocol(struct xhci_hc *hc, uint8_t slot_id, uint8_t interface);
-int xhci_submit_interrupt_in(struct xhci_hc *hc, uint8_t slot_id, uint8_t endpoint, void *buffer, uint16_t length);
+int xhci_set_boot_protocol(struct xhci_hc *hc, uint8_t slot_id,
+			   uint8_t interface);
+int xhci_submit_interrupt_in(struct xhci_hc *hc, uint8_t slot_id,
+			     uint8_t endpoint, void *buffer, uint16_t length);
 
 #endif /* _USB_XHCI_H */

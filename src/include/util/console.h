@@ -1,7 +1,12 @@
 #ifndef _CONSOLE_H
 #define _CONSOLE_H
 
+#include <boot_info.h>
+
 void console_init();
+void console_set_framebuffer(BOOT_INFO *boot_info);
+void console_set_colors(uint32_t fg, uint32_t bg);
+void console_get_colors(uint32_t *fg, uint32_t *bg);
 void new_line();
 int printk(const char *fmt, ...);
 void console_scroll_page_up(void);
