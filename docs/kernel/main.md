@@ -1,5 +1,5 @@
 この章では、カーネルのメイン関数とエントリポイントについて記述します。
-実装されているファイルは[main.c](../../src/kernel/main.c), [entry.c](../../src/kernel/entry.c)です。
+実装されているファイルは[main.c](https://github.com/nekogakure/LiteCore/blob/main/src/kernel/main.c), [entry.c](https://github.com/nekogakure/LiteCore/blob/main/src/kernel/entry.c)です。
 
 ## 概要
 mainモジュールは、カーネルのメイン実行ループを提供します。システムの初期化後、イベント処理、シェルの実行、CPUの休止を繰り返し行います。entryモジュールは、ブートローダーからカーネルに制御が移る最初のCコードエントリポイントです。

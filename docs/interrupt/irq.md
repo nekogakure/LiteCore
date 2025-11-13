@@ -1,5 +1,5 @@
 この章では、割り込み要求（IRQ）管理について記述します。
-実装されているファイルは[irq.c](../../src/kernel/interrupt/irq.c), [irq.h](../../src/include/interrupt/irq.h), [interrupt.c](../../src/kernel/interrupt/interrupt.c)です。
+実装されているファイルは[irq.c](https://github.com/nekogakure/LiteCore/blob/main/src/kernel/interrupt/irq.c), [irq.h](https://github.com/nekogakure/LiteCore/blob/main/src/include/interrupt/irq.h), [interrupt.c](https://github.com/nekogakure/LiteCore/blob/main/src/kernel/interrupt/interrupt.c)です。
 
 ## 概要
 IRQ管理モジュールは、割り込みハンドラの登録、割り込みイベントのキューイング、割り込みフラグの保存/復元を提供します。FIFOキューを使用して割り込みイベントを非同期に処理し、割り込みコンテキストと通常コンテキストを分離します。

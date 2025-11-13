@@ -1,5 +1,5 @@
 この章では、シェルの入出力とインタラクティブ機能について記述します。
-実装されているファイルは[shell.c](../../../src/kernel/shell/shell.c), [shell.h](../../../src/include/shell/shell.h)です。
+実装されているファイルは[shell.c](https://github.com/nekogakure/LiteCore/blob/main/src/kernel/shell/shell.c), [shell.h](https://github.com/nekogakure/LiteCore/blob/main/src/include/shell/shell.h)です。
 
 ## 概要
 シェルのインタラクティブな入出力機能を提供します。ユーザー入力の読み取り、バッファ管理、プロンプト表示、バックスペース処理などを実装します。

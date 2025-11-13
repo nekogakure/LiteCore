@@ -1,5 +1,5 @@
 この章では、ATAドライバについて記述します。
-実装されているファイルは[ata.c](../../src/kernel/driver/ata.c), [ata.h](../../src/include/driver/ata.h)です。
+実装されているファイルは[ata.c](https://github.com/nekogakure/LiteCore/blob/main/src/kernel/driver/ata.c), [ata.h](https://github.com/nekogakure/LiteCore/blob/main/src/include/driver/ata.h)です。
 
 ## 概要
 ATAドライバは、IDE/ATAハードディスクドライブへのアクセスを提供します。PIOモードを使用してセクタの読み書きを行い、LBA28アドレッシングをサポートします。プライマリおよびセカンダリバスの両方に対応し、マスター/スレーブドライブの検出と制御が可能です。

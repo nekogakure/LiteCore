@@ -1,5 +1,5 @@
 この章では、USB プロトコルの定義について記述します。
-実装されているファイルは[usb.h](../../../src/include/driver/usb/usb.h)です。
+実装されているファイルは[usb.h](https://github.com/nekogakure/LiteCore/blob/main/src/include/driver/usb/usb.h)です。
 
 ## 概要
 

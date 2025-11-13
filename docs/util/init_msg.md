@@ -1,5 +1,5 @@
 この章では、カーネル初期化処理について記述します。
-実装されているファイルは[init_msg.c](../../src/kernel/util/init_msg.c), [init_msg.h](../../src/include/util/init_msg.h)です。
+実装されているファイルは[init_msg.c](https://github.com/nekogakure/LiteCore/blob/main/src/kernel/util/init_msg.c), [init_msg.h](https://github.com/nekogakure/LiteCore/blob/main/src/include/util/init_msg.h)です。
 
 ## 概要
 カーネル初期化モジュールは、システムの起動時に必要なすべてのサブシステムを初期化します。メモリ管理、割り込み処理、デバイスドライバ、ファイルシステムを順番に初期化し、システムを使用可能な状態にします。

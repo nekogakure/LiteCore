@@ -1,5 +1,5 @@
 この章では、シェルシステムの統合初期化について記述します。
-実装されているファイルは[shell_integration.c](../../../src/kernel/shell/shell_integration.c), [shell_integration.h](../../../src/include/shell/shell_integration.h)です。
+実装されているファイルは[shell_integration.c](https://github.com/nekogakure/LiteCore/blob/main/src/kernel/shell/shell_integration.c), [shell_integration.h](https://github.com/nekogakure/LiteCore/blob/main/src/include/shell/shell_integration.h)です。
 
 ## 概要
 シェルシステム全体の初期化を統合的に管理するモジュールです。シェル本体の初期化と、すべてのコマンド（組み込みと拡張）の登録を一括で行います。

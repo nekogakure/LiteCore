@@ -1,5 +1,5 @@
 この章では、入出力ユーティリティについて記述します。
-実装されているファイルは[io.c](../../src/kernel/util/io.c), [io.h](../../src/include/util/io.h)です。
+実装されているファイルは[io.c](https://github.com/nekogakure/LiteCore/blob/main/src/kernel/util/io.c), [io.h](https://github.com/nekogakure/LiteCore/blob/main/src/include/util/io.h)です。
 
 ## 概要
 入出力ユーティリティは、VGAテキストメモリへの低レベルアクセス、ポートI/O操作、CPU制御機能を提供します。画面クリア、直接メモリ書き込み、inb/outbなどのポートアクセス関数が含まれます。

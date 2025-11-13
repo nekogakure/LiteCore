@@ -1,5 +1,5 @@
 この章では、xHCI (eXtensible Host Controller Interface) ホストコントローラドライバについて記述します。
-実装されているファイルは[xhci.c](../../../src/kernel/driver/usb/xhci.c), [xhci.h](../../../src/include/driver/usb/xhci.h)です。
+実装されているファイルは[xhci.c](https://github.com/nekogakure/LiteCore/blob/main/src/kernel/driver/usb/xhci.c), [xhci.h](https://github.com/nekogakure/LiteCore/blob/main/src/include/driver/usb/xhci.h)です。
 
 ## 概要
 

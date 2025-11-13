@@ -1,5 +1,5 @@
 この章では、キーボードドライバについて記述します。
-実装されているファイルは[keyboard.c](../../src/kernel/device/keyboard.c), [keyboard.h](../../src/include/device/keyboard.h)です。
+実装されているファイルは[keyboard.c](https://github.com/nekogakure/LiteCore/blob/main/src/kernel/device/keyboard.c), [keyboard.h](https://github.com/nekogakure/LiteCore/blob/main/src/include/device/keyboard.h)です。
 
 ## 概要
 キーボードドライバは、PS/2キーボードからの入力を処理し、文字バッファを管理します。スキャンコードをASCII文字に変換し、Shift、Ctrl、Altキーの状態を管理します。リングバッファを使用して入力をバッファリングし、ブロッキング/ノンブロッキングの読み取りをサポートします。

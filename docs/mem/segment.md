@@ -1,5 +1,5 @@
 この章では、セグメント記述子テーブル（GDT）について記述します。
-実装されているファイルは[segment.c](../../src/kernel/mem/segment.c), [segment.h](../../src/include/mem/segment.h)です。
+実装されているファイルは[segment.c](https://github.com/nekogakure/LiteCore/blob/main/src/kernel/mem/segment.c), [segment.h](https://github.com/nekogakure/LiteCore/blob/main/src/include/mem/segment.h)です。
 
 ## 概要
 セグメント機構は、x86のGDT（Global Descriptor Table）を管理します。カーネルモードとユーザーモードのコードセグメントとデータセグメントを設定し、保護モードでのメモリセグメンテーションを実現します。NULLセグメント、カーネルコード/データ、ユーザーコード/データの5つのセグメントを定義します。

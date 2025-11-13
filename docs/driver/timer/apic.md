@@ -1,5 +1,5 @@
 この章では、APIC Timerドライバについて記述します。
-実装されているファイルは[apic.c](../../../src/kernel/driver/timer/apic.c), [apic.h](../../../src/include/driver/timer/apic.h)です。
+実装されているファイルは[apic.c](https://github.com/nekogakure/LiteCore/blob/main/src/kernel/driver/timer/apic.c), [apic.h](https://github.com/nekogakure/LiteCore/blob/main/src/include/driver/timer/apic.h)です。
 
 ## 概要
 APIC (Advanced Programmable Interrupt Controller) Timerは、x86_64プロセッサに内蔵された高精度タイマーです。このドライバは、APIC Timerを使用してシステム時刻の管理、タイマー割り込みの生成、および遅延処理を実装します。ACPI PM Timerを使用してキャリブレーションを行い、正確な周波数を計算します。

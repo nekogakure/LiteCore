@@ -1,5 +1,5 @@
 この章では、USBキーボードドライバについて記述します。
-実装されているファイルは[usb_keyboard.c](../../../src/kernel/driver/usb/usb_keyboard.c)です。
+実装されているファイルは[usb_keyboard.c](https://github.com/nekogakure/LiteCore/blob/main/src/kernel/driver/usb/usb_keyboard.c)です。
 
 ## 概要
 

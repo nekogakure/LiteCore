@@ -1,5 +1,5 @@
 この章では、UEFI Timer（PIT）ドライバについて記述します。
-実装されているファイルは[uefi_timer.c](../../../src/kernel/driver/timer/uefi_timer.c), [uefi_timer.h](../../../src/include/driver/timer/uefi_timer.h)です。
+実装されているファイルは[uefi_timer.c](https://github.com/nekogakure/LiteCore/blob/main/src/kernel/driver/timer/uefi_timer.c), [uefi_timer.h](https://github.com/nekogakure/LiteCore/blob/main/src/include/driver/timer/uefi_timer.h)です。
 
 ## 概要
 UEFI環境用のタイマードライバです。PIT (Programmable Interval Timer) を使用してタイマー割り込みを生成し、システム時刻の管理とスリープ機能を提供します。UEFI環境ではAPIC Timerの代わりにこのドライバが使用されます。

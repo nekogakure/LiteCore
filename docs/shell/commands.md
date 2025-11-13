@@ -1,5 +1,5 @@
 この章では、シェルコマンドシステムについて記述します。
-実装されているファイルは[commands.c](../../../src/kernel/shell/commands.c), [commands.h](../../../src/include/shell/commands.h)です。
+実装されているファイルは[commands.c](https://github.com/nekogakure/LiteCore/blob/main/src/kernel/shell/commands.c), [commands.h](https://github.com/nekogakure/LiteCore/blob/main/src/include/shell/commands.h)です。
 
 ## 概要
 シェルコマンドシステムは、ユーザーがテキストベースのコマンドを入力し実行するための基盤機能を提供します。コマンドの登録、パース、実行を管理し、組み込みコマンド（help, echo, clear）を含みます。

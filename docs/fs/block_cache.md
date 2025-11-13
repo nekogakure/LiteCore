@@ -1,5 +1,5 @@
 この章では、ブロックキャッシュについて記述します。
-実装されているファイルは[block_cache.c](../../src/kernel/fs/block_cache.c), [block_cache.h](../../src/include/fs/block_cache.h)です。
+実装されているファイルは[block_cache.c](https://github.com/nekogakure/LiteCore/blob/main/src/kernel/fs/block_cache.c), [block_cache.h](https://github.com/nekogakure/LiteCore/blob/main/src/include/fs/block_cache.h)です。
 
 ## 概要
 ブロックキャッシュは、ディスクI/Oのパフォーマンスを向上させるためのLRU（Least Recently Used）キャッシュです。ATAドライブからのブロック読み取り/書き込みをキャッシュし、頻繁にアクセスされるブロックをメモリに保持します。ダーティブロックの管理と遅延書き込みをサポートします。

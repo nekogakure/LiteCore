@@ -1,5 +1,5 @@
 この章では、スピンロック機構について記述します。
-実装されているファイルは[spinlock.c](../../src/kernel/sync/spinlock.c), [spinlock.h](../../src/include/sync/spinlock.h)です。
+実装されているファイルは[spinlock.c](https://github.com/nekogakure/LiteCore/blob/main/src/kernel/sync/spinlock.c), [spinlock.h](https://github.com/nekogakure/LiteCore/blob/main/src/include/sync/spinlock.h)です。
 
 ## 概要
 スピンロックは、マルチコアシステムや割り込みコンテキストでの排他制御を提供する同期プリミティブです。アトミックな命令（xchg）を使用してロックの取得と解放を行い、ビジーウェイトで実装されています。割り込みフラグの保存と復元をサポートし、割り込みハンドラ内でも安全に使用できます。

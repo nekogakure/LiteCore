@@ -1,5 +1,5 @@
 この章では、カーネルのエントリーポイントについて記述します。
-実装されているファイルは[entry.c](../../src/kernel/entry.c)です。
+実装されているファイルは[entry.c](https://github.com/nekogakure/LiteCore/blob/main/src/kernel/entry.c)です。
 
 ## 概要
 カーネルのエントリーポイントを定義するファイルです。ブートローダーからカーネルに制御が移ると、最初にこの`kernel_entry`関数が呼ばれます。この関数はブート情報を受け取り、メイン関数`kmain`に制御を渡します。

@@ -1,5 +1,5 @@
 この章では、割り込み記述子テーブル（IDT）について記述します。
-実装されているファイルは[idt.c](../../src/kernel/interrupt/idt.c), [idt.h](../../src/include/interrupt/idt.h)です。
+実装されているファイルは[idt.c](https://github.com/nekogakure/LiteCore/blob/main/src/kernel/interrupt/idt.c), [idt.h](https://github.com/nekogakure/LiteCore/blob/main/src/include/interrupt/idt.h)です。
 
 ## 概要
 IDT（Interrupt Descriptor Table）モジュールは、x86の割り込みと例外の処理を初期化します。256個のIDTエントリを設定し、PIC（Programmable Interrupt Controller）を再マッピングして、割り込みベクタをカーネルが使用する範囲（32-255）に配置します。

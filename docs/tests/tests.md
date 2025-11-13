@@ -1,5 +1,5 @@
 この章では、テストシステムについて記述します。
-実装されているファイルは[run.c](../../src/kernel/tests/run.c), [run.h](../../src/include/tests/run.h), [define.h](../../src/include/tests/define.h)と各種テストファイルです。
+実装されているファイルは[run.c](https://github.com/nekogakure/LiteCore/blob/main/src/kernel/tests/run.c), [run.h](https://github.com/nekogakure/LiteCore/blob/main/src/include/tests/run.h), [define.h](https://github.com/nekogakure/LiteCore/blob/main/src/include/tests/define.h)と各種テストファイルです。
 
 ## 概要
 テストシステムは、カーネルの各サブシステムの機能を検証するためのユニットテストを提供します。メモリ管理、ページング、割り込み、ファイルシステムなどのテストが含まれます。テストは条件付きコンパイルで有効化/無効化できます。

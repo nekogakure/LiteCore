@@ -1,5 +1,5 @@
 この章では、拡張シェルコマンドについて記述します。
-実装されているファイルは[extended_commands.c](../../../src/kernel/shell/extended_commands.c)です。
+実装されているファイルは[extended_commands.c](https://github.com/nekogakure/LiteCore/blob/main/src/kernel/shell/extended_commands.c)です。
 
 ## 概要
 システムの機能にアクセスするための拡張コマンド群を提供します。メモリ情報、ファイルシステム操作、デバイス情報、システム情報などの実用的なコマンドを含みます。

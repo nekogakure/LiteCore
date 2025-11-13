@@ -1,5 +1,5 @@
 この章では、統合タイマーインターフェースについて記述します。
-実装されているファイルは[timer.c](../../../src/kernel/driver/timer/timer.c), [timer.h](../../../src/include/driver/timer/timer.h)です。
+実装されているファイルは[timer.c](https://github.com/nekogakure/LiteCore/blob/main/src/kernel/driver/timer/timer.c), [timer.h](https://github.com/nekogakure/LiteCore/blob/main/src/include/driver/timer/timer.h)です。
 
 ## 概要
 環境に応じて適切なタイマードライバを選択し、統一されたインターフェースを提供するラッパーモジュールです。UEFI環境ではUEFI Timer（PIT）を、それ以外の環境ではAPIC Timerを使用します。

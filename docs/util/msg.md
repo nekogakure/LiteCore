@@ -1,5 +1,5 @@
 この章では、エラーメッセージ表示機能について記述します。
-実装されているファイルは[msg.c](../../../src/kernel/util/msg.c)です。
+実装されているファイルは[msg.c](https://github.com/nekogakure/LiteCore/blob/main/src/kernel/util/msg.c)です。
 
 ## 概要
 エラーコードから対応するエラーメッセージを表示するユーティリティ機能を提供します。統一されたエラーメッセージフォーマットにより、デバッグを容易にします。
