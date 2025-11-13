@@ -1,5 +1,5 @@
 この章では、HID (Human Interface Device) の定義について記述します。
-実装されているファイルは[hid.h](../../../src/include/driver/usb/hid.h)です。
+実装されているファイルは[hid.h](https://github.com/nekogakure/LiteCore/blob/main/src/include/driver/usb/hid.h)です。
 
 ## 概要
 

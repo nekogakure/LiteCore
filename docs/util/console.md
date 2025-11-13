@@ -1,5 +1,5 @@
 この章では、コンソール出力機能について記述します。
-実装されているファイルは[console.c](../../src/kernel/util/console.c), [console.h](../../src/include/util/console.h)です。
+実装されているファイルは[console.c](https://github.com/nekogakure/LiteCore/blob/main/src/kernel/util/console.c), [console.h](https://github.com/nekogakure/LiteCore/blob/main/src/include/util/console.h)です。
 
 ## 概要
 コンソールモジュールは、VGAテキストモード（80x25）でのテキスト出力を管理します。カーソル位置の追跡、スクロール、履歴バッファ、printk形式の出力をサポートします。シリアルポート出力にも対応しています。

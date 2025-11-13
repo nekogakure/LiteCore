@@ -1,5 +1,5 @@
 この章では、ページング機構について記述します。
-実装されているファイルは[paging.c](../../src/kernel/mem/paging.c), [paging.h](../../src/include/mem/paging.h)です。
+実装されているファイルは[paging.c](https://github.com/nekogakure/LiteCore/blob/main/src/kernel/mem/paging.c), [paging.h](https://github.com/nekogakure/LiteCore/blob/main/src/include/mem/paging.h)です。
 
 ## 概要
 ページング機構は、x86の仮想メモリ管理を実装します。ページディレクトリとページテーブルを使用して、物理アドレスから仮想アドレスへのマッピングを管理します。恒等マッピング（identity mapping）の初期化、ページフォルトハンドラ、動的なページマッピング/アンマッピングをサポートします。

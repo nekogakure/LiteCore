@@ -1,5 +1,5 @@
 この章では、仮想ファイルシステム（VFS）レイヤーについて記述します。
-実装されているファイルは[fs.c](../../src/kernel/fs/fs.c), [fs.h](../../src/include/fs/fs.h)です。
+実装されているファイルは[fs.c](https://github.com/nekogakure/LiteCore/blob/main/src/kernel/fs/fs.c), [fs.h](https://github.com/nekogakure/LiteCore/blob/main/src/include/fs/fs.h)です。
 
 ## 概要
 VFS（Virtual File System）レイヤーは、複数のファイルシステム実装（FAT12、ext2）に対する統一されたインターフェースを提供します。ファイルシステムの種類を自動検出し、適切なバックエンドにディスパッチします。ディレクトリの列挙、ファイルの読み取りなど、基本的なファイル操作をサポートします。

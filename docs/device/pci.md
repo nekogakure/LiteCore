@@ -1,5 +1,5 @@
 この章では、PCIバスドライバについて記述します。
-実装されているファイルは[pci.c](../../src/kernel/device/pci.c), [pci.h](../../src/include/device/pci.h)です。
+実装されているファイルは[pci.c](https://github.com/nekogakure/LiteCore/blob/main/src/kernel/device/pci.c), [pci.h](https://github.com/nekogakure/LiteCore/blob/main/src/include/device/pci.h)です。
 
 ## 概要
 PCIドライバは、PCIバス上のデバイスを検出し、コンフィギュレーション空間にアクセスする機能を提供します。標準的なPCIコンフィギュレーション空間アクセスメカニズムを使用して、バス、デバイス、ファンクションを列挙します。

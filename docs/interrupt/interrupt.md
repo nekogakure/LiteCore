@@ -1,5 +1,5 @@
 この章では、割り込みハンドラ管理について記述します。
-実装されているファイルは[interrupt.c](../../src/kernel/interrupt/interrupt.c)です。
+実装されているファイルは[interrupt.c](https://github.com/nekogakure/LiteCore/blob/main/src/kernel/interrupt/interrupt.c)です。
 
 ## 概要
 割り込みハンドラ管理モジュールは、IRQハンドラの登録、FIFOキューによるイベント管理、非同期イベント処理を提供します。複数のハンドラを1つのIRQに登録でき、イベントをキューイングして後で処理できます。

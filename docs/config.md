@@ -1,5 +1,5 @@
 この章では、設定ファイルについて記述します。
-実装されているファイルは[util/config.h](../../src/include/util/config.h)です。
+実装されているファイルは[util/config.h](https://github.com/nekogakure/LiteCore/blob/main/src/include/util/config.h)です。
 
 ## 概要
 util/config.hは、カーネル全体で使用されるグローバル設定と定数を定義するヘッダファイルです。バージョン情報、メモリレイアウト、VGA設定などが含まれます。

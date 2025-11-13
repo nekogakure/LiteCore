@@ -1,5 +1,5 @@
 この章では、IDTロード処理について記述します。
-実装されているファイルは[load_idt.c](../../src/kernel/interrupt/load_idt.c)です。
+実装されているファイルは[load_idt.c](https://github.com/nekogakure/LiteCore/blob/main/src/kernel/interrupt/load_idt.c)です。
 
 ## 概要
 IDTロードモジュールは、IDT（Interrupt Descriptor Table）をCPUにロードするための低レベル関数を提供します。`lidt`命令のラッパーとして機能します。

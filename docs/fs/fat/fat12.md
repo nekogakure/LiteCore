@@ -1,5 +1,5 @@
 この章では、FAT12ファイルシステムについて記述します。
-実装されているファイルは[fat12.c](../../../src/kernel/fs/fat/fat12.c), [fat12.h](../../../src/include/fs/fat/fat12.h)です。
+実装されているファイルは[fat12.c](https://github.com/nekogakure/LiteCore/blob/main/src/kernel/fs/fat/fat12.c), [fat12.h](https://github.com/nekogakure/LiteCore/blob/main/src/include/fs/fat/fat12.h)です。
 
 ## 概要
 FAT12ファイルシステムドライバは、MS-DOS互換のFAT12ファイルシステムをサポートします。ブートセクタの解析、FATテーブルの読み取り、ルートディレクトリのエントリ列挙、ファイルの読み取りを実装しています。主にフロッピーディスクイメージや小容量ストレージで使用されます。
