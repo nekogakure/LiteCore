@@ -81,7 +81,24 @@ static void idt_set_gate(int n, uint64_t handler) {
 void irq_handler_c(uint32_t vec) {
 	if (vec >= 32 && vec < 32 + 16) {
 		uint32_t irq = vec - 32;
-		// ベクタ番号をそのまま渡す（interrupt_registerもベクタ番号で登録される）
+
+		// タイマー割り込み(IRQ 0 = vec 32)は直接ハンドラを呼んでからスケジューリング
+		if (vec == 32) {
+			// 登録されたタイマーハンドラを呼ぶ（timer_ticksをインクリメント）
+			extern void uefi_timer_tick(uint32_t, void *);
+			uefi_timer_tick(0, NULL);
+
+			// スケジューリングを実行
+			extern void task_schedule(void);
+			task_schedule();
+
+			if (irq >= 8)
+				outb(PIC2_COMMAND, 0x20);
+			outb(PIC1_COMMAND, 0x20);
+			return;
+		}
+
+		// その他の割り込みはFIFO経由で処理
 		interrupt_raise((vec << 16) | 0u);
 
 		if (irq >= 8)
