@@ -31,7 +31,8 @@ void *alloc_page_table(void) {
 		       (unsigned)phys);
 		return NULL;
 	}
-	printk("alloc_page_table: clearing table at virt=0x%x (phys=0x%x)\n", (unsigned)virt, (unsigned)phys);
+	printk("alloc_page_table: clearing table at virt=0x%x (phys=0x%x)\n",
+	       (unsigned)virt, (unsigned)phys);
 	// ページングが有効化されていない場合、virtはphysと同じ（アイデンティティ）
 	// しかし、physが1MBを超える場合、アクセスできない可能性がある
 	// 安全のため、物理アドレスで直接アクセス
@@ -63,7 +64,8 @@ int map_page(uint32_t phys, uint32_t virt, uint32_t flags) {
 			       (unsigned)pd_idx);
 			return -1;
 		}
-		printk("map_page: new_pt_virt=0x%x, converting to phys\n", (unsigned)(uintptr_t)new_pt_virt);
+		printk("map_page: new_pt_virt=0x%x, converting to phys\n",
+		       (unsigned)(uintptr_t)new_pt_virt);
 		uint32_t new_pt_phys =
 			vmem_virt_to_phys((uint32_t)(uintptr_t)new_pt_virt);
 		printk("map_page: new_pt_phys=0x%x\n", (unsigned)new_pt_phys);
@@ -209,9 +211,9 @@ void paging_enable(void) {
 	asm volatile("mov %%cr4, %0" : "=r"(cr4));
 	printk("paging_enable: Current CR0=0x%lx CR3=0x%lx CR4=0x%lx\n",
 	       (unsigned long)cr0, (unsigned long)cr3, (unsigned long)cr4);
-	printk("paging_enable: PG bit=%d, PAE bit=%d\n",
-	       (int)((cr0 >> 31) & 1), (int)((cr4 >> 5) & 1));
-	
+	printk("paging_enable: PG bit=%d, PAE bit=%d\n", (int)((cr0 >> 31) & 1),
+	       (int)((cr4 >> 5) & 1));
+
 	// 注意: x86-64ロングモードでは、UEFIがすでに64ビットページングを設定しています。
 	// 現在の32ビットページング構造（2レベル: PD→PT）は互換性がありません。
 	// 64ビットモードでは4レベル（PML4→PDPT→PD→PT）構造が必要です。

@@ -107,7 +107,6 @@ static int parse_bdf(const char *data, size_t size) {
 	int in_bitmap = 0;
 
 	while (p < end && *p) {
-
 		// フォント情報のパース
 		if (starts_with(p, "FONTBOUNDINGBOX")) {
 			p += 15; // "FONTBOUNDINGBOX"の長さ
@@ -183,7 +182,8 @@ static int parse_bdf(const char *data, size_t size) {
 		} else if (in_bitmap && current_glyph) {
 			// ビットマップデータを読み込む
 			p = skip_spaces(p);
-			if ((*p >= '0' && *p <= '9') || (*p >= 'A' && *p <= 'F') ||
+			if ((*p >= '0' && *p <= '9') ||
+			    (*p >= 'A' && *p <= 'F') ||
 			    (*p >= 'a' && *p <= 'f')) {
 				if (bitmap_line < MAX_GLYPH_HEIGHT) {
 					char hex_str[3] = { 0 };
@@ -236,7 +236,8 @@ int bdf_init(const char *path) {
 
 	// ファイルサイズを取得
 	size_t file_size = inode.i_size;
-	if (file_size == 0 || file_size > 1024 * 1024) { // 1MBを超える場合はエラー
+	if (file_size == 0 ||
+	    file_size > 1024 * 1024) { // 1MBを超える場合はエラー
 		printk("BDF: Invalid file size: %u\n", (uint32_t)file_size);
 		return 0;
 	}

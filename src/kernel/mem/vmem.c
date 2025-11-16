@@ -38,7 +38,8 @@ uint32_t vmem_virt_to_phys(uint32_t virt) {
 	uint64_t cr3;
 	asm volatile("mov %%cr3, %0" : "=r"(cr3));
 	uint32_t pd_phys = cr3 & 0xFFFFF000;
-	uint32_t pd_virt = (phys2virt ? phys2virt(pd_phys) : default_phys2virt(pd_phys));
+	uint32_t pd_virt =
+		(phys2virt ? phys2virt(pd_phys) : default_phys2virt(pd_phys));
 	if (pd_virt == 0) {
 		printk("vmem_virt_to_phys: phys2virt returned 0 for pd_phys=0x%x\n",
 		       (unsigned)pd_phys);
@@ -68,7 +69,8 @@ uint32_t vmem_virt_to_phys(uint32_t virt) {
 	}
 
 	uint32_t pt_phys = pde & 0xFFFFF000;
-	uint32_t pt_virt = (phys2virt ? phys2virt(pt_phys) : default_phys2virt(pt_phys));
+	uint32_t pt_virt =
+		(phys2virt ? phys2virt(pt_phys) : default_phys2virt(pt_phys));
 	if (pt_virt == 0) {
 		printk("vmem_virt_to_phys: phys2virt returned 0 for pt_phys=0x%x\n",
 		       (unsigned)pt_phys);

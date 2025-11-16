@@ -10,8 +10,8 @@
 
 #define MAX_TASKS 64
 #define KERNEL_STACK_SIZE 0x4000 // 16KB
-#define USER_STACK_SIZE 0x4000   // 16KB
-#define TIME_SLICE_DEFAULT 10    // 10 ticks
+#define USER_STACK_SIZE 0x4000 // 16KB
+#define TIME_SLICE_DEFAULT 10 // 10 ticks
 
 static task_t *tasks[MAX_TASKS];
 static task_t *current_task = NULL;
@@ -71,7 +71,6 @@ static uint64_t create_task_page_directory(void) {
 		pd[i] = current_pd[i];
 	}
 
-
 	// 物理アドレスを返す
 	uint32_t pd_phys = vmem_virt_to_phys((uint32_t)(uintptr_t)pd_virt);
 	return pd_phys;
@@ -95,8 +94,8 @@ void task_init(void) {
 	// idle タスクは現在実行中のコンテキスト（kmain）として初期化
 	idle_task.tid = 0;
 	str_copy(idle_task.name, "idle", sizeof(idle_task.name));
-	idle_task.state = TASK_STATE_RUNNING;  // 既に実行中
-	idle_task.kernel_mode = 1;  // カーネルモード
+	idle_task.state = TASK_STATE_RUNNING; // 既に実行中
+	idle_task.kernel_mode = 1; // カーネルモード
 	idle_task.time_slice = TIME_SLICE_DEFAULT;
 	idle_task.total_time = 0;
 	idle_task.next = NULL;
@@ -113,14 +112,17 @@ void task_init(void) {
 	uint64_t current_rsp;
 	asm volatile("mov %%rsp, %0" : "=r"(current_rsp));
 	idle_task.regs.rsp = current_rsp;
-	idle_task.regs.rip = 0;  // task_switch から戻る時に設定される
+	idle_task.regs.rip = 0; // task_switch から戻る時に設定される
 	idle_task.regs.rflags = 0x202; // IF=1 (割り込み有効)
-	
+
 	// 他のレジスタをゼロ初期化
-	idle_task.regs.rax = idle_task.regs.rbx = idle_task.regs.rcx = idle_task.regs.rdx = 0;
+	idle_task.regs.rax = idle_task.regs.rbx = idle_task.regs.rcx =
+		idle_task.regs.rdx = 0;
 	idle_task.regs.rsi = idle_task.regs.rdi = idle_task.regs.rbp = 0;
-	idle_task.regs.r8 = idle_task.regs.r9 = idle_task.regs.r10 = idle_task.regs.r11 = 0;
-	idle_task.regs.r12 = idle_task.regs.r13 = idle_task.regs.r14 = idle_task.regs.r15 = 0;
+	idle_task.regs.r8 = idle_task.regs.r9 = idle_task.regs.r10 =
+		idle_task.regs.r11 = 0;
+	idle_task.regs.r12 = idle_task.regs.r13 = idle_task.regs.r14 =
+		idle_task.regs.r15 = 0;
 
 	// カーネルスタックは現在のスタックをそのまま使用
 	idle_task.kernel_stack = current_rsp;
@@ -167,15 +169,14 @@ task_t *task_create(void (*entry)(void), const char *name, int kernel_mode) {
 	}
 
 	// タスク構造体を仮想アドレスに変換
-	uint32_t task_virt =
-		vmem_phys_to_virt((uint32_t)(uintptr_t)task);
+	uint32_t task_virt = vmem_phys_to_virt((uint32_t)(uintptr_t)task);
 	task = (task_t *)(uintptr_t)task_virt;
 
 	// タスク構造体を初期化
 	task->tid = next_tid++;
 	str_copy(task->name, name, sizeof(task->name));
 	task->state = TASK_STATE_READY;
-	task->kernel_mode = kernel_mode;  // カーネルモードフラグを設定
+	task->kernel_mode = kernel_mode; // カーネルモードフラグを設定
 	task->time_slice = TIME_SLICE_DEFAULT;
 	task->total_time = 0;
 	task->next = NULL;
@@ -200,13 +201,15 @@ task_t *task_create(void (*entry)(void), const char *name, int kernel_mode) {
 		// スタックの初期化：entry関数が戻る先としてtask_exitをpush
 		// task_switch は ret 命令で task->regs.rip にジャンプする
 		// entry 関数が ret で戻る時、スタックの task_exit にジャンプする
-		uint64_t *stack_ptr = (uint64_t *)kstack_virt;  // スタック最上位から開始
-		stack_ptr--;  // 8バイト下げる
-		*stack_ptr = (uint64_t)task_exit;  // entry から戻る先
+		uint64_t *stack_ptr =
+			(uint64_t *)kstack_virt; // スタック最上位から開始
+		stack_ptr--; // 8バイト下げる
+		*stack_ptr = (uint64_t)task_exit; // entry から戻る先
 
 		// レジスタを初期化
 		task->regs.rsp = (uint64_t)stack_ptr;
-		task->regs.rip = (uint64_t)entry;  // task_switch が ret でここにジャンプ
+		task->regs.rip =
+			(uint64_t)entry; // task_switch が ret でここにジャンプ
 		task->regs.rflags = 0x202; // IF=1
 		task->regs.cr3 = current_cr3_val;
 	} else {
@@ -225,8 +228,7 @@ task_t *task_create(void (*entry)(void), const char *name, int kernel_mode) {
 			return NULL;
 		}
 		uint32_t ustack_virt =
-			vmem_phys_to_virt((uint32_t)(uintptr_t)ustack) +
-			0x1000;
+			vmem_phys_to_virt((uint32_t)(uintptr_t)ustack) + 0x1000;
 		task->user_stack = ustack_virt;
 
 		// レジスタを初期化
@@ -245,8 +247,8 @@ task_t *task_create(void (*entry)(void), const char *name, int kernel_mode) {
 	tasks[slot] = task;
 
 #ifdef INIT_MSG
-	printk("task_create: Created task '%s' (TID=%u)\n",
-	       name, (unsigned)task->tid);
+	printk("task_create: Created task '%s' (TID=%u)\n", name,
+	       (unsigned)task->tid);
 #endif
 
 	return task;
@@ -304,7 +306,8 @@ void task_schedule(void) {
 
 	// 次のタスクがなければidleタスクに戻る（現在のタスクがDEADまたはidleでない場合）
 	if (!next_task) {
-		if (current_task->state == TASK_STATE_DEAD || current_task != &idle_task) {
+		if (current_task->state == TASK_STATE_DEAD ||
+		    current_task != &idle_task) {
 			next_task = &idle_task;
 		} else {
 			// 現在のタスクがidleで、他に実行可能なタスクがない場合は継続

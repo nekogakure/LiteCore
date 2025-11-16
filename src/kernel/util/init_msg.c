@@ -127,12 +127,12 @@ void kernel_init() {
 #endif
 
 #ifdef INIT_MSG
-        new_line();
-        printk("> MULTI TASK INIT\n");
+	new_line();
+	printk("> MULTI TASK INIT\n");
 #endif
-        task_init();
+	task_init();
 #ifdef INIT_MSG
-        printk("ok\n");
+	printk("ok\n");
 #endif
 }
 

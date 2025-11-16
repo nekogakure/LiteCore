@@ -50,10 +50,10 @@ void multi_task_test(void) {
 
 	printk("Tasks created. Manually yielding to trigger first switch...\n");
 	new_line();
-	
+
 	// 最初のタスクスイッチを手動でトリガー
 	task_yield();
-	
+
 	printk("\n[MAIN] Back to main after tasks completed\n");
 	printk("====== TEST COMPLETE ======\n");
 	new_line();

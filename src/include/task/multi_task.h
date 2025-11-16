@@ -8,10 +8,10 @@
  * @brief タスク状態
  */
 typedef enum {
-	TASK_STATE_READY = 0,   // 実行可能
+	TASK_STATE_READY = 0, // 実行可能
 	TASK_STATE_RUNNING = 1, // 実行中
 	TASK_STATE_BLOCKED = 2, // ブロック中
-	TASK_STATE_DEAD = 3     // 終了済み
+	TASK_STATE_DEAD = 3 // 終了済み
 } task_state_t;
 
 /**
@@ -22,26 +22,26 @@ typedef struct {
 	uint64_t rax, rbx, rcx, rdx;
 	uint64_t rsi, rdi, rbp, rsp;
 	uint64_t r8, r9, r10, r11, r12, r13, r14, r15;
-	uint64_t rip;    // 命令ポインタ
+	uint64_t rip; // 命令ポインタ
 	uint64_t rflags; // フラグレジスタ
-	uint64_t cr3;    // ページディレクトリベースレジスタ
+	uint64_t cr3; // ページディレクトリベースレジスタ
 } registers_t;
 
 /**
  * @brief タスク制御ブロック（TCB）
  */
 typedef struct task {
-	uint32_t tid;            // タスクID
-	char name[32];           // タスク名（デバッグ用）
-	task_state_t state;      // タスク状態
-	int kernel_mode;         // カーネルモードフラグ（1=カーネル、0=ユーザー）
-	registers_t regs;        // レジスタコンテキスト
-	uint64_t kernel_stack;   // カーネルスタックポインタ
-	uint64_t user_stack;     // ユーザースタックポインタ
+	uint32_t tid; // タスクID
+	char name[32]; // タスク名（デバッグ用）
+	task_state_t state; // タスク状態
+	int kernel_mode; // カーネルモードフラグ（1=カーネル、0=ユーザー）
+	registers_t regs; // レジスタコンテキスト
+	uint64_t kernel_stack; // カーネルスタックポインタ
+	uint64_t user_stack; // ユーザースタックポインタ
 	uint64_t page_directory; // ページディレクトリの物理アドレス
-	uint64_t time_slice;     // タイムスライス（ticks）
-	uint64_t total_time;     // 累計実行時間（ticks）
-	struct task *next;       // 次のタスク（リンクリスト）
+	uint64_t time_slice; // タイムスライス（ticks）
+	uint64_t total_time; // 累計実行時間（ticks）
+	struct task *next; // 次のタスク（リンクリスト）
 } task_t;
 
 /**
