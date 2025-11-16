@@ -90,6 +90,15 @@ uint32_t vmem_virt_to_phys(uint32_t virt) {
 	return phys;
 }
 
+/* 64-bit wrapper: call 32-bit virt->phys and zero-extend to 64-bit.
+   This is a compatibility helper for subsystems that expect 64-bit DMA addresses.
+   Replace with a true 64-bit page-table walk implementation if/when needed. */
+uint64_t vmem_virt_to_phys64(uint64_t virt) {
+	uint32_t v32 = (uint32_t)virt;
+	uint32_t p32 = vmem_virt_to_phys(v32);
+	return (uint64_t)p32;
+}
+
 // 物理アドレス→仮想アドレス変換
 uint32_t vmem_phys_to_virt(uint32_t phys) {
 	/* Treat UINT32_MAX as error sentinel instead of 0 to allow phys==0 */
@@ -119,6 +128,12 @@ uint32_t vmem_phys_to_virt(uint32_t phys) {
 	default:
 		return UINT32_MAX;
 	}
+}
+
+uint64_t vmem_phys_to_virt64(uint64_t phys) {
+	uint32_t p32 = (uint32_t)phys;
+	uint32_t v32 = vmem_phys_to_virt(p32);
+	return (uint64_t)v32;
 }
 
 // オフセット設定
