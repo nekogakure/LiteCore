@@ -1,4 +1,6 @@
 CompileFlags:
   Add:
-    - -isystem./src/kernel
+    - -isystem./src/kernel/
+    - -I./src/kernel/
     - -isystem.
+    - -I./src/

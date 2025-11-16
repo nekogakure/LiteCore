@@ -2,7 +2,7 @@
   "lsp": {
     "clangd": {
       "initialization_options": {
-        "fallbackFlags": ["-isystem./src/kernel"]
+        "fallbackFlags": ["-isystem./src/kernel", "-I.src/kernel"]
       }
     }
   }
