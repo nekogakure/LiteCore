@@ -90,13 +90,79 @@ uint32_t vmem_virt_to_phys(uint32_t virt) {
 	return phys;
 }
 
-/* 64-bit wrapper: call 32-bit virt->phys and zero-extend to 64-bit.
-   This is a compatibility helper for subsystems that expect 64-bit DMA addresses.
-   Replace with a true 64-bit page-table walk implementation if/when needed. */
 uint64_t vmem_virt_to_phys64(uint64_t virt) {
-	uint32_t v32 = (uint32_t)virt;
-	uint32_t p32 = vmem_virt_to_phys(v32);
-	return (uint64_t)p32;
+	if (current_mode == VMEM_MODE_IDENTITY) {
+		return virt;
+	}
+	if (current_mode == VMEM_MODE_OFFSET) {
+		if ((int64_t)virt - vmem_offset < 0) return 0;
+		uint64_t phys = (uint64_t)((int64_t)virt - vmem_offset);
+		return phys;
+	}
+
+	uint64_t cr3;
+	asm volatile("mov %%cr3, %0" : "=r"(cr3));
+	uint64_t pml4_base = cr3 & 0xFFFFFFFFFFFFF000ULL;
+
+	/* indices */
+	uint64_t pml4_idx = (virt >> 39) & 0x1FFULL;
+	uint64_t pdpt_idx = (virt >> 30) & 0x1FFULL;
+	uint64_t pd_idx   = (virt >> 21) & 0x1FFULL;
+	uint64_t pt_idx   = (virt >> 12) & 0x1FFULL;
+	uint64_t page_off = virt & 0xFFFULL;
+
+	uint64_t read_entry;
+	uint64_t entry;
+
+	/* read PML4E */
+	uint64_t pml4e_phys = pml4_base + (pml4_idx * 8);
+	uint64_t pml4e_virt = vmem_phys_to_virt64(pml4e_phys);
+	if (pml4e_virt == UINT64_MAX) return 0;
+	read_entry = *((volatile uint64_t *)(uintptr_t)pml4e_virt);
+	entry = read_entry;
+	if ((entry & 0x1) == 0) return 0; /* not present */
+
+	/* PDPT */
+	uint64_t pdpt_base = entry & 0xFFFFFFFFFFFFF000ULL;
+	uint64_t pdpte_phys = pdpt_base + (pdpt_idx * 8);
+	uint64_t pdpte_virt = vmem_phys_to_virt64(pdpte_phys);
+	if (pdpte_virt == UINT64_MAX) return 0;
+	read_entry = *((volatile uint64_t *)(uintptr_t)pdpte_virt);
+	entry = read_entry;
+	if ((entry & 0x1) == 0) return 0;
+	/* 1 GiB page? (PS bit) */
+	if (entry & (1ULL << 7)) {
+		uint64_t base = entry & 0xFFFFFC0000000ULL; /* bits 51:30 */
+		uint64_t offset = virt & 0x3FFFFFFFULL; /* lower 30 bits */
+		return base + offset;
+	}
+
+	/* PD */
+	uint64_t pd_base = entry & 0xFFFFFFFFFFFFF000ULL;
+	uint64_t pde_phys = pd_base + (pd_idx * 8);
+	uint64_t pde_virt = vmem_phys_to_virt64(pde_phys);
+	if (pde_virt == UINT64_MAX) return 0;
+	read_entry = *((volatile uint64_t *)(uintptr_t)pde_virt);
+	entry = read_entry;
+	if ((entry & 0x1) == 0) return 0;
+	/* 2 MiB page? (PS bit) */
+	if (entry & (1ULL << 7)) {
+		uint64_t base = entry & 0xFFFFFFFFFFE00000ULL; /* bits 51:21 */
+		uint64_t offset = virt & 0x1FFFFFULL; /* lower 21 bits */
+		return base + offset;
+	}
+
+	/* PT */
+	uint64_t pt_base = entry & 0xFFFFFFFFFFFFF000ULL;
+	uint64_t pte_phys = pt_base + (pt_idx * 8);
+	uint64_t pte_virt = vmem_phys_to_virt64(pte_phys);
+	if (pte_virt == UINT64_MAX) return 0;
+	read_entry = *((volatile uint64_t *)(uintptr_t)pte_virt);
+	entry = read_entry;
+	if ((entry & 0x1) == 0) return 0;
+
+	uint64_t page_base = entry & 0xFFFFFFFFFFFFF000ULL;
+	return page_base + page_off;
 }
 
 // 物理アドレス→仮想アドレス変換
@@ -131,8 +197,26 @@ uint32_t vmem_phys_to_virt(uint32_t phys) {
 }
 
 uint64_t vmem_phys_to_virt64(uint64_t phys) {
+	/*
+	 * vmem_phys_to_virt works with 32-bit physical addresses and returns
+	 * UINT32_MAX on error. The 64-bit wrapper must translate that error
+	 * into UINT64_MAX so callers (the page-table walker) can detect
+	 * failures reliably. Also fail if the physical address doesn't fit
+	 * in 32-bits because this simple mapper cannot handle >4GiB frames
+	 * without a proper phys->virt64 implementation.
+	 */
+	if (phys == UINT64_MAX) {
+		return UINT64_MAX;
+	}
+	if (phys > UINT32_MAX) {
+		/* unsupported: physical address out of 32-bit range */
+		return UINT64_MAX;
+	}
 	uint32_t p32 = (uint32_t)phys;
 	uint32_t v32 = vmem_phys_to_virt(p32);
+	if (v32 == UINT32_MAX) {
+		return UINT64_MAX;
+	}
 	return (uint64_t)v32;
 }
 
