@@ -27,7 +27,7 @@ LDFLAGS    = -m elf_x86_64 -z max-page-size=0x1000
 NFLAGS     = -f bin
 QEMU_FLAGS = -serial stdio -display none -monitor none -device qemu-xhci,id=xhci \
              -device usb-kbd,bus=xhci.0 \
-             -bios /usr/share/ovmf/OVMF.fd -d int -D qemu.log --no-reboot
+             -bios /usr/share/ovmf/OVMF.fd -d int,guest_errors -D qemu.log --no-reboot
 QEMU_VGA   = -device qemu-xhci,id=xhci -device usb-kbd,bus=xhci.0
 CONSOLE    = -display curses
 
@@ -115,7 +115,7 @@ run-console: $(ESP_IMG) $(EXT2_IMG)
 	$(QEMU) -bios /usr/share/ovmf/OVMF.fd $(CONSOLE) $(QEMU_USB) -drive file=$(ESP_IMG),format=raw -drive file=$(EXT2_IMG),format=raw,if=ide
 
 run-vga: $(ESP_IMG) $(EXT2_IMG)
-	$(QEMU) -bios /usr/share/ovmf/OVMF.fd $(QEMU_VGA) -drive file=$(ESP_IMG),format=raw -drive file=$(EXT2_IMG),format=raw,if=ide -d int -D qemu.log --no-reboot
+	$(QEMU) -bios /usr/share/ovmf/OVMF.fd $(QEMU_VGA) -drive file=$(ESP_IMG),format=raw -drive file=$(EXT2_IMG),format=raw,if=ide -d int -D qemu.log --no-reboot -monitor stdio
 
 clean:
 	rm -rf $(OUT_DIR) $(ESP_DIR)
