@@ -9,6 +9,7 @@
 #include <shell/shell_integration.h>
 #include <util/io.h>
 #include <util/init_msg.h>
+#include <util/debug.h>
 #include <mem/map.h>
 #include <mem/manager.h>
 #include <mem/segment.h>
@@ -38,10 +39,11 @@ void kmain(BOOT_INFO *boot_info) {
 
 	console_init();
 	console_set_framebuffer(boot_info);
+        set_log_level(ALL);
 
 	gdt_build();
 	gdt_install_lgdt();
-	gdt_install_jump(); // セグメントレジスタの更新も実行
+	gdt_install_jump();
 
 	printk("Welcome to Litecore kernel!\n");
 	printk("    Version : %s\n", VERSION);
