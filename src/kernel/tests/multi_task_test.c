@@ -25,7 +25,6 @@ static void test_task2(void) {
  * @brief マルチタスクのテスト
  */
 void multi_task_test(void) {
-	printk("====== SIMPLE MULTITASK TEST ======\n");
 	printk("Creating 2 test tasks...\n");
 
 	// タスク1を作成して実行キューに追加
@@ -55,6 +54,5 @@ void multi_task_test(void) {
 	task_yield();
 
 	printk("\n[MAIN] Back to main after tasks completed\n");
-	printk("====== TEST COMPLETE ======\n");
 	new_line();
 }
