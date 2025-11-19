@@ -95,7 +95,8 @@ uint64_t vmem_virt_to_phys64(uint64_t virt) {
 		return virt;
 	}
 	if (current_mode == VMEM_MODE_OFFSET) {
-		if ((int64_t)virt - vmem_offset < 0) return 0;
+		if ((int64_t)virt - vmem_offset < 0)
+			return 0;
 		uint64_t phys = (uint64_t)((int64_t)virt - vmem_offset);
 		return phys;
 	}
@@ -107,8 +108,8 @@ uint64_t vmem_virt_to_phys64(uint64_t virt) {
 	/* indices */
 	uint64_t pml4_idx = (virt >> 39) & 0x1FFULL;
 	uint64_t pdpt_idx = (virt >> 30) & 0x1FFULL;
-	uint64_t pd_idx   = (virt >> 21) & 0x1FFULL;
-	uint64_t pt_idx   = (virt >> 12) & 0x1FFULL;
+	uint64_t pd_idx = (virt >> 21) & 0x1FFULL;
+	uint64_t pt_idx = (virt >> 12) & 0x1FFULL;
 	uint64_t page_off = virt & 0xFFFULL;
 
 	uint64_t read_entry;
@@ -117,19 +118,23 @@ uint64_t vmem_virt_to_phys64(uint64_t virt) {
 	/* read PML4E */
 	uint64_t pml4e_phys = pml4_base + (pml4_idx * 8);
 	uint64_t pml4e_virt = vmem_phys_to_virt64(pml4e_phys);
-	if (pml4e_virt == UINT64_MAX) return 0;
+	if (pml4e_virt == UINT64_MAX)
+		return 0;
 	read_entry = *((volatile uint64_t *)(uintptr_t)pml4e_virt);
 	entry = read_entry;
-	if ((entry & 0x1) == 0) return 0; /* not present */
+	if ((entry & 0x1) == 0)
+		return 0; /* not present */
 
 	/* PDPT */
 	uint64_t pdpt_base = entry & 0xFFFFFFFFFFFFF000ULL;
 	uint64_t pdpte_phys = pdpt_base + (pdpt_idx * 8);
 	uint64_t pdpte_virt = vmem_phys_to_virt64(pdpte_phys);
-	if (pdpte_virt == UINT64_MAX) return 0;
+	if (pdpte_virt == UINT64_MAX)
+		return 0;
 	read_entry = *((volatile uint64_t *)(uintptr_t)pdpte_virt);
 	entry = read_entry;
-	if ((entry & 0x1) == 0) return 0;
+	if ((entry & 0x1) == 0)
+		return 0;
 	/* 1 GiB page? (PS bit) */
 	if (entry & (1ULL << 7)) {
 		uint64_t base = entry & 0xFFFFFC0000000ULL; /* bits 51:30 */
@@ -141,10 +146,12 @@ uint64_t vmem_virt_to_phys64(uint64_t virt) {
 	uint64_t pd_base = entry & 0xFFFFFFFFFFFFF000ULL;
 	uint64_t pde_phys = pd_base + (pd_idx * 8);
 	uint64_t pde_virt = vmem_phys_to_virt64(pde_phys);
-	if (pde_virt == UINT64_MAX) return 0;
+	if (pde_virt == UINT64_MAX)
+		return 0;
 	read_entry = *((volatile uint64_t *)(uintptr_t)pde_virt);
 	entry = read_entry;
-	if ((entry & 0x1) == 0) return 0;
+	if ((entry & 0x1) == 0)
+		return 0;
 	/* 2 MiB page? (PS bit) */
 	if (entry & (1ULL << 7)) {
 		uint64_t base = entry & 0xFFFFFFFFFFE00000ULL; /* bits 51:21 */
@@ -156,10 +163,12 @@ uint64_t vmem_virt_to_phys64(uint64_t virt) {
 	uint64_t pt_base = entry & 0xFFFFFFFFFFFFF000ULL;
 	uint64_t pte_phys = pt_base + (pt_idx * 8);
 	uint64_t pte_virt = vmem_phys_to_virt64(pte_phys);
-	if (pte_virt == UINT64_MAX) return 0;
+	if (pte_virt == UINT64_MAX)
+		return 0;
 	read_entry = *((volatile uint64_t *)(uintptr_t)pte_virt);
 	entry = read_entry;
-	if ((entry & 0x1) == 0) return 0;
+	if ((entry & 0x1) == 0)
+		return 0;
 
 	uint64_t page_base = entry & 0xFFFFFFFFFFFFF000ULL;
 	return page_base + page_off;

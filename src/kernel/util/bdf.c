@@ -135,7 +135,7 @@ static int parse_bdf(const char *data, size_t size) {
 				printk("BDF: Too many glyphs\n");
 				return 0;
 			}
-                        
+
 			current_glyph = &font.glyphs[font.num_glyphs];
 			current_glyph->width = font.width;
 			current_glyph->height = font.height;
@@ -144,9 +144,9 @@ static int parse_bdf(const char *data, size_t size) {
 			current_glyph->encoding = 0;
 			bitmap_line = 0;
 
-                        for (int zi = 0; zi < MAX_GLYPH_HEIGHT; zi++) {
-                                current_glyph->bitmap[zi] = 0;
-                        }
+			for (int zi = 0; zi < MAX_GLYPH_HEIGHT; zi++) {
+				current_glyph->bitmap[zi] = 0;
+			}
 
 			in_bitmap = 0;
 		} else if (starts_with(p, "ENCODING")) {
@@ -187,27 +187,37 @@ static int parse_bdf(const char *data, size_t size) {
 			in_bitmap = 0;
 		} else if (in_bitmap && current_glyph) {
 			p = skip_spaces(p);
-			if ((*p >= '0' && *p <= '9') || (*p >= 'A' && *p <= 'F') ||
-				(*p >= 'a' && *p <= 'f')) {
+			if ((*p >= '0' && *p <= '9') ||
+			    (*p >= 'A' && *p <= 'F') ||
+			    (*p >= 'a' && *p <= 'f')) {
 				if (bitmap_line < MAX_GLYPH_HEIGHT) {
 					char hex_str[9];
 					int i = 0;
 					while (i < (int)(sizeof(hex_str) - 1) &&
-						   ((*p >= '0' && *p <= '9') || (*p >= 'A' && *p <= 'F') ||
-							(*p >= 'a' && *p <= 'f'))) {
+					       ((*p >= '0' && *p <= '9') ||
+						(*p >= 'A' && *p <= 'F') ||
+						(*p >= 'a' && *p <= 'f'))) {
 						hex_str[i++] = *p++;
 					}
 					hex_str[i] = '\0';
 					uint32_t val = hex_to_int(hex_str);
 					int hex_len = i;
 					int total_bits = hex_len * 4;
-					int width = current_glyph->width ? current_glyph->width : font.width;
-					if (width <= 0) width = font.width;
+					int width =
+						current_glyph->width ?
+							current_glyph->width :
+							font.width;
+					if (width <= 0)
+						width = font.width;
 					if (total_bits > width) {
 						val >>= (total_bits - width);
 					}
-					uint32_t mask = (width >= 32) ? 0xFFFFFFFFu : ((1u << width) - 1u);
-					current_glyph->bitmap[bitmap_line++] = (uint16_t)(val & mask);
+					uint32_t mask =
+						(width >= 32) ?
+							0xFFFFFFFFu :
+							((1u << width) - 1u);
+					current_glyph->bitmap[bitmap_line++] =
+						(uint16_t)(val & mask);
 				}
 			}
 		}

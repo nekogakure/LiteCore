@@ -24,19 +24,25 @@ static uint32_t fb_fg_color = 0xFFFFFF; // 白
 static uint32_t fb_bg_color = 0x000000; // 黒
 
 static void allocate_gfx_buf_if_needed(void) {
-	if (!use_framebuffer) return;
-	if (gfx_buf) return;
+	if (!use_framebuffer)
+		return;
+	if (gfx_buf)
+		return;
 
 	const bdf_font_t *font = bdf_get_font();
 	int fw = font ? (int)font->width : 8;
 	int fh = font ? (int)font->height : 16;
-	if (fw <= 0) fw = 8;
-	if (fh <= 0) fh = 16;
+	if (fw <= 0)
+		fw = 8;
+	if (fh <= 0)
+		fh = 16;
 
 	gfx_cols = (int)(fb_width / fw);
 	gfx_rows = (int)(fb_height / fh);
-	if (gfx_cols <= 0) gfx_cols = 1;
-	if (gfx_rows <= 0) gfx_rows = 1;
+	if (gfx_cols <= 0)
+		gfx_cols = 1;
+	if (gfx_rows <= 0)
+		gfx_rows = 1;
 
 	uint32_t size = (uint32_t)(gfx_cols * gfx_rows);
 	gfx_buf = (char *)kmalloc(size);
@@ -44,7 +50,8 @@ static void allocate_gfx_buf_if_needed(void) {
 		gfx_cols = gfx_rows = 0;
 		return;
 	}
-	for (uint32_t i = 0; i < size; i++) gfx_buf[i] = ' ';
+	for (uint32_t i = 0; i < size; i++)
+		gfx_buf[i] = ' ';
 }
 
 /**
@@ -101,8 +108,10 @@ static void draw_char_fb(int x, int y, char c) {
 
 	const bdf_glyph_t *glyph = bdf_get_glyph((uint32_t)(unsigned char)c);
 
-	int char_width = (glyph && glyph->width) ? (int)glyph->width : (int)font_info->width;
-	int char_height = (glyph && glyph->height) ? (int)glyph->height : (int)font_info->height;
+	int char_width = (glyph && glyph->width) ? (int)glyph->width :
+						   (int)font_info->width;
+	int char_height = (glyph && glyph->height) ? (int)glyph->height :
+						     (int)font_info->height;
 
 	if (!glyph || c == ' ') {
 		for (int row = 0; row < char_height; row++) {
@@ -110,7 +119,8 @@ static void draw_char_fb(int x, int y, char c) {
 				uint32_t pixel_x = x * char_width + col;
 				uint32_t pixel_y = y * char_height + row;
 				if (pixel_x < fb_width && pixel_y < fb_height) {
-					uint32_t offset = pixel_y * fb_pitch + pixel_x;
+					uint32_t offset =
+						pixel_y * fb_pitch + pixel_x;
 					framebuffer[offset] = fb_bg_color;
 				}
 			}
@@ -118,7 +128,8 @@ static void draw_char_fb(int x, int y, char c) {
 		return;
 	}
 
-	for (int row = 0; row < char_height && row < (int)MAX_GLYPH_HEIGHT; row++) {
+	for (int row = 0; row < char_height && row < (int)MAX_GLYPH_HEIGHT;
+	     row++) {
 		uint16_t bits = glyph->bitmap[row];
 		for (int col = 0; col < char_width; col++) {
 			uint32_t pixel_x = x * char_width + col;
@@ -127,8 +138,12 @@ static void draw_char_fb(int x, int y, char c) {
 			if (pixel_x < fb_width && pixel_y < fb_height) {
 				uint32_t offset = pixel_y * fb_pitch + pixel_x;
 				int bitpos = (char_width - 1) - col;
-				uint16_t mask = (bitpos >= 0 && bitpos < 16) ? (1u << bitpos) : 0;
-				framebuffer[offset] = (bits & mask) ? fb_fg_color : fb_bg_color;
+				uint16_t mask = (bitpos >= 0 && bitpos < 16) ?
+							(1u << bitpos) :
+							0;
+				framebuffer[offset] = (bits & mask) ?
+							      fb_fg_color :
+							      fb_bg_color;
 			}
 		}
 	}
@@ -256,11 +271,13 @@ void new_line() {
 			for (int r = 0; r < gfx_rows - 1; r++) {
 				char *dst = gfx_buf + r * line_size;
 				char *src = gfx_buf + (r + 1) * line_size;
-				for (int c = 0; c < line_size; c++) dst[c] = src[c];
+				for (int c = 0; c < line_size; c++)
+					dst[c] = src[c];
 			}
 			/* clear last line */
 			char *last = gfx_buf + (gfx_rows - 1) * line_size;
-			for (int c = 0; c < line_size; c++) last[c] = ' ';
+			for (int c = 0; c < line_size; c++)
+				last[c] = ' ';
 			cursor_row = gfx_rows - 1;
 			console_render_text_to_fb();
 		}
@@ -281,7 +298,8 @@ void new_line() {
 			} else {
 				for (int i = 0; i < N_HISTORY - 1; ++i) {
 					for (int c = 0; c < CONSOLE_COLS; ++c)
-						history[i][c] = history[i + 1][c];
+						history[i][c] =
+							history[i + 1][c];
 				}
 				for (int c = 0; c < CONSOLE_COLS; ++c)
 					history[N_HISTORY - 1][c] = linebuf[c];
@@ -290,7 +308,8 @@ void new_line() {
 			for (int r = 0; r < CONSOLE_ROWS - 1; r++) {
 				for (int c = 0; c < CONSOLE_COLS; c++) {
 					int dst = (r * CONSOLE_COLS + c) * 2;
-					int src = ((r + 1) * CONSOLE_COLS + c) * 2;
+					int src = ((r + 1) * CONSOLE_COLS + c) *
+						  2;
 					video[dst] = video[src];
 					video[dst + 1] = video[src + 1];
 				}
@@ -303,8 +322,8 @@ void new_line() {
 			}
 			cursor_row = CONSOLE_ROWS - 1;
 			history_offset = (history_lines > CONSOLE_ROWS) ?
-							 history_lines - CONSOLE_ROWS :
-							 0;
+						 history_lines - CONSOLE_ROWS :
+						 0;
 			if (use_framebuffer) {
 				console_render_text_to_fb();
 			}
@@ -430,9 +449,11 @@ void console_scroll_page_down(void) {
 }
 
 void console_render_text_to_fb(void) {
-	if (!use_framebuffer) return;
+	if (!use_framebuffer)
+		return;
 	const bdf_font_t *font_info = bdf_get_font();
-	if (!font_info) return;
+	if (!font_info)
+		return;
 	/* If we have an allocated gfx buffer (sized to fb/font), render from it
 	 * so we can draw beyond 80x25. Otherwise fall back to video memory. */
 	if (gfx_buf && gfx_cols > 0 && gfx_rows > 0) {
@@ -448,7 +469,8 @@ void console_render_text_to_fb(void) {
 
 	int fb_cols = (int)(fb_width / font_info->width);
 	int fb_rows = (int)(fb_height / font_info->height);
-	if (fb_cols <= 0 || fb_rows <= 0) return;
+	if (fb_cols <= 0 || fb_rows <= 0)
+		return;
 
 	int cols = (fb_cols < CONSOLE_COLS) ? fb_cols : CONSOLE_COLS;
 	int rows = (fb_rows < CONSOLE_ROWS) ? fb_rows : CONSOLE_ROWS;
@@ -472,8 +494,10 @@ void console_post_font_init(void) {
 	if (gfx_buf && gfx_cols > 0 && gfx_rows > 0) {
 		/* copy existing video memory (80x25) into gfx_buf top-left */
 		uint8_t *video = (uint8_t *)VIDEO_MEMORY;
-		int copy_rows = (gfx_rows < CONSOLE_ROWS) ? gfx_rows : CONSOLE_ROWS;
-		int copy_cols = (gfx_cols < CONSOLE_COLS) ? gfx_cols : CONSOLE_COLS;
+		int copy_rows = (gfx_rows < CONSOLE_ROWS) ? gfx_rows :
+							    CONSOLE_ROWS;
+		int copy_cols = (gfx_cols < CONSOLE_COLS) ? gfx_cols :
+							    CONSOLE_COLS;
 		for (int r = 0; r < copy_rows; ++r) {
 			for (int c = 0; c < copy_cols; ++c) {
 				int vpos = (r * CONSOLE_COLS + c) * 2;
@@ -487,7 +511,8 @@ void console_post_font_init(void) {
 		}
 		/* if gfx_rows > CONSOLE_ROWS, clear remaining rows */
 		for (int r = copy_rows; r < gfx_rows; ++r) {
-			for (int c = 0; c < gfx_cols; ++c) gfx_buf[r * gfx_cols + c] = ' ';
+			for (int c = 0; c < gfx_cols; ++c)
+				gfx_buf[r * gfx_cols + c] = ' ';
 		}
 
 		/* Render to framebuffer */

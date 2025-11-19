@@ -124,10 +124,9 @@ void kernel_init() {
 				block_cache_destroy(cache);
 			}
 
-				/* initialize font and then allow console to allocate gfx buffer */
-				init_font();
-				console_post_font_init();
-                        
+			/* initialize font and then allow console to allocate gfx buffer */
+			init_font();
+			console_post_font_init();
 		}
 	}
 #ifdef INIT_MSG
