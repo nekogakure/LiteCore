@@ -11,6 +11,8 @@ void new_line();
 int printk(const char *fmt, ...);
 void console_scroll_page_up(void);
 void console_scroll_page_down(void);
+void console_render_text_to_fb(void);
+void console_post_font_init(void);
 
 /* シリアル入力関数 */
 int serial_received(void);

@@ -247,23 +247,17 @@ int xhci_init(void);
 int xhci_reset_controller(struct xhci_hc *hc);
 int xhci_start_controller(struct xhci_hc *hc);
 uint32_t xhci_get_port_status(struct xhci_hc *hc, uint32_t port_num);
-
-/* Phase 2: Command/Event Ring functions */
 int xhci_setup_command_ring(struct xhci_hc *hc);
 int xhci_setup_event_ring(struct xhci_hc *hc);
 void xhci_ring_doorbell(struct xhci_hc *hc, uint8_t slot_id, uint8_t target);
 int xhci_wait_for_event(struct xhci_hc *hc, struct xhci_trb *event_trb,
 			uint32_t timeout_ms);
 void xhci_handle_events(struct xhci_hc *hc);
-
-/* Phase 3: Device Enumeration functions */
 int xhci_enable_slot(struct xhci_hc *hc);
 int xhci_address_device(struct xhci_hc *hc, uint8_t slot_id, uint8_t port);
 int xhci_configure_endpoint(struct xhci_hc *hc, uint8_t slot_id);
 int xhci_reset_port(struct xhci_hc *hc, uint8_t port);
 void xhci_handle_port_status_change(struct xhci_hc *hc, uint8_t port);
-
-/* Phase 4: USB Protocol functions */
 int xhci_control_transfer(struct xhci_hc *hc, uint8_t slot_id,
 			  uint8_t request_type, uint8_t request, uint16_t value,
 			  uint16_t index, void *data, uint16_t length);
@@ -271,16 +265,12 @@ int xhci_get_descriptor(struct xhci_hc *hc, uint8_t slot_id, uint8_t desc_type,
 			uint8_t desc_index, void *buffer, uint16_t length);
 int xhci_set_configuration(struct xhci_hc *hc, uint8_t slot_id,
 			   uint8_t config_value);
-
-/* Helper functions */
 void *xhci_alloc_aligned(uint32_t size, uint32_t alignment);
 void xhci_free_aligned(void *ptr);
 uint8_t xhci_get_keyboard_slot(struct xhci_hc *hc);
 int xhci_setup_keyboard_polling(struct xhci_hc *hc, uint8_t slot_id);
 int xhci_poll_keyboard(struct xhci_hc *hc, uint8_t slot_id,
 		       uint8_t *report_buffer);
-
-/* HID Keyboard specific */
 int xhci_configure_keyboard(struct xhci_hc *hc, uint8_t slot_id);
 int xhci_set_boot_protocol(struct xhci_hc *hc, uint8_t slot_id,
 			   uint8_t interface);

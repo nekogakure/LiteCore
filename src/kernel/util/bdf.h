@@ -15,7 +15,7 @@ typedef struct {
 	uint8_t height; // グリフの高さ
 	int8_t x_offset; // X方向のオフセット
 	int8_t y_offset; // Y方向のオフセット
-	uint8_t bitmap[MAX_GLYPH_HEIGHT]; // ビットマップデータ
+	uint16_t bitmap[MAX_GLYPH_HEIGHT]; // ビットマップデータ
 } bdf_glyph_t;
 
 /**
@@ -31,24 +31,8 @@ typedef struct {
 	bdf_glyph_t glyphs[MAX_GLYPHS]; // グリフ配列
 } bdf_font_t;
 
-/**
- * @brief BDFフォントを初期化
- * @param path フォントファイルのパス
- * @return 成功時は1、失敗時は0
- */
 int bdf_init(const char *path);
-
-/**
- * @brief 文字コードに対応するグリフを取得
- * @param c 文字コード
- * @return グリフへのポインタ、見つからない場合はNULL
- */
 const bdf_glyph_t *bdf_get_glyph(uint32_t c);
-
-/**
- * @brief フォント情報を取得
- * @return フォント情報へのポインタ
- */
 const bdf_font_t *bdf_get_font(void);
 
 #endif /* _BDF_H */

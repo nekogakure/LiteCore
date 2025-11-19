@@ -37,8 +37,8 @@ static BOOT_INFO *g_boot_info = NULL;
 void kmain(BOOT_INFO *boot_info) {
 	g_boot_info = boot_info;
 
-	console_init();
 	console_set_framebuffer(boot_info);
+	console_init();
 	set_log_level(ALL);
 
 	gdt_build();

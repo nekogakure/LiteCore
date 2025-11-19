@@ -1,11 +1,3 @@
-/**
- * @file xhci.c
- * @brief xHCI (eXtensible Host Controller Interface) USB 3.0 Driver
- * 
- * xHCI仕様に基づくUSBホストコントローラドライバ
- * Phase 1: コントローラ検出と基本初期化
- */
-
 #include <driver/usb/xhci.h>
 #include <device/pci.h>
 #include <util/console.h>

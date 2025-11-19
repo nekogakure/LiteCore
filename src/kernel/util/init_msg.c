@@ -9,6 +9,7 @@
 #include <shell/shell_integration.h>
 #include <util/io.h>
 #include <util/init_msg.h>
+#include <util/bdf.h>
 #include <mem/map.h>
 #include <mem/manager.h>
 #include <mem/segment.h>
@@ -24,6 +25,8 @@
 #endif
 
 extern struct ext2_super *g_ext2_sb;
+
+void init_font();
 
 void kernel_init() {
 #ifdef INIT_MSG
@@ -120,6 +123,11 @@ void kernel_init() {
 				printk("Error: Failed to mount ext2 filesystem\n");
 				block_cache_destroy(cache);
 			}
+
+				/* initialize font and then allow console to allocate gfx buffer */
+				init_font();
+				console_post_font_init();
+                        
 		}
 	}
 #ifdef INIT_MSG

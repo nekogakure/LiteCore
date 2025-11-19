@@ -22,9 +22,9 @@
 
 /* Boot Protocol Keyboard Report */
 struct hid_keyboard_report {
-	uint8_t modifier; /* Ctrl, Shift, Alt, GUI */
+	uint8_t modifier; /* Ctrl, Shift, Alt, */
 	uint8_t reserved;
-	uint8_t keycode[6]; /* 同時押し可能なキー（最大6個） */
+	uint8_t keycode[64]; /* 同時押し可能なキー（最大64個） */
 } __attribute__((packed));
 
 /* Modifier bits */

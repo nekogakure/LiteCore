@@ -1,13 +1,20 @@
 #include <util/config.h>
+#include <util/console.h>
 #include <util/io.h>
 #include <util/bdf.h>
 #include <stdarg.h>
 #include <stdint.h>
+#include <mem/manager.h>
 #include <interrupt/irq.h>
 #include <boot_info.h>
 
 // GOP フレームバッファ情報
 static uint32_t *framebuffer = NULL;
+
+static int gfx_cols = 0;
+static int gfx_rows = 0;
+static char *gfx_buf = NULL;
+
 static uint32_t fb_width = 0;
 static uint32_t fb_height = 0;
 static uint32_t fb_pitch = 0;
@@ -15,6 +22,30 @@ static int use_framebuffer = 0;
 
 static uint32_t fb_fg_color = 0xFFFFFF; // 白
 static uint32_t fb_bg_color = 0x000000; // 黒
+
+static void allocate_gfx_buf_if_needed(void) {
+	if (!use_framebuffer) return;
+	if (gfx_buf) return;
+
+	const bdf_font_t *font = bdf_get_font();
+	int fw = font ? (int)font->width : 8;
+	int fh = font ? (int)font->height : 16;
+	if (fw <= 0) fw = 8;
+	if (fh <= 0) fh = 16;
+
+	gfx_cols = (int)(fb_width / fw);
+	gfx_rows = (int)(fb_height / fh);
+	if (gfx_cols <= 0) gfx_cols = 1;
+	if (gfx_rows <= 0) gfx_rows = 1;
+
+	uint32_t size = (uint32_t)(gfx_cols * gfx_rows);
+	gfx_buf = (char *)kmalloc(size);
+	if (!gfx_buf) {
+		gfx_cols = gfx_rows = 0;
+		return;
+	}
+	for (uint32_t i = 0; i < size; i++) gfx_buf[i] = ' ';
+}
 
 /**
  * @brief GOPフレームバッファ情報を設定
@@ -63,30 +94,41 @@ static void draw_char_fb(int x, int y, char c) {
 		return;
 	}
 
-	const bdf_glyph_t *glyph = bdf_get_glyph((uint32_t)(unsigned char)c);
-	if (!glyph) {
-		return;
-	}
-
 	const bdf_font_t *font_info = bdf_get_font();
 	if (!font_info) {
 		return;
 	}
 
-	int char_width = font_info->width;
-	int char_height = font_info->height;
+	const bdf_glyph_t *glyph = bdf_get_glyph((uint32_t)(unsigned char)c);
 
-	for (int row = 0; row < glyph->height && row < char_height; row++) {
-		uint8_t bits = glyph->bitmap[row];
-		for (int col = 0; col < 8; col++) {
+	int char_width = (glyph && glyph->width) ? (int)glyph->width : (int)font_info->width;
+	int char_height = (glyph && glyph->height) ? (int)glyph->height : (int)font_info->height;
+
+	if (!glyph || c == ' ') {
+		for (int row = 0; row < char_height; row++) {
+			for (int col = 0; col < char_width; col++) {
+				uint32_t pixel_x = x * char_width + col;
+				uint32_t pixel_y = y * char_height + row;
+				if (pixel_x < fb_width && pixel_y < fb_height) {
+					uint32_t offset = pixel_y * fb_pitch + pixel_x;
+					framebuffer[offset] = fb_bg_color;
+				}
+			}
+		}
+		return;
+	}
+
+	for (int row = 0; row < char_height && row < (int)MAX_GLYPH_HEIGHT; row++) {
+		uint16_t bits = glyph->bitmap[row];
+		for (int col = 0; col < char_width; col++) {
 			uint32_t pixel_x = x * char_width + col;
 			uint32_t pixel_y = y * char_height + row;
 
 			if (pixel_x < fb_width && pixel_y < fb_height) {
 				uint32_t offset = pixel_y * fb_pitch + pixel_x;
-				framebuffer[offset] = (bits & (0x80 >> col)) ?
-							      fb_fg_color :
-							      fb_bg_color;
+				int bitpos = (char_width - 1) - col;
+				uint16_t mask = (bitpos >= 0 && bitpos < 16) ? (1u << bitpos) : 0;
+				framebuffer[offset] = (bits & mask) ? fb_fg_color : fb_bg_color;
 			}
 		}
 	}
@@ -207,46 +249,66 @@ void console_init() {
 void new_line() {
 	cursor_col = 0;
 	cursor_row++;
-	if (cursor_row >= CONSOLE_ROWS) {
-		// スクロール処理
-		uint8_t *video = (uint8_t *)VIDEO_MEMORY;
-		int last = (CONSOLE_ROWS - 1) * CONSOLE_COLS;
-		char linebuf[CONSOLE_COLS];
-		for (int c = 0; c < CONSOLE_COLS; c++) {
-			linebuf[c] = (char)video[(last + c) * 2];
-		}
-
-		if (history_lines < N_HISTORY) {
-			for (int i = 0; i < CONSOLE_COLS; ++i)
-				history[history_lines][i] = linebuf[i];
-			history_lines++;
-		} else {
-			for (int i = 0; i < N_HISTORY - 1; ++i) {
-				for (int c = 0; c < CONSOLE_COLS; ++c)
-					history[i][c] = history[i + 1][c];
+	if (use_framebuffer && gfx_buf && gfx_cols > 0 && gfx_rows > 0) {
+		if (cursor_row >= gfx_rows) {
+			/* scroll gfx buffer up one line */
+			int line_size = gfx_cols;
+			for (int r = 0; r < gfx_rows - 1; r++) {
+				char *dst = gfx_buf + r * line_size;
+				char *src = gfx_buf + (r + 1) * line_size;
+				for (int c = 0; c < line_size; c++) dst[c] = src[c];
 			}
-			for (int c = 0; c < CONSOLE_COLS; ++c)
-				history[N_HISTORY - 1][c] = linebuf[c];
+			/* clear last line */
+			char *last = gfx_buf + (gfx_rows - 1) * line_size;
+			for (int c = 0; c < line_size; c++) last[c] = ' ';
+			cursor_row = gfx_rows - 1;
+			console_render_text_to_fb();
 		}
-
-		for (int r = 0; r < CONSOLE_ROWS - 1; r++) {
+	} else {
+		if (cursor_row >= CONSOLE_ROWS) {
+			/* スクロール処理 (テキストモード) */
+			uint8_t *video = (uint8_t *)VIDEO_MEMORY;
+			int last = (CONSOLE_ROWS - 1) * CONSOLE_COLS;
+			char linebuf[CONSOLE_COLS];
 			for (int c = 0; c < CONSOLE_COLS; c++) {
-				int dst = (r * CONSOLE_COLS + c) * 2;
-				int src = ((r + 1) * CONSOLE_COLS + c) * 2;
-				video[dst] = video[src];
-				video[dst + 1] = video[src + 1];
+				linebuf[c] = (char)video[(last + c) * 2];
+			}
+
+			if (history_lines < N_HISTORY) {
+				for (int i = 0; i < CONSOLE_COLS; ++i)
+					history[history_lines][i] = linebuf[i];
+				history_lines++;
+			} else {
+				for (int i = 0; i < N_HISTORY - 1; ++i) {
+					for (int c = 0; c < CONSOLE_COLS; ++c)
+						history[i][c] = history[i + 1][c];
+				}
+				for (int c = 0; c < CONSOLE_COLS; ++c)
+					history[N_HISTORY - 1][c] = linebuf[c];
+			}
+
+			for (int r = 0; r < CONSOLE_ROWS - 1; r++) {
+				for (int c = 0; c < CONSOLE_COLS; c++) {
+					int dst = (r * CONSOLE_COLS + c) * 2;
+					int src = ((r + 1) * CONSOLE_COLS + c) * 2;
+					video[dst] = video[src];
+					video[dst + 1] = video[src + 1];
+				}
+			}
+
+			uint8_t attr = COLOR;
+			for (int c = 0; c < CONSOLE_COLS; c++) {
+				video[(last + c) * 2] = ' ';
+				video[(last + c) * 2 + 1] = attr;
+			}
+			cursor_row = CONSOLE_ROWS - 1;
+			history_offset = (history_lines > CONSOLE_ROWS) ?
+							 history_lines - CONSOLE_ROWS :
+							 0;
+			if (use_framebuffer) {
+				console_render_text_to_fb();
 			}
 		}
-
-		uint8_t attr = COLOR;
-		for (int c = 0; c < CONSOLE_COLS; c++) {
-			video[(last + c) * 2] = ' ';
-			video[(last + c) * 2 + 1] = attr;
-		}
-		cursor_row = CONSOLE_ROWS - 1;
-		history_offset = (history_lines > CONSOLE_ROWS) ?
-					 history_lines - CONSOLE_ROWS :
-					 0;
 	}
 }
 
@@ -266,30 +328,54 @@ static void console_putc(char ch) {
 
 	if (ch == '\b' || ch == 0x08) {
 		// Backspace処理: カーソルを1文字戻す
-		if (cursor_col > 0) {
-			cursor_col--;
-		} else if (cursor_row > 0) {
-			// 前の行の最後に移動
-			cursor_row--;
-			cursor_col = CONSOLE_COLS - 1;
+		if (use_framebuffer && gfx_buf && gfx_cols > 0) {
+			if (cursor_col > 0) {
+				cursor_col--;
+			} else if (cursor_row > 0) {
+				cursor_row--;
+				cursor_col = gfx_cols - 1;
+			}
+			int pos = cursor_row * gfx_cols + cursor_col;
+			if (pos >= 0 && pos < gfx_cols * gfx_rows)
+				gfx_buf[pos] = ' ';
+			draw_char_fb(cursor_col, cursor_row, ' ');
+		} else {
+			if (cursor_col > 0) {
+				cursor_col--;
+			} else if (cursor_row > 0) {
+				// 前の行の最後に移動
+				cursor_row--;
+				cursor_col = CONSOLE_COLS - 1;
+			}
 		}
 		serial_putc('\b');
 		return;
 	}
 
-	int pos = (cursor_row * CONSOLE_COLS + cursor_col) * 2;
-	video[pos] = (uint8_t)ch;
-	video[pos + 1] = attr;
-
-	// GOP フレームバッファに出力
-	if (use_framebuffer) {
+	if (use_framebuffer && gfx_buf && gfx_cols > 0 && gfx_rows > 0) {
+		int pos = cursor_row * gfx_cols + cursor_col;
+		if (pos >= 0 && pos < gfx_cols * gfx_rows) {
+			gfx_buf[pos] = ch;
+		}
 		draw_char_fb(cursor_col, cursor_row, ch);
-	}
-
-	cursor_col++;
-	serial_putc(ch);
-	if (cursor_col >= CONSOLE_COLS) {
-		new_line();
+		cursor_col++;
+		serial_putc(ch);
+		if (cursor_col >= gfx_cols) {
+			new_line();
+		}
+	} else {
+		int pos = (cursor_row * CONSOLE_COLS + cursor_col) * 2;
+		video[pos] = (uint8_t)ch;
+		video[pos + 1] = attr;
+		// GOP フレームバッファに出力
+		if (use_framebuffer) {
+			draw_char_fb(cursor_col, cursor_row, ch);
+		}
+		cursor_col++;
+		serial_putc(ch);
+		if (cursor_col >= CONSOLE_COLS) {
+			new_line();
+		}
 	}
 }
 
@@ -317,6 +403,11 @@ static void redraw_from_history(void) {
 			video[pos + 1] = attr;
 		}
 	}
+
+	if (use_framebuffer) {
+		/* If we have a gfx_buf, render that; otherwise render video memory */
+		console_render_text_to_fb();
+	}
 }
 
 void console_scroll_page_up(void) {
@@ -336,6 +427,72 @@ void console_scroll_page_down(void) {
 	if (history_offset > max_offset)
 		history_offset = max_offset;
 	redraw_from_history();
+}
+
+void console_render_text_to_fb(void) {
+	if (!use_framebuffer) return;
+	const bdf_font_t *font_info = bdf_get_font();
+	if (!font_info) return;
+	/* If we have an allocated gfx buffer (sized to fb/font), render from it
+	 * so we can draw beyond 80x25. Otherwise fall back to video memory. */
+	if (gfx_buf && gfx_cols > 0 && gfx_rows > 0) {
+		for (int r = 0; r < gfx_rows; ++r) {
+			for (int c = 0; c < gfx_cols; ++c) {
+				int pos = r * gfx_cols + c;
+				char ch = gfx_buf[pos];
+				draw_char_fb(c, r, ch);
+			}
+		}
+		return;
+	}
+
+	int fb_cols = (int)(fb_width / font_info->width);
+	int fb_rows = (int)(fb_height / font_info->height);
+	if (fb_cols <= 0 || fb_rows <= 0) return;
+
+	int cols = (fb_cols < CONSOLE_COLS) ? fb_cols : CONSOLE_COLS;
+	int rows = (fb_rows < CONSOLE_ROWS) ? fb_rows : CONSOLE_ROWS;
+
+	uint8_t *video = (uint8_t *)VIDEO_MEMORY;
+	for (int r = 0; r < rows; ++r) {
+		for (int c = 0; c < cols; ++c) {
+			int pos = (r * CONSOLE_COLS + c) * 2;
+			char ch = (char)video[pos];
+			draw_char_fb(c, r, ch);
+		}
+	}
+}
+
+/* Called after font has been initialized and kmalloc is available. This
+ * allocates the gfx text buffer (if possible) and renders current video
+ * memory into the framebuffer so early messages become visible. */
+void console_post_font_init(void) {
+	/* try to allocate gfx buffer now that memory allocator is ready */
+	allocate_gfx_buf_if_needed();
+	if (gfx_buf && gfx_cols > 0 && gfx_rows > 0) {
+		/* copy existing video memory (80x25) into gfx_buf top-left */
+		uint8_t *video = (uint8_t *)VIDEO_MEMORY;
+		int copy_rows = (gfx_rows < CONSOLE_ROWS) ? gfx_rows : CONSOLE_ROWS;
+		int copy_cols = (gfx_cols < CONSOLE_COLS) ? gfx_cols : CONSOLE_COLS;
+		for (int r = 0; r < copy_rows; ++r) {
+			for (int c = 0; c < copy_cols; ++c) {
+				int vpos = (r * CONSOLE_COLS + c) * 2;
+				char ch = (char)video[vpos];
+				gfx_buf[r * gfx_cols + c] = ch;
+			}
+			/* fill remainder of gfx row with spaces if gfx_cols > CONSOLE_COLS */
+			for (int c = copy_cols; c < gfx_cols; ++c) {
+				gfx_buf[r * gfx_cols + c] = ' ';
+			}
+		}
+		/* if gfx_rows > CONSOLE_ROWS, clear remaining rows */
+		for (int r = copy_rows; r < gfx_rows; ++r) {
+			for (int c = 0; c < gfx_cols; ++c) gfx_buf[r * gfx_cols + c] = ' ';
+		}
+
+		/* Render to framebuffer */
+		console_render_text_to_fb();
+	}
 }
 
 /**
