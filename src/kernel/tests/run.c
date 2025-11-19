@@ -69,12 +69,6 @@ void run_test() {
 	new_line();
 #endif
 
-#ifdef XHCI_TEST
-	printk("> XHCI USB TEST\n");
-	xhci_test();
-	new_line();
-#endif
-
 #ifdef MULTI_TASK_TEST
 	printk("> MULTI TASK TEST\n");
 	multi_task_test();

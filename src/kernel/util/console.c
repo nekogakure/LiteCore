@@ -71,8 +71,8 @@ void console_set_framebuffer(BOOT_INFO *boot_info) {
 
 /**
  * @brief フレームバッファの色を設定
- * @param fg 前景色（RGB形式: 0xRRGGBB）
- * @param bg 背景色（RGB形式: 0xRRGGBB）
+ * @param fg 前景色
+ * @param bg 背景色
  */
 void console_set_colors(uint32_t fg, uint32_t bg) {
 	fb_fg_color = fg;
@@ -210,10 +210,6 @@ static int cursor_row = 0;
  */
 static int cursor_col = 0;
 
-/**
- * @var CONSOLE_COLS
- * @brief コンソール列文字数
- */
 static const int CONSOLE_COLS = 80;
 
 /**
@@ -237,6 +233,7 @@ void console_init() {
 	// VGA テキストモードをクリア
 	uint8_t *video = (uint8_t *)VIDEO_MEMORY;
 	uint8_t attr = COLOR;
+        
 	for (int i = 0; i < 80 * 25; i++) {
 		*video++ = ' ';
 		*video++ = attr;
@@ -454,8 +451,6 @@ void console_render_text_to_fb(void) {
 	const bdf_font_t *font_info = bdf_get_font();
 	if (!font_info)
 		return;
-	/* If we have an allocated gfx buffer (sized to fb/font), render from it
-	 * so we can draw beyond 80x25. Otherwise fall back to video memory. */
 	if (gfx_buf && gfx_cols > 0 && gfx_rows > 0) {
 		for (int r = 0; r < gfx_rows; ++r) {
 			for (int c = 0; c < gfx_cols; ++c) {
@@ -485,14 +480,9 @@ void console_render_text_to_fb(void) {
 	}
 }
 
-/* Called after font has been initialized and kmalloc is available. This
- * allocates the gfx text buffer (if possible) and renders current video
- * memory into the framebuffer so early messages become visible. */
 void console_post_font_init(void) {
-	/* try to allocate gfx buffer now that memory allocator is ready */
 	allocate_gfx_buf_if_needed();
 	if (gfx_buf && gfx_cols > 0 && gfx_rows > 0) {
-		/* copy existing video memory (80x25) into gfx_buf top-left */
 		uint8_t *video = (uint8_t *)VIDEO_MEMORY;
 		int copy_rows = (gfx_rows < CONSOLE_ROWS) ? gfx_rows :
 							    CONSOLE_ROWS;
@@ -504,12 +494,10 @@ void console_post_font_init(void) {
 				char ch = (char)video[vpos];
 				gfx_buf[r * gfx_cols + c] = ch;
 			}
-			/* fill remainder of gfx row with spaces if gfx_cols > CONSOLE_COLS */
 			for (int c = copy_cols; c < gfx_cols; ++c) {
 				gfx_buf[r * gfx_cols + c] = ' ';
 			}
 		}
-		/* if gfx_rows > CONSOLE_ROWS, clear remaining rows */
 		for (int r = copy_rows; r < gfx_rows; ++r) {
 			for (int c = 0; c < gfx_cols; ++c)
 				gfx_buf[r * gfx_cols + c] = ' ';

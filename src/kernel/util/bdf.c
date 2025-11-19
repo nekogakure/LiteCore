@@ -288,8 +288,34 @@ int bdf_init(const char *path) {
 
 	if (result) {
 		initialized = 1;
+#ifdef INIT_MSG
 		printk("BDF: Loaded font with %u glyphs (%dx%d)\n",
 		       font.num_glyphs, font.width, font.height);
+#endif
+
+		for (uint32_t gi = 0; gi < font.num_glyphs; gi++) {
+			bdf_glyph_t *g = &font.glyphs[gi];
+			if (g->width > 16)
+				g->width = 16;
+			if (g->height == 0)
+				g->height = font.height;
+			if (g->height > MAX_GLYPH_HEIGHT)
+				g->height = MAX_GLYPH_HEIGHT;
+			for (int r = g->height; r < MAX_GLYPH_HEIGHT; r++) {
+				g->bitmap[r] = 0;
+			}
+		}
+
+		int found_default = 0;
+		for (uint32_t gi = 0; gi < font.num_glyphs; gi++) {
+			if (font.glyphs[gi].encoding == font.default_char) {
+				found_default = 1;
+				break;
+			}
+		}
+		if (!found_default) {
+			font.default_char = 32;
+		}
 	}
 
 	return result;

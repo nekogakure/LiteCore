@@ -25,10 +25,9 @@ CFLAGS     = -O2 -Wimplicit-function-declaration -Wunused-but-set-variable -ffre
 LDFLAGS    = -m elf_x86_64 -z max-page-size=0x1000
 
 NFLAGS     = -f bin
-QEMU_FLAGS = -serial stdio -display none -monitor none -device qemu-xhci,id=xhci \
-             -device usb-kbd,bus=xhci.0 \
+QEMU_FLAGS = -serial stdio -display none -monitor none \
              -bios /usr/share/ovmf/OVMF.fd -d int,guest_errors -D qemu.log --no-reboot
-QEMU_VGA   = -device qemu-xhci,id=xhci -device usb-kbd,bus=xhci.0
+QEMU_VGA   = 
 CONSOLE    = -display curses
 
 SOURCES    = $(shell find $(SRC_KERNEL) -name "*.c")
@@ -109,15 +108,18 @@ $(EXT2_IMG): $(KERNEL)
 	@echo "ext2 image created: $(EXT2_IMG)"
 
 run: $(ESP_IMG) $(EXT2_IMG)
-	$(QEMU) $(QEMU_FLAGS) --drive file=$(ESP_IMG),format=raw -drive file=$(EXT2_IMG),format=raw,if=ide $(QEMU_USB)
+	$(QEMU) $(QEMU_FLAGS) --drive file=$(ESP_IMG),format=raw -drive file=$(EXT2_IMG),format=raw,if=ide
 
 run-console: $(ESP_IMG) $(EXT2_IMG)
-	$(QEMU) -bios /usr/share/ovmf/OVMF.fd $(CONSOLE) $(QEMU_USB) -drive file=$(ESP_IMG),format=raw -drive file=$(EXT2_IMG),format=raw,if=ide
+	$(QEMU) -bios /usr/share/ovmf/OVMF.fd $(CONSOLE)-drive file=$(ESP_IMG),format=raw -drive file=$(EXT2_IMG),format=raw,if=ide
 
 run-vga: $(ESP_IMG) $(EXT2_IMG)
 	$(QEMU) -bios /usr/share/ovmf/OVMF.fd $(QEMU_VGA) -drive file=$(ESP_IMG),format=raw -drive file=$(EXT2_IMG),format=raw,if=ide -d int -D qemu.log --no-reboot -monitor stdio
 
-clean:
+clean-all:
 	rm -rf $(OUT_DIR) $(ESP_DIR)
 	cd $(EDK2_DIR) && rm -rf bin/boot
 	rm -f $(EXT2_IMG)
+
+clean: 
+	rm -rf $(OUT_DIR)

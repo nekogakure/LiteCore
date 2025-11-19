@@ -5,9 +5,6 @@
 #include <stdbool.h>
 #include <interrupt/irq.h>
 
-#ifdef UEFI_MODE
-#include <driver/usb/usb_keyboard.h>
-#endif
 
 #define KEY_BUFFER_SIZE 256
 static char key_buffer[KEY_BUFFER_SIZE];
@@ -160,16 +157,9 @@ static void kbd_process(uint32_t sc_payload, void *ctx) {
  * @brief キーボードドライバを初期化
  */
 void keyboard_init(void) {
-#ifdef UEFI_MODE
-	// UEFI環境ではUSBキーボードを優先
-	if (usb_keyboard_init() == 0) {
-		// USB初期化成功（メッセージはusb_keyboard.cで出力済み）
-		printk("PS/2 Keyboard available as fallback\n");
-	} else {
-		printk("USB Keyboard not available, using PS/2\n");
-	}
+#ifdef INIT_MSG
+	printk("PS/2 Keyboard initialized\n");
 #endif
-
 	// 同期側の処理ハンドラを登録 (FIFOイベントの処理)
 	// IRQ 1 = ベクタ 33
 	interrupt_register(33, kbd_process, NULL);
@@ -179,15 +169,7 @@ void keyboard_init(void) {
 }
 
 void keyboard_poll(void) {
-#ifdef UEFI_MODE
-	// USBキーボードを優先してポーリング
-	if (usb_keyboard_available()) {
-		char c;
-		while ((c = usb_keyboard_getc()) != 0) {
-			buffer_put(c);
-		}
-	}
-#endif
+	// USBは無効化されているためPS/2のみを扱う
 
 	// PS/2キーボードをポーリング
 	kbd_isr(0, NULL);

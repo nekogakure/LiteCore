@@ -45,14 +45,12 @@ void kmain(BOOT_INFO *boot_info) {
 	gdt_install_lgdt();
 	gdt_install_jump();
 
+	kernel_init();
+
 	printk("Welcome to Litecore kernel!\n");
 	printk("    Version : %s\n", VERSION);
 	printk("    Build   : %s %s\n", __DATE__, __TIME__);
 	printk("    Author  : nekogakure\n");
-
-	new_line();
-
-	kernel_init();
 
 #ifdef TEST_TRUE
 	new_line();
