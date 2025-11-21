@@ -4,6 +4,9 @@
 #include <mem/map.h>
 #include <fs/ext/ext2.h>
 #include <driver/timer/apic.h>
+#ifdef UEFI_MODE
+#include <driver/timer/uefi_timer.h>
+#endif
 #include <device/pci.h>
 #include <stdint.h>
 
@@ -172,12 +175,18 @@ static int cmd_uptime(int argc, char **argv) {
 	(void)argc;
 	(void)argv;
 
-	if (!apic_timer_available()) {
-		printk("Uptime: APIC timer not available\n");
-		return 0;
-	}
+	uint64_t uptime_ms = 0;
 
-	uint64_t uptime_ms = apic_get_uptime_ms();
+	if (apic_timer_available()) {
+		uptime_ms = apic_get_uptime_ms();
+	} else {
+#ifdef UEFI_MODE
+		uptime_ms = uefi_get_uptime_ms();
+#else
+		printk("Uptime: no timer available\n");
+		return 0;
+#endif
+	}
 	uint32_t uptime_ms_low = (uint32_t)uptime_ms; /* 下位32bitを取得 */
 	uint32_t total_seconds = uptime_ms_low / 1000UL; /* ミリ秒を秒に変換 */
 
