@@ -116,12 +116,17 @@ user: lib $(USER_ELFS)
 $(OUT_DIR)/user/%.elf: $(OUT_DIR)/user/%.o
 	@mkdir -p $(dir $@)
 	@echo "Linking user ELF: $@"
-
 	@if [ -f "$(BIN_LIB_DIR)/libc.a" ]; then \
-		$(CC) -nostdlib -static $< $(USER_LDFLAGS) -Wl,-Ttext=0x400000 -o $@; \
+		$(CC) -nostdlib -static $< $(USER_LDFLAGS) -o $@; \
 	else \
-		$(CC) -nostdlib -static -Wl,-Ttext=0x400000 $< -o $@; \
+		$(CC) -nostdlib -static $< -o $@; \
 	fi
+
+
+$(OUT_DIR)/user/hello.elf: $(OUT_DIR)/user/hello.o $(OUT_DIR)/user/syscall.o
+	@mkdir -p $(dir $@)
+	@echo "Linking user ELF (hello, no -lc): $@"
+	@$(CC) -nostdlib -static $^ -o $@
 
 lib:
 	@mkdir -p $(OUT_DIR)

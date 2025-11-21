@@ -175,7 +175,7 @@ void idt_init(void) {
 	extern void isr47(void);
 	extern void isr48(void);
 
-		extern void isr128(void);
+	extern void isr128(void);
 
 	idt_set_gate(14, (uint64_t)isr14); /* page fault */
 	idt_set_gate(32, (uint64_t)isr32);
