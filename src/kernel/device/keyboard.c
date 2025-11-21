@@ -5,11 +5,13 @@
 #include <stdbool.h>
 #include <interrupt/irq.h>
 
-
 #define KEY_BUFFER_SIZE 256
 static char key_buffer[KEY_BUFFER_SIZE];
 static volatile int buffer_read_pos = 0;
 static volatile int buffer_write_pos = 0;
+
+// IRQ handling enabled flag (set when IRQ-based handling is registered)
+static volatile int irq_enabled = 0;
 
 static void buffer_put(char c) {
 	int next_pos = (buffer_write_pos + 1) % KEY_BUFFER_SIZE;
@@ -160,8 +162,13 @@ void keyboard_init(void) {
 #ifdef INIT_MSG
 	printk("PS/2 Keyboard initialized\n");
 #endif
-	// 同期側の処理ハンドラを登録 (FIFOイベントの処理)
-	// IRQ 1 = ベクタ 33
+	if (interrupt_register(33, kbd_isr, NULL) == 0) {
+		uint8_t mask = inb(0x21);
+		mask &= ~(1u << 1);
+		outb(0x21, mask);
+		irq_enabled = 1;
+	}
+
 	interrupt_register(33, kbd_process, NULL);
 #ifdef INIT_MSG
 	printk("Keyboard initialize success\n");
@@ -170,9 +177,9 @@ void keyboard_init(void) {
 
 void keyboard_poll(void) {
 	// USBは無効化されているためPS/2のみを扱う
-
-	// PS/2キーボードをポーリング
-	kbd_isr(0, NULL);
+	if (!irq_enabled) {
+		kbd_isr(0, NULL);
+	}
 
 	// シリアル入力もポーリング
 	char c;

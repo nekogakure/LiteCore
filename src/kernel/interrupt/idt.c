@@ -88,6 +88,19 @@ void irq_handler_c(uint32_t vec) {
 			extern void uefi_timer_tick(uint32_t, void *);
 			uefi_timer_tick(0, NULL);
 
+			if (irq >= 8)
+				outb(PIC2_COMMAND, 0x20);
+			outb(PIC1_COMMAND, 0x20);
+			return;
+		}
+
+		if (vec == 33) {
+			uint8_t status = inb(0x64);
+			uint8_t sc = 0;
+			if ((status & 0x01) != 0) {
+				sc = inb(0x60);
+			}
+			interrupt_raise((vec << 16) | (uint32_t)sc);
 
 			if (irq >= 8)
 				outb(PIC2_COMMAND, 0x20);
@@ -95,7 +108,6 @@ void irq_handler_c(uint32_t vec) {
 			return;
 		}
 
-		// その他の割り込みはFIFO経由で処理
 		interrupt_raise((vec << 16) | 0u);
 
 		if (irq >= 8)

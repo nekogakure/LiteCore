@@ -86,9 +86,6 @@ void kloop() {
 	int activity =
 		0; // このループで何か処理したかフラグ（分かりづらい仕事しろ、そうだこの変数だ）
 
-	/* ポーリングによるフォールバック: キーボードのscancodeを回収 */
-	keyboard_poll();
-
 	/* FIFOに入ったイベントを処理 */
 	int event_count = 0;
 	while (interrupt_dispatch_one()) {
@@ -97,6 +94,8 @@ void kloop() {
 	}
 
 	shell_readline_and_execute();
+
+	task_yield();
 
 	/* 何も処理しなかった場合はCPUを休止（次の割り込みまで） */
 	if (!activity) {

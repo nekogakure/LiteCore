@@ -284,8 +284,10 @@ void new_line() {
 		if (cursor_row >= fb_rows) {
 			if (use_framebuffer && framebuffer) {
 				for (uint32_t y = 0; y < fb_height; y++) {
-					for (uint32_t x = 0; x < fb_width; x++) {
-						framebuffer[y * fb_pitch + x] = fb_bg_color;
+					for (uint32_t x = 0; x < fb_width;
+					     x++) {
+						framebuffer[y * fb_pitch + x] =
+							fb_bg_color;
 					}
 				}
 			}
@@ -352,7 +354,8 @@ static void console_putc(char ch) {
 		if (use_framebuffer && !gfx_buf) {
 			const bdf_font_t *font = bdf_get_font();
 			int fw = font ? (int)font->width : 8;
-			int fb_cols = (fw > 0) ? (int)(fb_width / fw) : CONSOLE_COLS;
+			int fb_cols = (fw > 0) ? (int)(fb_width / fw) :
+						 CONSOLE_COLS;
 
 			draw_char_fb(cursor_col, cursor_row, ch);
 			cursor_col++;
@@ -389,7 +392,8 @@ static void redraw_from_history(void) {
 				continue;
 			for (int c = 0; c < gfx_cols; ++c) {
 				if (c < CONSOLE_COLS)
-					gfx_buf[r * gfx_cols + c] = history[idx][c];
+					gfx_buf[r * gfx_cols + c] =
+						history[idx][c];
 				else
 					gfx_buf[r * gfx_cols + c] = ' ';
 			}
@@ -412,7 +416,8 @@ static void redraw_from_history(void) {
 			for (int c = 0; c < fb_cols; ++c) {
 				char ch = ' ';
 				int idx = start + r;
-				if (idx >= 0 && idx < history_lines && c < CONSOLE_COLS)
+				if (idx >= 0 && idx < history_lines &&
+				    c < CONSOLE_COLS)
 					ch = history[idx][c];
 				draw_char_fb(c, r, ch);
 			}
@@ -472,7 +477,8 @@ void console_render_text_to_fb(void) {
 		for (int c = 0; c < cols; ++c) {
 			char ch = ' ';
 			int idx = history_offset + r;
-			if (idx >= 0 && idx < history_lines && c < CONSOLE_COLS) {
+			if (idx >= 0 && idx < history_lines &&
+			    c < CONSOLE_COLS) {
 				ch = history[idx][c];
 			}
 			draw_char_fb(c, r, ch);
@@ -484,13 +490,16 @@ void console_post_font_init(void) {
 	allocate_gfx_buf_if_needed();
 	if (gfx_buf && gfx_cols > 0 && gfx_rows > 0) {
 		/* Initialize gfx_buf from history if available, otherwise blank */
-		int copy_rows = (gfx_rows < CONSOLE_ROWS) ? gfx_rows : CONSOLE_ROWS;
-		int copy_cols = (gfx_cols < CONSOLE_COLS) ? gfx_cols : CONSOLE_COLS;
+		int copy_rows = (gfx_rows < CONSOLE_ROWS) ? gfx_rows :
+							    CONSOLE_ROWS;
+		int copy_cols = (gfx_cols < CONSOLE_COLS) ? gfx_cols :
+							    CONSOLE_COLS;
 		for (int r = 0; r < copy_rows; ++r) {
 			int idx = history_offset + r;
 			for (int c = 0; c < copy_cols; ++c) {
 				if (idx >= 0 && idx < history_lines)
-					gfx_buf[r * gfx_cols + c] = history[idx][c];
+					gfx_buf[r * gfx_cols + c] =
+						history[idx][c];
 				else
 					gfx_buf[r * gfx_cols + c] = ' ';
 			}
