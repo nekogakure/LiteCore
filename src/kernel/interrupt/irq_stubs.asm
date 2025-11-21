@@ -196,3 +196,13 @@ isr48:
         call irq_handler_c
         POP_ALL
         iretq
+
+global isr128
+isr128:
+        PUSH_ALL
+        mov rdi, rsp
+        mov rsi, 128
+        extern syscall_entry_c
+        call syscall_entry_c
+        POP_ALL
+        iretq

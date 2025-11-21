@@ -13,6 +13,8 @@ EDK2_BUILD = $(EDK2_DIR)/bin/boot/DEBUG_GCC5/X64/LiteCoreBootManager.efi
 SRC_DIR    = src
 SRC_BOOT   = boot
 SRC_KERNEL = $(SRC_DIR)/kernel
+SRC_USER   = $(SRC_DIR)/user
+SRC_LIB    = $(SRC_DIR)/lib
 FONTS      = $(SRC_KERNEL)/fonts/ter-u12b.bdf
 INCLUDE    = $(SRC_DIR)/kernel
 OUT_DIR    = bin
@@ -35,6 +37,13 @@ SOURCES    = $(shell find $(SRC_KERNEL) -name "*.c")
 ASM_SOURCES = $(shell find $(SRC_KERNEL) -name "*.asm")
 OBJECTS    = $(shell printf "%s\n" $(patsubst $(SRC_KERNEL)/%.c, $(K_OUT_DIR)/%.o, $(SOURCES)) $(patsubst $(SRC_KERNEL)/%.asm, $(K_OUT_DIR)/%.o, $(ASM_SOURCES)) | sort -u)
 
+USER_SOURCES = $(shell find $(SRC_USER) -name "*.c")
+USER_OBJECTS = $(shell printf "%s\n" $(patsubst $(SRC_USER)/%.c, $(OUT_DIR)/user/%.o, $(USER_SOURCES)) | sort -u)
+USER_ELFS = $(shell printf "%s\n" $(patsubst $(SRC_USER)/%.c, $(OUT_DIR)/user/%.elf, $(USER_SOURCES)) | sort -u)
+
+BIN_LIB_DIR = $(OUT_DIR)/lib
+USER_LDFLAGS ?= -L$(BIN_LIB_DIR) -lc
+
 BOOTX64    = $(B_OUT_DIR)/BOOTX64.EFI
 KERNEL_ELF = $(K_OUT_DIR)/kernel.elf
 KERNEL     = $(K_OUT_DIR)/kernel.bin
@@ -43,10 +52,28 @@ EXT2_IMG   = $(IMG_OUT_DIR)/fs.img
 LINKER     = $(SRC_DIR)/kernel.ld
 ESP_DIR    = esp
 
-.PHONY: all run run-console run-vga clean bootloader kernel ext2
+.PHONY: all run run-console run-vga clean bootloader kernel user lib ext2
 .DEFAULT_GOAL := all
 
-all: bootloader kernel $(F_OUT_DIR)/ter-u12b.bdf $(README) $(ESP_IMG) $(EXT2_IMG)
+.PHONY: lib-build
+
+lib-build:
+	@echo "==> lib-build: building libc/newlib in $(SRC_LIB)"
+	@if [ -d "$(SRC_LIB)" ]; then \
+		if command -v x86_64-elf-gcc >/dev/null 2>&1 ; then \
+			echo "Using cross toolchain x86_64-elf-*"; \
+			cd $(SRC_LIB) && AR=x86_64-elf-ar RANLIB=x86_64-elf-ranlib CC=x86_64-elf-gcc CFLAGS= make -j$(shell nproc) || exit $$?; \
+		else \
+			echo "Cross toolchain x86_64-elf-* not found, attempting host build (may be incompatible)"; \
+			cd $(SRC_LIB) && make -j$(shell nproc) || exit $$?; \
+		fi; \
+		$(MAKE) -C $(CURDIR) lib; \
+	else \
+		echo "$(SRC_LIB) not found, cannot build newlib"; exit 1; \
+	fi
+
+
+all: bootloader kernel user $(F_OUT_DIR)/ter-u12b.bdf $(README) $(ESP_IMG) $(EXT2_IMG)
 
 $(K_OUT_DIR):
 	@mkdir -p $(K_OUT_DIR)
@@ -76,6 +103,40 @@ $(K_OUT_DIR)/%.o: $(SRC_KERNEL)/%.c
 $(K_OUT_DIR)/%.o: $(SRC_KERNEL)/%.asm
 	@mkdir -p $(dir $@)
 	@$(NASM) -f elf64 $< -o $@
+
+$(OUT_DIR)/user/%.o: $(SRC_USER)/%.c
+	@mkdir -p $(dir $@)
+	@$(CC) $(CFLAGS) -c $< -o $@
+
+
+user: lib $(USER_ELFS)
+	@echo "Built user ELFs: $(USER_ELFS)"
+
+
+$(OUT_DIR)/user/%.elf: $(OUT_DIR)/user/%.o
+	@mkdir -p $(dir $@)
+	@echo "Linking user ELF: $@"
+
+	@if [ -f "$(BIN_LIB_DIR)/libc.a" ]; then \
+		$(CC) -nostdlib -static $< $(USER_LDFLAGS) -Wl,-Ttext=0x400000 -o $@; \
+	else \
+		$(CC) -nostdlib -static -Wl,-Ttext=0x400000 $< -o $@; \
+	fi
+
+lib:
+	@mkdir -p $(OUT_DIR)
+	@if [ -e "$(BIN_LIB_DIR)" ]; then \
+		echo "$(BIN_LIB_DIR) already exists"; \
+	else \
+		if [ -d "$(SRC_LIB)" ]; then \
+			ln -sfn ../../$(SRC_LIB) $(BIN_LIB_DIR); \
+			echo "Created symlink $(BIN_LIB_DIR) -> $(SRC_LIB)"; \
+		else \
+			mkdir -p $(BIN_LIB_DIR); \
+			echo "Created empty $(BIN_LIB_DIR), please place built lib files here"; \
+		fi; \
+	fi
+
 
 $(F_OUT_DIR)/ter-u12b.bdf: $(FONTS)
 	@mkdir -p $(F_OUT_DIR)
@@ -109,6 +170,7 @@ $(EXT2_IMG): $(KERNEL)
 		-not -name "*.o" \
 		-not -name "fs.img" \
 		-not -path "bin/fs_tmp/*" \
+		-not -path "bin/user/*" \
 		-exec bash -c 'dest="bin/fs_tmp/$${1#bin/}"; mkdir -p "$$(dirname "$$dest")"; cp "$$1" "$$dest"' _ {} \;
 	@mkdir -p bin/fs_tmp
 	@cp README.md bin/fs_tmp/README.md 2>/dev/null || true

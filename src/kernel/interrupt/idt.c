@@ -175,6 +175,8 @@ void idt_init(void) {
 	extern void isr47(void);
 	extern void isr48(void);
 
+		extern void isr128(void);
+
 	idt_set_gate(14, (uint64_t)isr14); /* page fault */
 	idt_set_gate(32, (uint64_t)isr32);
 	idt_set_gate(33, (uint64_t)isr33);
@@ -193,6 +195,18 @@ void idt_init(void) {
 	idt_set_gate(46, (uint64_t)isr46);
 	idt_set_gate(47, (uint64_t)isr47);
 	idt_set_gate(48, (uint64_t)isr48); /* APIC Timer */
+	/* syscall vector: allow user mode (DPL=3) */
+	/* set gate with DPL=3 (0xEE flags) */
+	{
+		uint64_t handler = (uint64_t)isr128;
+		idt[128].base_lo = handler & 0xFFFF;
+		idt[128].sel = 0x08;
+		idt[128].ist = 0;
+		idt[128].flags = 0xEE; /* Present, DPL=3, Interrupt Gate */
+		idt[128].base_mid = (handler >> 16) & 0xFFFF;
+		idt[128].base_hi = (handler >> 32) & 0xFFFFFFFF;
+		idt[128].reserved = 0;
+	}
 
 	idtp.limit = sizeof(struct idt_entry) * IDT_ENTRIES - 1;
 	idtp.base = (uint64_t)&idt;
