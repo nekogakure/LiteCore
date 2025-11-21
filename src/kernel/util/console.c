@@ -230,20 +230,19 @@ static int history_offset = 0;
 void console_init() {
 	serial_init(); // シリアルポートを初期化
 
-	// VGA テキストモードをクリア
-	uint8_t *video = (uint8_t *)VIDEO_MEMORY;
-	uint8_t attr = COLOR;
-        
-	for (int i = 0; i < 80 * 25; i++) {
-		*video++ = ' ';
-		*video++ = attr;
+	allocate_gfx_buf_if_needed();
+
+	if (gfx_buf && gfx_cols > 0 && gfx_rows > 0) {
+		uint32_t size = (uint32_t)(gfx_cols * gfx_rows);
+		for (uint32_t i = 0; i < size; ++i)
+			gfx_buf[i] = ' ';
 	}
 
-	// GOP フレームバッファをクリア（黒で塗りつぶし）
-	if (use_framebuffer) {
-		for (uint32_t y = 0; y < fb_height; y++) {
-			for (uint32_t x = 0; x < fb_width; x++) {
-				framebuffer[y * fb_pitch + x] = 0x000000;
+	if (use_framebuffer && framebuffer) {
+		uint32_t color = fb_bg_color;
+		for (uint32_t y = 0; y < fb_height; ++y) {
+			for (uint32_t x = 0; x < fb_width; ++x) {
+				framebuffer[y * fb_pitch + x] = color;
 			}
 		}
 	}
@@ -278,52 +277,23 @@ void new_line() {
 			cursor_row = gfx_rows - 1;
 			console_render_text_to_fb();
 		}
+	} else if (use_framebuffer && !gfx_buf) {
+		const bdf_font_t *font = bdf_get_font();
+		int fh = font ? (int)font->height : 16;
+		int fb_rows = (fh > 0) ? (int)(fb_height / fh) : CONSOLE_ROWS;
+		if (cursor_row >= fb_rows) {
+			if (use_framebuffer && framebuffer) {
+				for (uint32_t y = 0; y < fb_height; y++) {
+					for (uint32_t x = 0; x < fb_width; x++) {
+						framebuffer[y * fb_pitch + x] = fb_bg_color;
+					}
+				}
+			}
+			cursor_row = fb_rows - 1;
+		}
 	} else {
 		if (cursor_row >= CONSOLE_ROWS) {
-			/* スクロール処理 (テキストモード) */
-			uint8_t *video = (uint8_t *)VIDEO_MEMORY;
-			int last = (CONSOLE_ROWS - 1) * CONSOLE_COLS;
-			char linebuf[CONSOLE_COLS];
-			for (int c = 0; c < CONSOLE_COLS; c++) {
-				linebuf[c] = (char)video[(last + c) * 2];
-			}
-
-			if (history_lines < N_HISTORY) {
-				for (int i = 0; i < CONSOLE_COLS; ++i)
-					history[history_lines][i] = linebuf[i];
-				history_lines++;
-			} else {
-				for (int i = 0; i < N_HISTORY - 1; ++i) {
-					for (int c = 0; c < CONSOLE_COLS; ++c)
-						history[i][c] =
-							history[i + 1][c];
-				}
-				for (int c = 0; c < CONSOLE_COLS; ++c)
-					history[N_HISTORY - 1][c] = linebuf[c];
-			}
-
-			for (int r = 0; r < CONSOLE_ROWS - 1; r++) {
-				for (int c = 0; c < CONSOLE_COLS; c++) {
-					int dst = (r * CONSOLE_COLS + c) * 2;
-					int src = ((r + 1) * CONSOLE_COLS + c) *
-						  2;
-					video[dst] = video[src];
-					video[dst + 1] = video[src + 1];
-				}
-			}
-
-			uint8_t attr = COLOR;
-			for (int c = 0; c < CONSOLE_COLS; c++) {
-				video[(last + c) * 2] = ' ';
-				video[(last + c) * 2 + 1] = attr;
-			}
 			cursor_row = CONSOLE_ROWS - 1;
-			history_offset = (history_lines > CONSOLE_ROWS) ?
-						 history_lines - CONSOLE_ROWS :
-						 0;
-			if (use_framebuffer) {
-				console_render_text_to_fb();
-			}
 		}
 	}
 }
@@ -333,7 +303,6 @@ void new_line() {
  * @brief 位置文字表示
  */
 static void console_putc(char ch) {
-	uint8_t *video = (uint8_t *)VIDEO_MEMORY;
 	uint8_t attr = COLOR;
 
 	if (ch == '\n') {
@@ -380,50 +349,78 @@ static void console_putc(char ch) {
 			new_line();
 		}
 	} else {
-		int pos = (cursor_row * CONSOLE_COLS + cursor_col) * 2;
-		video[pos] = (uint8_t)ch;
-		video[pos + 1] = attr;
-		// GOP フレームバッファに出力
-		if (use_framebuffer) {
+		if (use_framebuffer && !gfx_buf) {
+			const bdf_font_t *font = bdf_get_font();
+			int fw = font ? (int)font->width : 8;
+			int fb_cols = (fw > 0) ? (int)(fb_width / fw) : CONSOLE_COLS;
+
 			draw_char_fb(cursor_col, cursor_row, ch);
-		}
-		cursor_col++;
-		serial_putc(ch);
-		if (cursor_col >= CONSOLE_COLS) {
-			new_line();
+			cursor_col++;
+			serial_putc(ch);
+			if (cursor_col >= fb_cols) {
+				new_line();
+			}
+		} else {
+			/* No VGA/text-mode support: if framebuffer not available,
+			 * just emit to serial. */
+			serial_putc(ch);
+			cursor_col++;
+			if (cursor_col >= CONSOLE_COLS) {
+				new_line();
+			}
 		}
 	}
 }
 
 /* history_offsetからコンソールを再描画 */
 static void redraw_from_history(void) {
-	uint8_t *video = (uint8_t *)VIDEO_MEMORY;
-	/* clear screen */
-	uint8_t attr = COLOR;
-	for (int r = 0; r < CONSOLE_ROWS; ++r) {
-		for (int c = 0; c < CONSOLE_COLS; ++c) {
-			int pos = (r * CONSOLE_COLS + c) * 2;
-			video[pos] = ' ';
-			video[pos + 1] = attr;
-		}
-	}
+	/* When using gfx_buf, copy history into it and render. If using direct
+	 * framebuffer rendering (no gfx_buf), draw characters directly. If no
+	 * framebuffer, do nothing (no VGA support). */
+	if (use_framebuffer && gfx_buf && gfx_cols > 0 && gfx_rows > 0) {
+		uint32_t gsize = (uint32_t)(gfx_cols * gfx_rows);
+		for (uint32_t i = 0; i < gsize; ++i)
+			gfx_buf[i] = ' ';
 
-	int start = history_offset;
-	for (int r = 0; r < CONSOLE_ROWS; ++r) {
-		int idx = start + r;
-		if (idx < 0 || idx >= history_lines)
-			continue;
-		for (int c = 0; c < CONSOLE_COLS; ++c) {
-			int pos = (r * CONSOLE_COLS + c) * 2;
-			video[pos] = (uint8_t)history[idx][c];
-			video[pos + 1] = attr;
+		int start = history_offset;
+		for (int r = 0; r < gfx_rows; ++r) {
+			int idx = start + r;
+			if (idx < 0 || idx >= history_lines)
+				continue;
+			for (int c = 0; c < gfx_cols; ++c) {
+				if (c < CONSOLE_COLS)
+					gfx_buf[r * gfx_cols + c] = history[idx][c];
+				else
+					gfx_buf[r * gfx_cols + c] = ' ';
+			}
 		}
-	}
-
-	if (use_framebuffer) {
-		/* If we have a gfx_buf, render that; otherwise render video memory */
 		console_render_text_to_fb();
+		return;
 	}
+
+	if (use_framebuffer && !gfx_buf) {
+		/* Direct framebuffer rendering: paint from history lines */
+		const bdf_font_t *font = bdf_get_font();
+		if (!font)
+			return;
+		int fw = (int)font->width;
+		int fh = (int)font->height;
+		int fb_cols = (fw > 0) ? (int)(fb_width / fw) : CONSOLE_COLS;
+		int rows = (fh > 0) ? (int)(fb_height / fh) : CONSOLE_ROWS;
+		int start = history_offset;
+		for (int r = 0; r < rows; ++r) {
+			for (int c = 0; c < fb_cols; ++c) {
+				char ch = ' ';
+				int idx = start + r;
+				if (idx >= 0 && idx < history_lines && c < CONSOLE_COLS)
+					ch = history[idx][c];
+				draw_char_fb(c, r, ch);
+			}
+		}
+		return;
+	}
+
+	/* No framebuffer: nothing to redraw (VGA/text-mode support removed) */
 }
 
 void console_scroll_page_up(void) {
@@ -467,14 +464,17 @@ void console_render_text_to_fb(void) {
 	if (fb_cols <= 0 || fb_rows <= 0)
 		return;
 
-	int cols = (fb_cols < CONSOLE_COLS) ? fb_cols : CONSOLE_COLS;
-	int rows = (fb_rows < CONSOLE_ROWS) ? fb_rows : CONSOLE_ROWS;
+	int cols = fb_cols;
+	int rows = fb_rows;
 
-	uint8_t *video = (uint8_t *)VIDEO_MEMORY;
+	/* Render from history (if any) or blank when no gfx_buf exists. */
 	for (int r = 0; r < rows; ++r) {
 		for (int c = 0; c < cols; ++c) {
-			int pos = (r * CONSOLE_COLS + c) * 2;
-			char ch = (char)video[pos];
+			char ch = ' ';
+			int idx = history_offset + r;
+			if (idx >= 0 && idx < history_lines && c < CONSOLE_COLS) {
+				ch = history[idx][c];
+			}
 			draw_char_fb(c, r, ch);
 		}
 	}
@@ -483,16 +483,16 @@ void console_render_text_to_fb(void) {
 void console_post_font_init(void) {
 	allocate_gfx_buf_if_needed();
 	if (gfx_buf && gfx_cols > 0 && gfx_rows > 0) {
-		uint8_t *video = (uint8_t *)VIDEO_MEMORY;
-		int copy_rows = (gfx_rows < CONSOLE_ROWS) ? gfx_rows :
-							    CONSOLE_ROWS;
-		int copy_cols = (gfx_cols < CONSOLE_COLS) ? gfx_cols :
-							    CONSOLE_COLS;
+		/* Initialize gfx_buf from history if available, otherwise blank */
+		int copy_rows = (gfx_rows < CONSOLE_ROWS) ? gfx_rows : CONSOLE_ROWS;
+		int copy_cols = (gfx_cols < CONSOLE_COLS) ? gfx_cols : CONSOLE_COLS;
 		for (int r = 0; r < copy_rows; ++r) {
+			int idx = history_offset + r;
 			for (int c = 0; c < copy_cols; ++c) {
-				int vpos = (r * CONSOLE_COLS + c) * 2;
-				char ch = (char)video[vpos];
-				gfx_buf[r * gfx_cols + c] = ch;
+				if (idx >= 0 && idx < history_lines)
+					gfx_buf[r * gfx_cols + c] = history[idx][c];
+				else
+					gfx_buf[r * gfx_cols + c] = ' ';
 			}
 			for (int c = copy_cols; c < gfx_cols; ++c) {
 				gfx_buf[r * gfx_cols + c] = ' ';
@@ -503,9 +503,33 @@ void console_post_font_init(void) {
 				gfx_buf[r * gfx_cols + c] = ' ';
 		}
 
-		/* Render to framebuffer */
 		console_render_text_to_fb();
 	}
+}
+
+/**
+ * @brief 画面全体をクリア
+ */
+void console_clear_screen(void) {
+	/* Clear gfx buffer (if any) and framebuffer. Legacy VGA text buffer
+	 * is not used in UEFI builds. */
+	if (gfx_buf && gfx_cols > 0 && gfx_rows > 0) {
+		uint32_t size = (uint32_t)(gfx_cols * gfx_rows);
+		for (uint32_t i = 0; i < size; ++i)
+			gfx_buf[i] = ' ';
+	}
+
+	if (use_framebuffer && framebuffer) {
+		uint32_t color = fb_bg_color;
+		for (uint32_t y = 0; y < fb_height; ++y) {
+			for (uint32_t x = 0; x < fb_width; ++x) {
+				framebuffer[y * fb_pitch + x] = color;
+			}
+		}
+	}
+
+	cursor_row = 0;
+	cursor_col = 0;
 }
 
 /**

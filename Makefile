@@ -20,6 +20,7 @@ K_OUT_DIR  = $(OUT_DIR)/kernel
 B_OUT_DIR  = $(OUT_DIR)/boot
 F_OUT_DIR  = $(K_OUT_DIR)/fonts
 IMG_OUT_DIR = $(OUT_DIR)
+README     = $(OUT_DIR)/README.txt
 
 CFLAGS     = -O2 -Wimplicit-function-declaration -Wunused-but-set-variable -ffreestanding -m64 -c -Wall -Wextra -I$(INCLUDE) -mcmodel=large -mno-red-zone -fno-pic
 LDFLAGS    = -m elf_x86_64 -z max-page-size=0x1000
@@ -45,7 +46,7 @@ ESP_DIR    = esp
 .PHONY: all run run-console run-vga clean bootloader kernel ext2
 .DEFAULT_GOAL := all
 
-all: bootloader kernel $(F_OUT_DIR)/ter-u12b.bdf $(ESP_IMG) $(EXT2_IMG)
+all: bootloader kernel $(F_OUT_DIR)/ter-u12b.bdf $(README) $(ESP_IMG) $(EXT2_IMG)
 
 $(K_OUT_DIR):
 	@mkdir -p $(K_OUT_DIR)
@@ -79,6 +80,10 @@ $(K_OUT_DIR)/%.o: $(SRC_KERNEL)/%.asm
 $(F_OUT_DIR)/ter-u12b.bdf: $(FONTS)
 	@mkdir -p $(F_OUT_DIR)
 	@cp $< $@
+
+$(README):
+	@mkdir -p $(OUT_DIR)
+	@cp README.md $(README)
 
 $(ESP_IMG): $(BOOTX64) $(KERNEL)
 	@rm -f $(ESP_IMG)
