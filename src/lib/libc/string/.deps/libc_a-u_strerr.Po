@@ -1,1 +1,15 @@
-# dummy
+libc/string/libc_a-u_strerr.o: ../../newlib/newlib/libc/string/u_strerr.c \
+ /usr/include/stdc-predef.h \
+ /home/jin/Dev/LiteCore/newlib/newlib/libc/include/_ansi.h \
+ /home/jin/Dev/LiteCore/src/lib/targ-include/newlib.h \
+ /home/jin/Dev/LiteCore/src/lib/targ-include/_newlib_version.h \
+ /home/jin/Dev/LiteCore/newlib/newlib/libc/include/sys/config.h \
+ /home/jin/Dev/LiteCore/newlib/newlib/libc/include/machine/ieeefp.h \
+ /home/jin/Dev/LiteCore/newlib/newlib/libc/include/sys/features.h
+/usr/include/stdc-predef.h:
+/home/jin/Dev/LiteCore/newlib/newlib/libc/include/_ansi.h:
+/home/jin/Dev/LiteCore/src/lib/targ-include/newlib.h:
+/home/jin/Dev/LiteCore/src/lib/targ-include/_newlib_version.h:
+/home/jin/Dev/LiteCore/newlib/newlib/libc/include/sys/config.h:
+/home/jin/Dev/LiteCore/newlib/newlib/libc/include/machine/ieeefp.h:
+/home/jin/Dev/LiteCore/newlib/newlib/libc/include/sys/features.h:

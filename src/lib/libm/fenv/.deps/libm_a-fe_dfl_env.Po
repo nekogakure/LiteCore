@@ -1,1 +1,17 @@
-# dummy
+libm/fenv/libm_a-fe_dfl_env.o: ../../newlib/newlib/libm/fenv/fe_dfl_env.c \
+ /usr/include/stdc-predef.h \
+ /home/jin/Dev/LiteCore/newlib/newlib/libc/include/fenv.h \
+ /home/jin/Dev/LiteCore/src/lib/targ-include/sys/fenv.h \
+ /home/jin/Dev/LiteCore/newlib/newlib/libc/include/sys/cdefs.h \
+ /home/jin/Dev/LiteCore/newlib/newlib/libc/include/machine/_default_types.h \
+ /home/jin/Dev/LiteCore/newlib/newlib/libc/include/sys/features.h \
+ /home/jin/Dev/LiteCore/src/lib/targ-include/_newlib_version.h \
+ /usr/lib/gcc/x86_64-linux-gnu/13/include/stddef.h
+/usr/include/stdc-predef.h:
+/home/jin/Dev/LiteCore/newlib/newlib/libc/include/fenv.h:
+/home/jin/Dev/LiteCore/src/lib/targ-include/sys/fenv.h:
+/home/jin/Dev/LiteCore/newlib/newlib/libc/include/sys/cdefs.h:
+/home/jin/Dev/LiteCore/newlib/newlib/libc/include/machine/_default_types.h:
+/home/jin/Dev/LiteCore/newlib/newlib/libc/include/sys/features.h:
+/home/jin/Dev/LiteCore/src/lib/targ-include/_newlib_version.h:
+/usr/lib/gcc/x86_64-linux-gnu/13/include/stddef.h:

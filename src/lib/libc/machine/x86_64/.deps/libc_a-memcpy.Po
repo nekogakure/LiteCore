@@ -1,1 +1,6 @@
-# dummy
+libc/machine/x86_64/libc_a-memcpy.o: \
+ ../../newlib/newlib/libc/machine/x86_64/memcpy.S \
+ /usr/include/stdc-predef.h \
+ ../../newlib/newlib/libc/machine/x86_64/x86_64mach.h
+/usr/include/stdc-predef.h:
+../../newlib/newlib/libc/machine/x86_64/x86_64mach.h:

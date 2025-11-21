@@ -1,1 +1,47 @@
-# dummy
+libc/ssp/libc_a-vsprintf_chk.o: \
+ ../../newlib/newlib/libc/ssp/vsprintf_chk.c /usr/include/stdc-predef.h \
+ /home/jin/Dev/LiteCore/newlib/newlib/libc/include/sys/cdefs.h \
+ /home/jin/Dev/LiteCore/newlib/newlib/libc/include/machine/_default_types.h \
+ /home/jin/Dev/LiteCore/newlib/newlib/libc/include/sys/features.h \
+ /home/jin/Dev/LiteCore/src/lib/targ-include/_newlib_version.h \
+ /usr/lib/gcc/x86_64-linux-gnu/13/include/stddef.h \
+ /home/jin/Dev/LiteCore/newlib/newlib/libc/include/ssp/ssp.h \
+ /home/jin/Dev/LiteCore/newlib/newlib/libc/include/stdio.h \
+ /home/jin/Dev/LiteCore/newlib/newlib/libc/include/_ansi.h \
+ /home/jin/Dev/LiteCore/src/lib/targ-include/newlib.h \
+ /home/jin/Dev/LiteCore/newlib/newlib/libc/include/sys/config.h \
+ /home/jin/Dev/LiteCore/newlib/newlib/libc/include/machine/ieeefp.h \
+ /usr/lib/gcc/x86_64-linux-gnu/13/include/stdarg.h \
+ /home/jin/Dev/LiteCore/newlib/newlib/libc/include/sys/reent.h \
+ /home/jin/Dev/LiteCore/newlib/newlib/libc/include/_ansi.h \
+ /home/jin/Dev/LiteCore/newlib/newlib/libc/include/sys/_types.h \
+ /home/jin/Dev/LiteCore/newlib/newlib/libc/include/machine/_types.h \
+ /home/jin/Dev/LiteCore/newlib/newlib/libc/include/sys/lock.h \
+ /home/jin/Dev/LiteCore/newlib/newlib/libc/include/sys/stdio.h \
+ /home/jin/Dev/LiteCore/newlib/newlib/libc/include/limits.h \
+ /home/jin/Dev/LiteCore/newlib/newlib/libc/include/sys/syslimits.h \
+ /usr/lib/gcc/x86_64-linux-gnu/13/include/limits.h \
+ /home/jin/Dev/LiteCore/newlib/newlib/libc/include/ssp/stdio.h
+/usr/include/stdc-predef.h:
+/home/jin/Dev/LiteCore/newlib/newlib/libc/include/sys/cdefs.h:
+/home/jin/Dev/LiteCore/newlib/newlib/libc/include/machine/_default_types.h:
+/home/jin/Dev/LiteCore/newlib/newlib/libc/include/sys/features.h:
+/home/jin/Dev/LiteCore/src/lib/targ-include/_newlib_version.h:
+/usr/lib/gcc/x86_64-linux-gnu/13/include/stddef.h:
+/home/jin/Dev/LiteCore/newlib/newlib/libc/include/ssp/ssp.h:
+/home/jin/Dev/LiteCore/newlib/newlib/libc/include/stdio.h:
+/home/jin/Dev/LiteCore/newlib/newlib/libc/include/_ansi.h:
+/home/jin/Dev/LiteCore/src/lib/targ-include/newlib.h:
+/home/jin/Dev/LiteCore/newlib/newlib/libc/include/sys/config.h:
+/home/jin/Dev/LiteCore/newlib/newlib/libc/include/machine/ieeefp.h:
+/usr/lib/gcc/x86_64-linux-gnu/13/include/stdarg.h:
+/home/jin/Dev/LiteCore/newlib/newlib/libc/include/sys/reent.h:
+/home/jin/Dev/LiteCore/newlib/newlib/libc/include/_ansi.h:
+/home/jin/Dev/LiteCore/newlib/newlib/libc/include/sys/_types.h:
+/home/jin/Dev/LiteCore/newlib/newlib/libc/include/machine/_types.h:
+/home/jin/Dev/LiteCore/newlib/newlib/libc/include/sys/lock.h:
+/home/jin/Dev/LiteCore/newlib/newlib/libc/include/sys/stdio.h:
+/home/jin/Dev/LiteCore/newlib/newlib/libc/include/limits.h:
+/home/jin/Dev/LiteCore/newlib/newlib/libc/include/sys/syslimits.h:
+/usr/lib/gcc/x86_64-linux-gnu/13/include/limits.h:
+/home/jin/Dev/LiteCore/newlib/newlib/libc/include/ssp/stdio.h:

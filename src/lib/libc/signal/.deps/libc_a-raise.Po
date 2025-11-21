@@ -1,1 +1,3 @@
-# dummy
+libc/signal/libc_a-raise.o: ../../newlib/newlib/libc/signal/raise.c \
+ /usr/include/stdc-predef.h
+/usr/include/stdc-predef.h:

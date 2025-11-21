@@ -1,1 +1,64 @@
-# dummy
+libm/common/libm_a-s_llrint.o: ../../newlib/newlib/libm/common/s_llrint.c \
+ /usr/include/stdc-predef.h ../../newlib/newlib/libm/common/fdlibm.h \
+ /home/jin/Dev/LiteCore/newlib/newlib/libc/include/math.h \
+ /home/jin/Dev/LiteCore/newlib/newlib/libc/include/sys/reent.h \
+ /home/jin/Dev/LiteCore/newlib/newlib/libc/include/_ansi.h \
+ /home/jin/Dev/LiteCore/src/lib/targ-include/newlib.h \
+ /home/jin/Dev/LiteCore/src/lib/targ-include/_newlib_version.h \
+ /home/jin/Dev/LiteCore/newlib/newlib/libc/include/sys/config.h \
+ /home/jin/Dev/LiteCore/newlib/newlib/libc/include/machine/ieeefp.h \
+ /home/jin/Dev/LiteCore/newlib/newlib/libc/include/sys/features.h \
+ /usr/lib/gcc/x86_64-linux-gnu/13/include/stddef.h \
+ /home/jin/Dev/LiteCore/newlib/newlib/libc/include/sys/cdefs.h \
+ /home/jin/Dev/LiteCore/newlib/newlib/libc/include/machine/_default_types.h \
+ /home/jin/Dev/LiteCore/newlib/newlib/libc/include/sys/_types.h \
+ /home/jin/Dev/LiteCore/newlib/newlib/libc/include/machine/_types.h \
+ /home/jin/Dev/LiteCore/newlib/newlib/libc/include/sys/lock.h \
+ /home/jin/Dev/LiteCore/newlib/newlib/libc/include/_ansi.h \
+ /home/jin/Dev/LiteCore/newlib/newlib/libc/include/sys/types.h \
+ /home/jin/Dev/LiteCore/newlib/newlib/libc/include/sys/_stdint.h \
+ /home/jin/Dev/LiteCore/newlib/newlib/libc/include/machine/endian.h \
+ /home/jin/Dev/LiteCore/newlib/newlib/libc/include/machine/_endian.h \
+ /home/jin/Dev/LiteCore/newlib/newlib/libc/include/sys/select.h \
+ /home/jin/Dev/LiteCore/newlib/newlib/libc/include/sys/_sigset.h \
+ /home/jin/Dev/LiteCore/newlib/newlib/libc/include/sys/_timeval.h \
+ /home/jin/Dev/LiteCore/newlib/newlib/libc/include/sys/timespec.h \
+ /home/jin/Dev/LiteCore/newlib/newlib/libc/include/sys/_timespec.h \
+ /home/jin/Dev/LiteCore/newlib/newlib/libc/include/sys/_pthreadtypes.h \
+ /home/jin/Dev/LiteCore/newlib/newlib/libc/include/sys/sched.h \
+ /home/jin/Dev/LiteCore/newlib/newlib/libc/include/machine/types.h \
+ ../../newlib/newlib/libm/common/math_config.h \
+ /home/jin/Dev/LiteCore/newlib/newlib/libc/include/stdint.h \
+ /home/jin/Dev/LiteCore/newlib/newlib/libc/include/sys/_intsup.h
+/usr/include/stdc-predef.h:
+../../newlib/newlib/libm/common/fdlibm.h:
+/home/jin/Dev/LiteCore/newlib/newlib/libc/include/math.h:
+/home/jin/Dev/LiteCore/newlib/newlib/libc/include/sys/reent.h:
+/home/jin/Dev/LiteCore/newlib/newlib/libc/include/_ansi.h:
+/home/jin/Dev/LiteCore/src/lib/targ-include/newlib.h:
+/home/jin/Dev/LiteCore/src/lib/targ-include/_newlib_version.h:
+/home/jin/Dev/LiteCore/newlib/newlib/libc/include/sys/config.h:
+/home/jin/Dev/LiteCore/newlib/newlib/libc/include/machine/ieeefp.h:
+/home/jin/Dev/LiteCore/newlib/newlib/libc/include/sys/features.h:
+/usr/lib/gcc/x86_64-linux-gnu/13/include/stddef.h:
+/home/jin/Dev/LiteCore/newlib/newlib/libc/include/sys/cdefs.h:
+/home/jin/Dev/LiteCore/newlib/newlib/libc/include/machine/_default_types.h:
+/home/jin/Dev/LiteCore/newlib/newlib/libc/include/sys/_types.h:
+/home/jin/Dev/LiteCore/newlib/newlib/libc/include/machine/_types.h:
+/home/jin/Dev/LiteCore/newlib/newlib/libc/include/sys/lock.h:
+/home/jin/Dev/LiteCore/newlib/newlib/libc/include/_ansi.h:
+/home/jin/Dev/LiteCore/newlib/newlib/libc/include/sys/types.h:
+/home/jin/Dev/LiteCore/newlib/newlib/libc/include/sys/_stdint.h:
+/home/jin/Dev/LiteCore/newlib/newlib/libc/include/machine/endian.h:
+/home/jin/Dev/LiteCore/newlib/newlib/libc/include/machine/_endian.h:
+/home/jin/Dev/LiteCore/newlib/newlib/libc/include/sys/select.h:
+/home/jin/Dev/LiteCore/newlib/newlib/libc/include/sys/_sigset.h:
+/home/jin/Dev/LiteCore/newlib/newlib/libc/include/sys/_timeval.h:
+/home/jin/Dev/LiteCore/newlib/newlib/libc/include/sys/timespec.h:
+/home/jin/Dev/LiteCore/newlib/newlib/libc/include/sys/_timespec.h:
+/home/jin/Dev/LiteCore/newlib/newlib/libc/include/sys/_pthreadtypes.h:
+/home/jin/Dev/LiteCore/newlib/newlib/libc/include/sys/sched.h:
+/home/jin/Dev/LiteCore/newlib/newlib/libc/include/machine/types.h:
+../../newlib/newlib/libm/common/math_config.h:
+/home/jin/Dev/LiteCore/newlib/newlib/libc/include/stdint.h:
+/home/jin/Dev/LiteCore/newlib/newlib/libc/include/sys/_intsup.h:

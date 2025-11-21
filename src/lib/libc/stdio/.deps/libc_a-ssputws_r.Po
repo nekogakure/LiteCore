@@ -1,1 +1,7 @@
-# dummy
+libc/stdio/libc_a-ssputws_r.o: ../../newlib/newlib/libc/stdio/ssputws_r.c \
+ /usr/include/stdc-predef.h \
+ /home/jin/Dev/LiteCore/src/lib/targ-include/newlib.h \
+ /home/jin/Dev/LiteCore/src/lib/targ-include/_newlib_version.h
+/usr/include/stdc-predef.h:
+/home/jin/Dev/LiteCore/src/lib/targ-include/newlib.h:
+/home/jin/Dev/LiteCore/src/lib/targ-include/_newlib_version.h:

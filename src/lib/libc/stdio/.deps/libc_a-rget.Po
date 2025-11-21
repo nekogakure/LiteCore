@@ -1,1 +1,79 @@
-# dummy
+libc/stdio/libc_a-rget.o: ../../newlib/newlib/libc/stdio/rget.c \
+ /usr/include/stdc-predef.h \
+ /home/jin/Dev/LiteCore/newlib/newlib/libc/include/_ansi.h \
+ /home/jin/Dev/LiteCore/src/lib/targ-include/newlib.h \
+ /home/jin/Dev/LiteCore/src/lib/targ-include/_newlib_version.h \
+ /home/jin/Dev/LiteCore/newlib/newlib/libc/include/sys/config.h \
+ /home/jin/Dev/LiteCore/newlib/newlib/libc/include/machine/ieeefp.h \
+ /home/jin/Dev/LiteCore/newlib/newlib/libc/include/sys/features.h \
+ /home/jin/Dev/LiteCore/newlib/newlib/libc/include/stdio.h \
+ /home/jin/Dev/LiteCore/newlib/newlib/libc/include/_ansi.h \
+ /home/jin/Dev/LiteCore/newlib/newlib/libc/include/sys/cdefs.h \
+ /home/jin/Dev/LiteCore/newlib/newlib/libc/include/machine/_default_types.h \
+ /usr/lib/gcc/x86_64-linux-gnu/13/include/stddef.h \
+ /usr/lib/gcc/x86_64-linux-gnu/13/include/stdarg.h \
+ /home/jin/Dev/LiteCore/newlib/newlib/libc/include/sys/reent.h \
+ /home/jin/Dev/LiteCore/newlib/newlib/libc/include/sys/_types.h \
+ /home/jin/Dev/LiteCore/newlib/newlib/libc/include/machine/_types.h \
+ /home/jin/Dev/LiteCore/newlib/newlib/libc/include/sys/lock.h \
+ /home/jin/Dev/LiteCore/newlib/newlib/libc/include/sys/stdio.h \
+ /home/jin/Dev/LiteCore/newlib/newlib/libc/include/errno.h \
+ /home/jin/Dev/LiteCore/newlib/newlib/libc/include/sys/errno.h \
+ ../../newlib/newlib/libc/stdio/local.h \
+ /home/jin/Dev/LiteCore/newlib/newlib/libc/include/reent.h \
+ /home/jin/Dev/LiteCore/newlib/newlib/libc/include/stdlib.h \
+ /home/jin/Dev/LiteCore/newlib/newlib/libc/include/machine/stdlib.h \
+ /home/jin/Dev/LiteCore/newlib/newlib/libc/include/alloca.h \
+ /home/jin/Dev/LiteCore/newlib/newlib/libc/include/unistd.h \
+ /home/jin/Dev/LiteCore/newlib/newlib/libc/include/sys/unistd.h \
+ /home/jin/Dev/LiteCore/newlib/newlib/libc/include/sys/types.h \
+ /home/jin/Dev/LiteCore/newlib/newlib/libc/include/sys/_stdint.h \
+ /home/jin/Dev/LiteCore/newlib/newlib/libc/include/machine/endian.h \
+ /home/jin/Dev/LiteCore/newlib/newlib/libc/include/machine/_endian.h \
+ /home/jin/Dev/LiteCore/newlib/newlib/libc/include/sys/select.h \
+ /home/jin/Dev/LiteCore/newlib/newlib/libc/include/sys/_sigset.h \
+ /home/jin/Dev/LiteCore/newlib/newlib/libc/include/sys/_timeval.h \
+ /home/jin/Dev/LiteCore/newlib/newlib/libc/include/sys/timespec.h \
+ /home/jin/Dev/LiteCore/newlib/newlib/libc/include/sys/_timespec.h \
+ /home/jin/Dev/LiteCore/newlib/newlib/libc/include/sys/_pthreadtypes.h \
+ /home/jin/Dev/LiteCore/newlib/newlib/libc/include/sys/sched.h \
+ /home/jin/Dev/LiteCore/newlib/newlib/libc/include/machine/types.h
+/usr/include/stdc-predef.h:
+/home/jin/Dev/LiteCore/newlib/newlib/libc/include/_ansi.h:
+/home/jin/Dev/LiteCore/src/lib/targ-include/newlib.h:
+/home/jin/Dev/LiteCore/src/lib/targ-include/_newlib_version.h:
+/home/jin/Dev/LiteCore/newlib/newlib/libc/include/sys/config.h:
+/home/jin/Dev/LiteCore/newlib/newlib/libc/include/machine/ieeefp.h:
+/home/jin/Dev/LiteCore/newlib/newlib/libc/include/sys/features.h:
+/home/jin/Dev/LiteCore/newlib/newlib/libc/include/stdio.h:
+/home/jin/Dev/LiteCore/newlib/newlib/libc/include/_ansi.h:
+/home/jin/Dev/LiteCore/newlib/newlib/libc/include/sys/cdefs.h:
+/home/jin/Dev/LiteCore/newlib/newlib/libc/include/machine/_default_types.h:
+/usr/lib/gcc/x86_64-linux-gnu/13/include/stddef.h:
+/usr/lib/gcc/x86_64-linux-gnu/13/include/stdarg.h:
+/home/jin/Dev/LiteCore/newlib/newlib/libc/include/sys/reent.h:
+/home/jin/Dev/LiteCore/newlib/newlib/libc/include/sys/_types.h:
+/home/jin/Dev/LiteCore/newlib/newlib/libc/include/machine/_types.h:
+/home/jin/Dev/LiteCore/newlib/newlib/libc/include/sys/lock.h:
+/home/jin/Dev/LiteCore/newlib/newlib/libc/include/sys/stdio.h:
+/home/jin/Dev/LiteCore/newlib/newlib/libc/include/errno.h:
+/home/jin/Dev/LiteCore/newlib/newlib/libc/include/sys/errno.h:
+../../newlib/newlib/libc/stdio/local.h:
+/home/jin/Dev/LiteCore/newlib/newlib/libc/include/reent.h:
+/home/jin/Dev/LiteCore/newlib/newlib/libc/include/stdlib.h:
+/home/jin/Dev/LiteCore/newlib/newlib/libc/include/machine/stdlib.h:
+/home/jin/Dev/LiteCore/newlib/newlib/libc/include/alloca.h:
+/home/jin/Dev/LiteCore/newlib/newlib/libc/include/unistd.h:
+/home/jin/Dev/LiteCore/newlib/newlib/libc/include/sys/unistd.h:
+/home/jin/Dev/LiteCore/newlib/newlib/libc/include/sys/types.h:
+/home/jin/Dev/LiteCore/newlib/newlib/libc/include/sys/_stdint.h:
+/home/jin/Dev/LiteCore/newlib/newlib/libc/include/machine/endian.h:
+/home/jin/Dev/LiteCore/newlib/newlib/libc/include/machine/_endian.h:
+/home/jin/Dev/LiteCore/newlib/newlib/libc/include/sys/select.h:
+/home/jin/Dev/LiteCore/newlib/newlib/libc/include/sys/_sigset.h:
+/home/jin/Dev/LiteCore/newlib/newlib/libc/include/sys/_timeval.h:
+/home/jin/Dev/LiteCore/newlib/newlib/libc/include/sys/timespec.h:
+/home/jin/Dev/LiteCore/newlib/newlib/libc/include/sys/_timespec.h:
+/home/jin/Dev/LiteCore/newlib/newlib/libc/include/sys/_pthreadtypes.h:
+/home/jin/Dev/LiteCore/newlib/newlib/libc/include/sys/sched.h:
+/home/jin/Dev/LiteCore/newlib/newlib/libc/include/machine/types.h:

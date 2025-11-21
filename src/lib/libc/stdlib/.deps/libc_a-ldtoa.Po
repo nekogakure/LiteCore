@@ -1,1 +1,13 @@
-# dummy
+libc/stdlib/libc_a-ldtoa.o: ../../newlib/newlib/libc/stdlib/ldtoa.c \
+ /usr/include/stdc-predef.h \
+ /home/jin/Dev/LiteCore/src/lib/targ-include/newlib.h \
+ /home/jin/Dev/LiteCore/src/lib/targ-include/_newlib_version.h \
+ /home/jin/Dev/LiteCore/newlib/newlib/libc/include/sys/config.h \
+ /home/jin/Dev/LiteCore/newlib/newlib/libc/include/machine/ieeefp.h \
+ /home/jin/Dev/LiteCore/newlib/newlib/libc/include/sys/features.h
+/usr/include/stdc-predef.h:
+/home/jin/Dev/LiteCore/src/lib/targ-include/newlib.h:
+/home/jin/Dev/LiteCore/src/lib/targ-include/_newlib_version.h:
+/home/jin/Dev/LiteCore/newlib/newlib/libc/include/sys/config.h:
+/home/jin/Dev/LiteCore/newlib/newlib/libc/include/machine/ieeefp.h:
+/home/jin/Dev/LiteCore/newlib/newlib/libc/include/sys/features.h:

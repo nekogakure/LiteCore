@@ -1,1 +1,7 @@
-# dummy
+libc/ctype/libc_a-jp2uc.o: ../../newlib/newlib/libc/ctype/jp2uc.c \
+ /usr/include/stdc-predef.h \
+ /home/jin/Dev/LiteCore/src/lib/targ-include/newlib.h \
+ /home/jin/Dev/LiteCore/src/lib/targ-include/_newlib_version.h
+/usr/include/stdc-predef.h:
+/home/jin/Dev/LiteCore/src/lib/targ-include/newlib.h:
+/home/jin/Dev/LiteCore/src/lib/targ-include/_newlib_version.h:

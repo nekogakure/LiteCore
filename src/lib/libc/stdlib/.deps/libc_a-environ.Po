@@ -1,1 +1,3 @@
-# dummy
+libc/stdlib/libc_a-environ.o: ../../newlib/newlib/libc/stdlib/environ.c \
+ /usr/include/stdc-predef.h
+/usr/include/stdc-predef.h:

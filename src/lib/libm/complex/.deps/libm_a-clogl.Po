@@ -1,1 +1,35 @@
-# dummy
+libm/complex/libm_a-clogl.o: ../../newlib/newlib/libm/complex/clogl.c \
+ /usr/include/stdc-predef.h \
+ /home/jin/Dev/LiteCore/newlib/newlib/libc/include/complex.h \
+ /home/jin/Dev/LiteCore/newlib/newlib/libc/include/sys/cdefs.h \
+ /home/jin/Dev/LiteCore/newlib/newlib/libc/include/machine/_default_types.h \
+ /home/jin/Dev/LiteCore/newlib/newlib/libc/include/sys/features.h \
+ /home/jin/Dev/LiteCore/src/lib/targ-include/_newlib_version.h \
+ /usr/lib/gcc/x86_64-linux-gnu/13/include/stddef.h \
+ /home/jin/Dev/LiteCore/newlib/newlib/libc/include/math.h \
+ /home/jin/Dev/LiteCore/newlib/newlib/libc/include/sys/reent.h \
+ /home/jin/Dev/LiteCore/newlib/newlib/libc/include/_ansi.h \
+ /home/jin/Dev/LiteCore/src/lib/targ-include/newlib.h \
+ /home/jin/Dev/LiteCore/newlib/newlib/libc/include/sys/config.h \
+ /home/jin/Dev/LiteCore/newlib/newlib/libc/include/machine/ieeefp.h \
+ /home/jin/Dev/LiteCore/newlib/newlib/libc/include/sys/_types.h \
+ /home/jin/Dev/LiteCore/newlib/newlib/libc/include/machine/_types.h \
+ /home/jin/Dev/LiteCore/newlib/newlib/libc/include/sys/lock.h \
+ /home/jin/Dev/LiteCore/newlib/newlib/libc/include/_ansi.h
+/usr/include/stdc-predef.h:
+/home/jin/Dev/LiteCore/newlib/newlib/libc/include/complex.h:
+/home/jin/Dev/LiteCore/newlib/newlib/libc/include/sys/cdefs.h:
+/home/jin/Dev/LiteCore/newlib/newlib/libc/include/machine/_default_types.h:
+/home/jin/Dev/LiteCore/newlib/newlib/libc/include/sys/features.h:
+/home/jin/Dev/LiteCore/src/lib/targ-include/_newlib_version.h:
+/usr/lib/gcc/x86_64-linux-gnu/13/include/stddef.h:
+/home/jin/Dev/LiteCore/newlib/newlib/libc/include/math.h:
+/home/jin/Dev/LiteCore/newlib/newlib/libc/include/sys/reent.h:
+/home/jin/Dev/LiteCore/newlib/newlib/libc/include/_ansi.h:
+/home/jin/Dev/LiteCore/src/lib/targ-include/newlib.h:
+/home/jin/Dev/LiteCore/newlib/newlib/libc/include/sys/config.h:
+/home/jin/Dev/LiteCore/newlib/newlib/libc/include/machine/ieeefp.h:
+/home/jin/Dev/LiteCore/newlib/newlib/libc/include/sys/_types.h:
+/home/jin/Dev/LiteCore/newlib/newlib/libc/include/machine/_types.h:
+/home/jin/Dev/LiteCore/newlib/newlib/libc/include/sys/lock.h:
+/home/jin/Dev/LiteCore/newlib/newlib/libc/include/_ansi.h:

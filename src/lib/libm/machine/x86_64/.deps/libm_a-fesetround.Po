@@ -1,1 +1,6 @@
-# dummy
+libm/machine/x86_64/libm_a-fesetround.o: \
+ ../../newlib/newlib/libm/machine/x86_64/fesetround.c \
+ /usr/include/stdc-predef.h \
+ ../../newlib/newlib/libm/machine/x86_64/../../fenv/fenv_stub.c
+/usr/include/stdc-predef.h:
+../../newlib/newlib/libm/machine/x86_64/../../fenv/fenv_stub.c:

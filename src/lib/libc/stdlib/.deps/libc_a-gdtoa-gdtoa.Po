@@ -1,1 +1,101 @@
-# dummy
+libc/stdlib/libc_a-gdtoa-gdtoa.o: \
+ ../../newlib/newlib/libc/stdlib/gdtoa-gdtoa.c /usr/include/stdc-predef.h \
+ /home/jin/Dev/LiteCore/src/lib/targ-include/newlib.h \
+ /home/jin/Dev/LiteCore/src/lib/targ-include/_newlib_version.h \
+ /home/jin/Dev/LiteCore/newlib/newlib/libc/include/sys/config.h \
+ /home/jin/Dev/LiteCore/newlib/newlib/libc/include/machine/ieeefp.h \
+ /home/jin/Dev/LiteCore/newlib/newlib/libc/include/sys/features.h \
+ ../../newlib/newlib/libc/stdlib/gdtoaimp.h \
+ ../../newlib/newlib/libc/stdlib/mprec.h \
+ /home/jin/Dev/LiteCore/newlib/newlib/libc/include/math.h \
+ /home/jin/Dev/LiteCore/newlib/newlib/libc/include/sys/reent.h \
+ /home/jin/Dev/LiteCore/newlib/newlib/libc/include/_ansi.h \
+ /usr/lib/gcc/x86_64-linux-gnu/13/include/stddef.h \
+ /home/jin/Dev/LiteCore/newlib/newlib/libc/include/sys/cdefs.h \
+ /home/jin/Dev/LiteCore/newlib/newlib/libc/include/machine/_default_types.h \
+ /home/jin/Dev/LiteCore/newlib/newlib/libc/include/sys/_types.h \
+ /home/jin/Dev/LiteCore/newlib/newlib/libc/include/machine/_types.h \
+ /home/jin/Dev/LiteCore/newlib/newlib/libc/include/sys/lock.h \
+ /home/jin/Dev/LiteCore/newlib/newlib/libc/include/_ansi.h \
+ /usr/lib/gcc/x86_64-linux-gnu/13/include/float.h \
+ /home/jin/Dev/LiteCore/newlib/newlib/libc/include/errno.h \
+ /home/jin/Dev/LiteCore/newlib/newlib/libc/include/sys/errno.h \
+ /home/jin/Dev/LiteCore/newlib/newlib/libc/include/assert.h \
+ /home/jin/Dev/LiteCore/newlib/newlib/libc/include/sys/types.h \
+ /home/jin/Dev/LiteCore/newlib/newlib/libc/include/sys/_stdint.h \
+ /home/jin/Dev/LiteCore/newlib/newlib/libc/include/machine/endian.h \
+ /home/jin/Dev/LiteCore/newlib/newlib/libc/include/machine/_endian.h \
+ /home/jin/Dev/LiteCore/newlib/newlib/libc/include/sys/select.h \
+ /home/jin/Dev/LiteCore/newlib/newlib/libc/include/sys/_sigset.h \
+ /home/jin/Dev/LiteCore/newlib/newlib/libc/include/sys/_timeval.h \
+ /home/jin/Dev/LiteCore/newlib/newlib/libc/include/sys/timespec.h \
+ /home/jin/Dev/LiteCore/newlib/newlib/libc/include/sys/_timespec.h \
+ /home/jin/Dev/LiteCore/newlib/newlib/libc/include/sys/_pthreadtypes.h \
+ /home/jin/Dev/LiteCore/newlib/newlib/libc/include/sys/sched.h \
+ /home/jin/Dev/LiteCore/newlib/newlib/libc/include/machine/types.h \
+ ../../newlib/newlib/libc/stdlib/../locale/setlocale.h \
+ /home/jin/Dev/LiteCore/newlib/newlib/libc/include/limits.h \
+ /home/jin/Dev/LiteCore/newlib/newlib/libc/include/sys/syslimits.h \
+ /usr/lib/gcc/x86_64-linux-gnu/13/include/limits.h \
+ /home/jin/Dev/LiteCore/newlib/newlib/libc/include/string.h \
+ /home/jin/Dev/LiteCore/newlib/newlib/libc/include/sys/_locale.h \
+ /home/jin/Dev/LiteCore/newlib/newlib/libc/include/strings.h \
+ /home/jin/Dev/LiteCore/newlib/newlib/libc/include/sys/string.h \
+ /home/jin/Dev/LiteCore/newlib/newlib/libc/include/stdlib.h \
+ /home/jin/Dev/LiteCore/newlib/newlib/libc/include/machine/stdlib.h \
+ /home/jin/Dev/LiteCore/newlib/newlib/libc/include/alloca.h \
+ /home/jin/Dev/LiteCore/newlib/newlib/libc/include/wchar.h \
+ /usr/lib/gcc/x86_64-linux-gnu/13/include/stdarg.h \
+ /home/jin/Dev/LiteCore/newlib/newlib/libc/include/locale.h \
+ ../../newlib/newlib/libc/stdlib/gdtoa.h \
+ /home/jin/Dev/LiteCore/newlib/newlib/libc/include/reent.h
+/usr/include/stdc-predef.h:
+/home/jin/Dev/LiteCore/src/lib/targ-include/newlib.h:
+/home/jin/Dev/LiteCore/src/lib/targ-include/_newlib_version.h:
+/home/jin/Dev/LiteCore/newlib/newlib/libc/include/sys/config.h:
+/home/jin/Dev/LiteCore/newlib/newlib/libc/include/machine/ieeefp.h:
+/home/jin/Dev/LiteCore/newlib/newlib/libc/include/sys/features.h:
+../../newlib/newlib/libc/stdlib/gdtoaimp.h:
+../../newlib/newlib/libc/stdlib/mprec.h:
+/home/jin/Dev/LiteCore/newlib/newlib/libc/include/math.h:
+/home/jin/Dev/LiteCore/newlib/newlib/libc/include/sys/reent.h:
+/home/jin/Dev/LiteCore/newlib/newlib/libc/include/_ansi.h:
+/usr/lib/gcc/x86_64-linux-gnu/13/include/stddef.h:
+/home/jin/Dev/LiteCore/newlib/newlib/libc/include/sys/cdefs.h:
+/home/jin/Dev/LiteCore/newlib/newlib/libc/include/machine/_default_types.h:
+/home/jin/Dev/LiteCore/newlib/newlib/libc/include/sys/_types.h:
+/home/jin/Dev/LiteCore/newlib/newlib/libc/include/machine/_types.h:
+/home/jin/Dev/LiteCore/newlib/newlib/libc/include/sys/lock.h:
+/home/jin/Dev/LiteCore/newlib/newlib/libc/include/_ansi.h:
+/usr/lib/gcc/x86_64-linux-gnu/13/include/float.h:
+/home/jin/Dev/LiteCore/newlib/newlib/libc/include/errno.h:
+/home/jin/Dev/LiteCore/newlib/newlib/libc/include/sys/errno.h:
+/home/jin/Dev/LiteCore/newlib/newlib/libc/include/assert.h:
+/home/jin/Dev/LiteCore/newlib/newlib/libc/include/sys/types.h:
+/home/jin/Dev/LiteCore/newlib/newlib/libc/include/sys/_stdint.h:
+/home/jin/Dev/LiteCore/newlib/newlib/libc/include/machine/endian.h:
+/home/jin/Dev/LiteCore/newlib/newlib/libc/include/machine/_endian.h:
+/home/jin/Dev/LiteCore/newlib/newlib/libc/include/sys/select.h:
+/home/jin/Dev/LiteCore/newlib/newlib/libc/include/sys/_sigset.h:
+/home/jin/Dev/LiteCore/newlib/newlib/libc/include/sys/_timeval.h:
+/home/jin/Dev/LiteCore/newlib/newlib/libc/include/sys/timespec.h:
+/home/jin/Dev/LiteCore/newlib/newlib/libc/include/sys/_timespec.h:
+/home/jin/Dev/LiteCore/newlib/newlib/libc/include/sys/_pthreadtypes.h:
+/home/jin/Dev/LiteCore/newlib/newlib/libc/include/sys/sched.h:
+/home/jin/Dev/LiteCore/newlib/newlib/libc/include/machine/types.h:
+../../newlib/newlib/libc/stdlib/../locale/setlocale.h:
+/home/jin/Dev/LiteCore/newlib/newlib/libc/include/limits.h:
+/home/jin/Dev/LiteCore/newlib/newlib/libc/include/sys/syslimits.h:
+/usr/lib/gcc/x86_64-linux-gnu/13/include/limits.h:
+/home/jin/Dev/LiteCore/newlib/newlib/libc/include/string.h:
+/home/jin/Dev/LiteCore/newlib/newlib/libc/include/sys/_locale.h:
+/home/jin/Dev/LiteCore/newlib/newlib/libc/include/strings.h:
+/home/jin/Dev/LiteCore/newlib/newlib/libc/include/sys/string.h:
+/home/jin/Dev/LiteCore/newlib/newlib/libc/include/stdlib.h:
+/home/jin/Dev/LiteCore/newlib/newlib/libc/include/machine/stdlib.h:
+/home/jin/Dev/LiteCore/newlib/newlib/libc/include/alloca.h:
+/home/jin/Dev/LiteCore/newlib/newlib/libc/include/wchar.h:
+/usr/lib/gcc/x86_64-linux-gnu/13/include/stdarg.h:
+/home/jin/Dev/LiteCore/newlib/newlib/libc/include/locale.h:
+../../newlib/newlib/libc/stdlib/gdtoa.h:
+/home/jin/Dev/LiteCore/newlib/newlib/libc/include/reent.h:
