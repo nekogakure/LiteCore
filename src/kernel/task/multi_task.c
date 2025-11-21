@@ -7,6 +7,7 @@
 #include <interrupt/irq.h>
 #include <stddef.h>
 #include <string.h>
+#include <fs/vfs.h>
 
 #define MAX_TASKS 64
 #define KERNEL_STACK_SIZE 0x4000 // 16KB
@@ -132,9 +133,17 @@ void task_init(void) {
 	tasks[0] = &idle_task;
 
 	scheduler_enabled = 1;
+        
+	for (int i = 0; i < 32; ++i) {
+		idle_task.fds[i] = -1;
+	}
+	idle_task.fds[0] = 0; /* stdin */
+	idle_task.fds[1] = 1; /* stdout */
+	idle_task.fds[2] = 2; /* stderr */
+	vfs_init();
 #ifdef INIT_MSG
 	printk("task_init: Multitasking initialized. Current context saved as idle task (TID=0, CR3=0x%lx)\n",
-	       (unsigned long)idle_task.regs.cr3);
+	        (unsigned long)idle_task.regs.cr3);
 #endif
 }
 
@@ -243,6 +252,17 @@ task_t *task_create(void (*entry)(void), const char *name, int kernel_mode) {
 	task->regs.rsi = task->regs.rdi = task->regs.rbp = 0;
 	task->regs.r8 = task->regs.r9 = task->regs.r10 = task->regs.r11 = 0;
 	task->regs.r12 = task->regs.r13 = task->regs.r14 = task->regs.r15 = 0;
+
+
+	/* initialize per-task fd table */
+	for (int i = 0; i < 32; ++i)
+		task->fds[i] = -1;
+	/* inherit standard fds for kernel-mode tasks */
+	if (kernel_mode) {
+		task->fds[0] = 0;
+		task->fds[1] = 1;
+		task->fds[2] = 2;
+	}
 
 	tasks[slot] = task;
 

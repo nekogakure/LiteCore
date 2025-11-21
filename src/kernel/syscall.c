@@ -4,31 +4,11 @@
 #include <mem/manager.h>
 #include <device/keyboard.h>
 #include <mem/usercopy.h>
+#include <fs/vfs.h>
 #include <stdint.h>
 
 static uint64_t sys_write(uint64_t fd, const void *buf, uint64_t len) {
-	if (buf == NULL)
-		return (uint64_t)-1;
-	if (fd != 1 && fd != 2) {
-		/* not implemented file descriptors */
-		return (uint64_t)-1;
-	}
-
-	const char *p = (const char *)buf;
-	uint64_t remaining = len;
-	/* chunk to avoid huge stack usage in printk */
-	while (remaining > 0) {
-		uint64_t chunk = remaining > 1000 ? 1000 : remaining;
-		char tmp[1001];
-		for (uint64_t i = 0; i < chunk; ++i)
-			tmp[i] = p[len - remaining + i];
-		tmp[chunk] = '\0';
-		/* use printk to print the chunk */
-		printk("%s", tmp);
-		remaining -= chunk;
-	}
-
-	return len;
+	return (uint64_t)vfs_write((int)fd, buf, (size_t)len);
 }
 
 static void sys_exit(int code) {
@@ -50,60 +30,27 @@ static uint64_t sys_sbrk(intptr_t inc) {
 }
 
 static uint64_t sys_read(uint64_t fd, void *buf, uint64_t len) {
-	if (buf == NULL)
-		return (uint64_t)-1;
-	if (fd != 0) {
-		return (uint64_t)-1;
-	}
-
-	char *out = (char *)buf;
-	uint64_t i;
-	for (i = 0; i < len; ++i) {
-		char c = keyboard_getchar();
-		out[i] = c;
-		if (c == '\n') {
-			i++;
-			break;
-		}
-	}
-	return i;
+	return (uint64_t)vfs_read((int)fd, buf, (size_t)len);
 }
 
 static uint64_t sys_close(uint64_t fd) {
-	(void)fd;
-	return (uint64_t)-1; /* not implemented */
+	return (uint64_t)vfs_close((int)fd);
 }
 
 static uint64_t sys_open(const char *pathname, uint64_t flags, uint64_t mode) {
-	(void)pathname;
-	(void)flags;
-	(void)mode;
-	return (uint64_t)-1; /* not implemented */
+	return (uint64_t)vfs_open(pathname, (int)flags, (int)mode);
 }
 
 static uint64_t sys_lseek(uint64_t fd, uint64_t offset, uint64_t whence) {
-	(void)fd;
-	(void)offset;
-	(void)whence;
-	return (uint64_t)-1; /* not implemented */
+	return (uint64_t)vfs_lseek((int)fd, (int64_t)offset, (int)whence);
 }
 
 static uint64_t sys_isatty(uint64_t fd) {
-	if (fd == 1 || fd == 2)
-		return 1;
-	return 0;
+	return (uint64_t)vfs_isatty((int)fd);
 }
 
 static uint64_t sys_fstat(uint64_t fd, void *buf) {
-	if (buf == NULL)
-		return (uint64_t)-1;
-	if (fd == 1 || fd == 2) {
-		uint32_t mode = 0020000; /* S_IFCHR */
-		if (copy_to_user(buf, &mode, sizeof(mode)) != 0)
-			return (uint64_t)-1;
-		return 0;
-	}
-	return (uint64_t)-1;
+	return (uint64_t)vfs_fstat((int)fd, buf);
 }
 
 static uint64_t dispatch_syscall(uint64_t num, uint64_t a0, uint64_t a1,

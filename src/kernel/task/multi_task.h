@@ -42,6 +42,7 @@ typedef struct task {
 	uint64_t time_slice; // タイムスライス（ticks）
 	uint64_t total_time; // 累計実行時間（ticks）
 	struct task *next; // 次のタスク（リンクリスト）
+	int fds[32]; // per-taskファイルディスクリプタテーブル
 } task_t;
 
 /**
