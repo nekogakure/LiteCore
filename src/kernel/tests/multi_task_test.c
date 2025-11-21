@@ -1,58 +1,27 @@
-#include <util/config.h>
-#include <util/console.h>
 #include <task/multi_task.h>
+#include <util/console.h>
 #include <tests/define.h>
 
-// カウントアップするタスク（ひたすら数えるんだ...いいね...？）
-static void test_task1(void) {
-	printk("[Task1] Started! About to yield...\n");
-	task_yield();
-	printk("[Task1] Resumed after yield\n");
-	printk("[Task1] Exiting...\n");
-	task_exit();
+static void task_a(void) {
+    while (1) {
+        printk("A\n");
+        task_yield();
+    }
 }
 
-// 別のメッセージを出力（するだけ）
-static void test_task2(void) {
-	printk("[Task2] Started! About to yield...\n");
-	task_yield();
-	printk("[Task2] Resumed after yield\n");
-	printk("[Task2] Exiting...\n");
-	task_exit();
+static void task_b(void) {
+    while (1) {
+        printk("B\n");
+        task_yield();
+    }
 }
 
-/**
- * @brief マルチタスクのテスト
- */
+// kmain または初期化後に呼ぶ
 void multi_task_test(void) {
-	printk("Creating 2 test tasks...\n");
-
-	// タスク1を作成して実行キューに追加
-	task_t *t1 = task_create(test_task1, "TestTask1", 1);
-	if (t1) {
-		task_ready(t1);
-		printk("Created Task1 (TID=%u)\n", (unsigned)t1->tid);
-	} else {
-		printk("Failed to create Task1\n");
-		return;
-	}
-
-	// タスク2を作成して実行キューに追加
-	task_t *t2 = task_create(test_task2, "TestTask2", 1);
-	if (t2) {
-		task_ready(t2);
-		printk("Created Task2 (TID=%u)\n", (unsigned)t2->tid);
-	} else {
-		printk("Failed to create Task2\n");
-		return;
-	}
-
-	printk("Tasks created. Manually yielding to trigger first switch...\n");
-	new_line();
-
-	// 最初のタスクスイッチを手動でトリガー
-	task_yield();
-
-	printk("\n[MAIN] Back to main after tasks completed\n");
-	new_line();
+    task_t *ta = task_create(task_a, "task_a", 1);
+    task_t *tb = task_create(task_b, "task_b", 1);
+    if (ta) task_ready(ta);
+    if (tb) task_ready(tb);
+    
+    task_schedule();
 }

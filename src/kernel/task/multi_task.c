@@ -316,9 +316,7 @@ void task_schedule(void) {
 		}
 	}
 
-	// 現在のタスクをレディキューに戻す（DEADでなければ、またidleでなければ）
-	if (current_task->state == TASK_STATE_RUNNING &&
-	    current_task != &idle_task) {
+	if (current_task->state == TASK_STATE_RUNNING) {
 		current_task->state = TASK_STATE_READY;
 		if (ready_queue_tail) {
 			ready_queue_tail->next = current_task;

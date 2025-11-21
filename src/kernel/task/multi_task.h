@@ -32,7 +32,7 @@ typedef struct {
  */
 typedef struct task {
 	uint32_t tid; // タスクID
-	char name[32]; // タスク名（デバッグ用）
+	char name[32]; // タスク名
 	task_state_t state; // タスク状態
 	int kernel_mode; // カーネルモードフラグ（1=カーネル、0=ユーザー）
 	registers_t regs; // レジスタコンテキスト

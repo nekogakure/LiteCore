@@ -88,9 +88,6 @@ void irq_handler_c(uint32_t vec) {
 			extern void uefi_timer_tick(uint32_t, void *);
 			uefi_timer_tick(0, NULL);
 
-			// スケジューリングを実行
-			extern void task_schedule(void);
-			task_schedule();
 
 			if (irq >= 8)
 				outb(PIC2_COMMAND, 0x20);
