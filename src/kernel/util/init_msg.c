@@ -152,7 +152,7 @@ void kernel_init() {
 
 void init_font() {
 	if (g_fat16_sb != NULL) {
-	if (bdf_init("/kernel/fonts/ter-u12b.bdf")) {
+		if (bdf_init("/kernel/fonts/ter-u12b.bdf")) {
 		} else {
 			printk("Warning: Failed to load BDF font\n");
 		}

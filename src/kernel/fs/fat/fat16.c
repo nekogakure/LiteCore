@@ -361,7 +361,6 @@ static void make_shortname(const char *name, char out[11]) {
 	}
 }
 
-
 /* Resolve an absolute path and copy the final directory entry into ent_buf (32 bytes).
  * If found, returns 0 and sets *parent_cluster_out to parent start cluster (0 for root)
  * and *ent_off to absolute byte offset of the entry. If not found but free slot exists,
@@ -599,7 +598,9 @@ int fat16_list_root(struct fat16_super *sb) {
 			}
 			uint32_t file_size = le32(ent + 28);
 			/* skip '.' and '..' entries */
-			if (name[0] == '.' && (name[1] == '\0' || (name[1] == '.' && name[2] == '\0')))
+			if (name[0] == '.' &&
+			    (name[1] == '\0' ||
+			     (name[1] == '.' && name[2] == '\0')))
 				continue;
 
 			/* align name to fixed column for consistent VGA/serial output */
@@ -636,7 +637,8 @@ int fat16_list_dir(struct fat16_super *sb, const char *path) {
 	uint32_t ent_off = 0;
 	uint32_t free_off = 0;
 	uint16_t parent = 0;
-	int r = fat16_resolve_path_bytes(sb, path, ent_buf, &ent_off, &free_off, &parent);
+	int r = fat16_resolve_path_bytes(sb, path, ent_buf, &ent_off, &free_off,
+					 &parent);
 	if (r != 0)
 		return -1;
 	uint8_t attr = ent_buf[11];
@@ -655,7 +657,8 @@ int fat16_list_dir(struct fat16_super *sb, const char *path) {
 
 	uint16_t cur = start_cluster;
 	while (cur >= 2 && cur < 0xFFF8) {
-		uint32_t sector = sb->first_data_sector + (cur - 2) * sb->sectors_per_cluster;
+		uint32_t sector = sb->first_data_sector +
+				  (cur - 2) * sb->sectors_per_cluster;
 		for (uint8_t sc = 0; sc < sb->sectors_per_cluster; ++sc) {
 			if (fat16_read_sector(sb, sector + sc, sec) != 0) {
 				kfree(sec);
@@ -692,7 +695,9 @@ int fat16_list_dir(struct fat16_super *sb, const char *path) {
 				}
 				uint32_t file_size = le32(ent + 28);
 				/* skip '.' and '..' entries */
-				if (name[0] == '.' && (name[1] == '\0' || (name[1] == '.' && name[2] == '\0')))
+				if (name[0] == '.' &&
+				    (name[1] == '\0' ||
+				     (name[1] == '.' && name[2] == '\0')))
 					continue;
 				/* align name to fixed column for consistent VGA/serial output */
 				int namelen = 0;
@@ -923,10 +928,11 @@ int fat16_write_file(struct fat16_super *sb, const char *name, const void *buf,
 			for (int i = 0; i < 32; ++i)
 				update_ent[i] = ent_local[i];
 		}
-		
+
 		update_ent[26] = 0;
 		update_ent[27] = 0;
-		update_ent[28] = update_ent[29] = update_ent[30] = update_ent[31] = 0;
+		update_ent[28] = update_ent[29] = update_ent[30] =
+			update_ent[31] = 0;
 		(void)fat16_write_bytes(sb, entry_offset, update_ent, 32);
 		return 0;
 	}
