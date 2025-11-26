@@ -29,5 +29,6 @@ int fat16_get_file_size(struct fat16_super *sb, const char *name,
 int fat16_write_file(struct fat16_super *sb, const char *name, const void *buf,
 		     size_t len);
 int fat16_create_file(struct fat16_super *sb, const char *name);
+int fat16_is_dir(struct fat16_super *sb, const char *path);
 
 #endif

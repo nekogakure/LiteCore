@@ -27,9 +27,6 @@ void kloop();
 // グローバルFAT16ハンドル
 struct fat16_super *g_fat16_sb = NULL;
 
-/* 互換性のため ext2 のグローバルポインタを NULL 定義しておく */
-struct ext2_super *g_ext2_sb = NULL;
-
 // グローバルブート情報
 static BOOT_INFO *g_boot_info = NULL;
 
@@ -87,7 +84,7 @@ void kmain(BOOT_INFO *boot_info) {
  */
 void kloop() {
 	int activity =
-		0; // このループで何か処理したかフラグ（分かりづらい仕事しろ、そうだこの変数だ）
+		0; // このループで何か処理したかフラグ（分かりづらい仕事しろ、）
 
 	/* FIFOに入ったイベントを処理 */
 	int event_count = 0;

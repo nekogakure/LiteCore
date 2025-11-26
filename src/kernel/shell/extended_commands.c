@@ -111,7 +111,7 @@ static int cmd_cat(int argc, char **argv) {
 		kfree(buf);
 	} else {
 		printk("Error: Failed to read file '%s' (error code: %d)\n",
-			   filename, result);
+		       filename, result);
 		return -1;
 	}
 
@@ -196,39 +196,104 @@ static int cmd_change_dir(int argc, char **argv) {
 		return -1;
 	}
 	const char *path = argv[1];
-	//uint32_t target_inode = 0;
-	//char new_path[256];
-	// Simplified: support only absolute root and relative "." and ".."
+	/* Build absolute path from current_path and provided path, normalize '.' and '..' */
+	char tmp[256];
+	/* If path is absolute, start from it */
 	if (path[0] == '/') {
-		// only allow root path for now
-		if (path[1] == '\0' || (path[1] == '/' && path[2] == '\0')) {
-			current_path[0] = '/';
-			current_path[1] = '\0';
-			return 0;
-		}
-		printk("cd: complex path resolution not implemented yet\n");
-		return -1;
-	} else if (path[0] == '.' && (path[1] == '\0' || path[1] == '/')) {
-		// '.' nothing
-		return 0;
-	} else if (path[0] == '.' && path[1] == '.' && (path[2] == '\0' || path[2] == '/')) {
-		// go to parent of current_path
+		/* copy path */
+		int i = 0;
+		for (; i < (int)sizeof(tmp) - 1 && path[i]; ++i)
+			tmp[i] = path[i];
+		tmp[i] = '\0';
+	} else {
+		/* relative: join current_path and path */
+		int i = 0;
+		/* copy current_path (without trailing slash except root) */
 		if (current_path[0] == '/' && current_path[1] == '\0') {
-			printk("already at root directory :P\n");
-			return 0;
-		}
-		int last_slash = -1;
-		for (int i = 0; current_path[i]; ++i) if (current_path[i] == '/') last_slash = i;
-		if (last_slash <= 0) {
-			current_path[0] = '/'; current_path[1] = '\0';
+			tmp[i++] = '/';
 		} else {
-			current_path[last_slash] = '\0';
-			if (last_slash == 0) { current_path[1] = '\0'; }
+			for (int j = 0;
+			     current_path[j] && i < (int)sizeof(tmp) - 1; ++j)
+				tmp[i++] = current_path[j];
 		}
-		return 0;
+		if (i > 0 && tmp[i - 1] != '/' && tmp[0] != '\0') {
+			if (i < (int)sizeof(tmp) - 1)
+				tmp[i++] = '/';
+		}
+		for (int j = 0; path[j] && i < (int)sizeof(tmp) - 1; ++j)
+			tmp[i++] = path[j];
+		tmp[i] = '\0';
 	}
-	printk("cd: complex path resolution not implemented yet\n");
-	return -1;
+
+	/* normalize components */
+	char comps[64][64];
+	int comp_count = 0;
+	int p = 0;
+	int len = 0;
+	while (tmp[p]) {
+		/* skip slashes */
+		while (tmp[p] == '/')
+			p++;
+		if (!tmp[p])
+			break;
+		len = 0;
+		while (tmp[p] && tmp[p] != '/' && len < 63) {
+			comps[comp_count][len++] = tmp[p++];
+		}
+		comps[comp_count][len] = '\0';
+		if (len == 0)
+			break;
+		if (comps[comp_count][0] == '.' &&
+		    comps[comp_count][1] == '\0') {
+			/* ignore '.' */
+		} else if (comps[comp_count][0] == '.' &&
+			   comps[comp_count][1] == '.' &&
+			   comps[comp_count][2] == '\0') {
+			if (comp_count > 0)
+				comp_count--; /* pop previous */
+		} else {
+			/* keep component */
+			comp_count++;
+			if (comp_count >= 64)
+				break;
+		}
+	}
+
+	/* rebuild normalized path */
+	char newpath[256];
+	int idx = 0;
+	if (comp_count == 0) {
+		newpath[0] = '/';
+		newpath[1] = '\0';
+	} else {
+		for (int i = 0; i < comp_count; ++i) {
+			if (idx < (int)sizeof(newpath) - 1)
+				newpath[idx++] = '/';
+			int j = 0;
+			while (comps[i][j] && idx < (int)sizeof(newpath) - 1)
+				newpath[idx++] = comps[i][j++];
+		}
+		newpath[idx] = '\0';
+	}
+
+	/* Verify target exists and is a directory */
+	int is_dir = 0;
+	uint32_t size = 0;
+	int r = vfs_resolve_path(newpath, &is_dir, &size);
+	if (r != 0) {
+		printk("cd: path not found: %s\n", newpath);
+		return -1;
+	}
+	if (!is_dir) {
+		printk("cd: not a directory: %s\n", newpath);
+		return -1;
+	}
+
+	/* commit */
+	for (int i = 0; i < (int)sizeof(current_path) - 1 && newpath[i]; ++i)
+		current_path[i] = newpath[i];
+	current_path[sizeof(current_path) - 1] = '\0';
+	return 0;
 }
 
 /**

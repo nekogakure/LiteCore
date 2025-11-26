@@ -108,7 +108,7 @@ void kernel_init() {
 #endif
 
 #ifdef INIT_MSG
-				printk("Registering VFS backends\n");
+			printk("Registering VFS backends\n");
 #endif
 			vfs_register_builtin_backends();
 			// VFS を通じてファイルシステムをマウント

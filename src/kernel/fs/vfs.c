@@ -10,20 +10,17 @@
 #include <fs/fat/fat16.h>
 #include <fs/block_cache.h>
 
-extern struct ext2_super *g_ext2_sb;
+#define MAX_OPEN_FILES 2048
+#define MAX_BACKENDS 128
 
-#define MAX_OPEN_FILES 256
-#define MAX_BACKENDS 8
-
-/* VFS backend interface (軽量) */
 struct vfs_backend {
 	const char *name;
 	/* mount returns backend-specific sb pointer via out_sb */
 	int (*mount_with_cache)(struct block_cache *cache, void **out_sb);
 	int (*read_file)(void *sb, const char *path, void *buf, size_t len,
-					 size_t *out_len);
+			 size_t *out_len);
 	int (*write_file)(void *sb, const char *path, const void *buf,
-					  size_t len);
+			  size_t len);
 	int (*get_file_size)(void *sb, const char *path, uint32_t *out_size);
 };
 
@@ -90,7 +87,7 @@ static int ext2_mount_wrapper(struct block_cache *cache, void **out_sb) {
 }
 
 static int ext2_read_wrapper(void *sb, const char *path, void *buf, size_t len,
-							 size_t *out_len) {
+			     size_t *out_len) {
 	struct ext2_super *s = (struct ext2_super *)sb;
 	if (!s || !path || !buf)
 		return -1;
@@ -108,7 +105,8 @@ static int ext2_read_wrapper(void *sb, const char *path, void *buf, size_t len,
 	return 0;
 }
 
-static int ext2_get_size_wrapper(void *sb, const char *path, uint32_t *out_size) {
+static int ext2_get_size_wrapper(void *sb, const char *path,
+				 uint32_t *out_size) {
 	struct ext2_super *s = (struct ext2_super *)sb;
 	if (!s || !path || !out_size)
 		return -1;
@@ -132,21 +130,23 @@ static int fat16_mount_wrapper(struct block_cache *cache, void **out_sb) {
 }
 
 static int fat16_read_wrapper(void *sb, const char *path, void *buf, size_t len,
-							 size_t *out_len) {
+			      size_t *out_len) {
 	struct fat16_super *s = (struct fat16_super *)sb;
 	if (!s || !path || !buf)
 		return -1;
 	return fat16_read_file(s, path, buf, len, out_len);
 }
 
-static int fat16_write_wrapper(void *sb, const char *path, const void *buf, size_t len) {
+static int fat16_write_wrapper(void *sb, const char *path, const void *buf,
+			       size_t len) {
 	struct fat16_super *s = (struct fat16_super *)sb;
 	if (!s || !path || !buf)
 		return -1;
 	return fat16_write_file(s, path, buf, len);
 }
 
-static int fat16_get_size_wrapper(void *sb, const char *path, uint32_t *out_size) {
+static int fat16_get_size_wrapper(void *sb, const char *path,
+				  uint32_t *out_size) {
 	struct fat16_super *s = (struct fat16_super *)sb;
 	if (!s || !path || !out_size)
 		return -1;
@@ -180,10 +180,12 @@ int vfs_mount_with_cache(struct block_cache *cache) {
 		return -1;
 	for (int i = 0; i < backend_count; ++i) {
 		void *sb = NULL;
-		if (backends[i]->mount_with_cache && backends[i]->mount_with_cache(cache, &sb) == 0) {
+		if (backends[i]->mount_with_cache &&
+		    backends[i]->mount_with_cache(cache, &sb) == 0) {
 			active_backend = backends[i];
 			active_sb = sb;
-			printk("vfs: mounted backend %s\n", active_backend->name);
+			printk("vfs: mounted backend %s\n",
+			       active_backend->name);
 			return 0;
 		}
 	}
@@ -249,7 +251,8 @@ int vfs_write(int fd, const void *buf, size_t len) {
 		if (!vf || !active_backend || !active_backend->write_file)
 			return -1;
 		/* Call backend write (overwrite) */
-		int r = active_backend->write_file(active_sb, vf->path, buf, len);
+		int r = active_backend->write_file(active_sb, vf->path, buf,
+						   len);
 		if (r == 0) {
 			/* update cached buffer */
 			if (vf->buf)
@@ -298,13 +301,16 @@ int vfs_read(int fd, void *buf, size_t len) {
 		if (!vf->buf && active_backend && active_backend->read_file) {
 			uint32_t sz = 0;
 			if (active_backend->get_file_size)
-				active_backend->get_file_size(active_sb, vf->path, &sz);
+				active_backend->get_file_size(active_sb,
+							      vf->path, &sz);
 			if (sz > 0) {
 				vf->buf = (uint8_t *)kmalloc(sz);
 				if (!vf->buf)
 					return -1;
 				size_t out_len = 0;
-				if (active_backend->read_file(active_sb, vf->path, vf->buf, sz, &out_len) != 0) {
+				if (active_backend->read_file(
+					    active_sb, vf->path, vf->buf, sz,
+					    &out_len) != 0) {
 					kfree(vf->buf);
 					vf->buf = NULL;
 					return -1;
@@ -317,7 +323,9 @@ int vfs_read(int fd, void *buf, size_t len) {
 		}
 		if (!vf->buf)
 			return 0;
-		uint32_t avail = vf->buf_size > vf->offset ? vf->buf_size - vf->offset : 0;
+		uint32_t avail = vf->buf_size > vf->offset ?
+					 vf->buf_size - vf->offset :
+					 0;
 		uint32_t to_copy = (uint32_t)len;
 		if (to_copy > avail)
 			to_copy = avail;
@@ -342,7 +350,8 @@ int vfs_open(const char *pathname, int flags, int mode) {
 		return -1;
 
 	/* allocate vfs_file and global handle */
-	struct vfs_file *vf = (struct vfs_file *)kmalloc(sizeof(struct vfs_file));
+	struct vfs_file *vf =
+		(struct vfs_file *)kmalloc(sizeof(struct vfs_file));
 	if (!vf)
 		return -1;
 	vf->type = VFS_TYPE_GENERIC;
@@ -409,12 +418,12 @@ int vfs_fstat(int fd, void *buf) {
 		uint32_t mode = 0020000; /* S_IFCHR */
 		(void)copy_to_user(buf, &mode, sizeof(mode));
 		(void)copy_to_user((void *)((uintptr_t)buf + 16), &mode,
-						   sizeof(mode));
+				   sizeof(mode));
 		uint64_t z64 = 0;
 		(void)copy_to_user((void *)((uintptr_t)buf + 48), &z64,
-						   sizeof(z64));
+				   sizeof(z64));
 		(void)copy_to_user((void *)((uintptr_t)buf + 40), &z64,
-						   sizeof(z64));
+				   sizeof(z64));
 		return 0;
 	}
 	task_t *t = task_current();
@@ -430,12 +439,12 @@ int vfs_fstat(int fd, void *buf) {
 		uint32_t mode = 0100000; /* regular */
 		(void)copy_to_user(buf, &mode, sizeof(mode));
 		(void)copy_to_user((void *)((uintptr_t)buf + 16), &mode,
-						   sizeof(mode));
+				   sizeof(mode));
 		uint64_t sz = (uint64_t)vf->buf_size;
 		(void)copy_to_user((void *)((uintptr_t)buf + 48), &sz,
-						   sizeof(sz));
+				   sizeof(sz));
 		(void)copy_to_user((void *)((uintptr_t)buf + 40), &sz,
-						   sizeof(sz));
+				   sizeof(sz));
 		return 0;
 	}
 	return -1;
@@ -446,7 +455,8 @@ int vfs_isatty(int fd) {
 }
 
 int vfs_read_file_all(const char *path, void **out_buf, uint32_t *out_size) {
-	if (!active_backend || !active_backend->get_file_size || !active_backend->read_file)
+	if (!active_backend || !active_backend->get_file_size ||
+	    !active_backend->read_file)
 		return -1;
 	if (!path || !out_buf || !out_size)
 		return -1;
@@ -462,7 +472,8 @@ int vfs_read_file_all(const char *path, void **out_buf, uint32_t *out_size) {
 	if (!buf)
 		return -3;
 	size_t out_len = 0;
-	if (active_backend->read_file(active_sb, path, buf, sz, &out_len) != 0) {
+	if (active_backend->read_file(active_sb, path, buf, sz, &out_len) !=
+	    0) {
 		kfree(buf);
 		return -4;
 	}
@@ -491,6 +502,45 @@ int vfs_list_root(void) {
 		if (ext2_read_inode(s, 2, &inode) != 0)
 			return -1;
 		return ext2_list_dir(s, &inode);
+	}
+	return -1;
+}
+
+int vfs_resolve_path(const char *path, int *is_dir, uint32_t *out_size) {
+	if (!active_backend || !path)
+		return -1;
+
+	if (active_backend->read_file == fat16_read_wrapper) {
+		struct fat16_super *s = (struct fat16_super *)active_sb;
+		if (!s)
+			return -1;
+		int dir = fat16_is_dir(s, path);
+		if (is_dir)
+			*is_dir = dir;
+		if (!dir && out_size) {
+			uint32_t sz = 0;
+			if (fat16_get_file_size(s, path, &sz) == 0)
+				*out_size = sz;
+			else
+				*out_size = 0;
+		}
+		return dir >= 0 ? 0 : -1;
+	} else if (active_backend->read_file == ext2_read_wrapper) {
+		struct ext2_super *s = (struct ext2_super *)active_sb;
+		if (!s)
+			return -1;
+		uint32_t inode_num;
+		if (ext2_resolve_path(s, path, &inode_num) != 0)
+			return -1;
+		struct ext2_inode inode;
+		if (ext2_read_inode(s, inode_num, &inode) != 0)
+			return -1;
+		int dir = (inode.i_mode & EXT2_S_IFDIR) ? 1 : 0;
+		if (is_dir)
+			*is_dir = dir;
+		if (!dir && out_size)
+			*out_size = inode.i_size;
+		return 0;
 	}
 	return -1;
 }

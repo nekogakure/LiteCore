@@ -3,7 +3,6 @@
 #include <util/bdf.h>
 #include <util/io.h>
 
-
 static bdf_font_t font;
 static int initialized = 0;
 

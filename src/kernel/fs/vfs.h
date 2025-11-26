@@ -24,5 +24,6 @@ void vfs_register_builtin_backends(void);
 int vfs_mount_with_cache(struct block_cache *cache);
 int vfs_read_file_all(const char *path, void **out_buf, uint32_t *out_size);
 int vfs_list_root(void);
+int vfs_resolve_path(const char *path, int *is_dir, uint32_t *out_size);
 
 #endif

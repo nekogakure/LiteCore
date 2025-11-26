@@ -483,6 +483,25 @@ int fat16_get_file_size(struct fat16_super *sb, const char *name,
 	return 0;
 }
 
+int fat16_is_dir(struct fat16_super *sb, const char *path) {
+	if (!sb || !path)
+		return 0;
+	if (path[0] == '/' && (path[1] == '\0' || path[1] == '/'))
+		return 1; /* root */
+	uint8_t *ent = NULL;
+	uint8_t *free_slot = NULL;
+	uint16_t parent = 0;
+	if (path[0] == '/') {
+		resolve_path(sb, path, &ent, &free_slot, &parent);
+	} else {
+		find_root_entry(sb, path, &ent, &free_slot);
+	}
+	if (!ent)
+		return 0;
+	uint8_t attr = ent[11];
+	return (attr & 0x10) ? 1 : 0;
+}
+
 /* ルートディレクトリ内のエントリ位置を探す (見つかれば ent_out にポインタを返す) */
 static uint8_t *find_root_entry(struct fat16_super *sb, const char *name,
 				uint8_t **ent_out, uint8_t **free_out) {
