@@ -14,7 +14,7 @@
 #include <mem/manager.h>
 #include <mem/segment.h>
 #include <driver/ata.h>
-#include <fs/ext/ext2.h>
+#include <fs/fat/fat16.h>
 #include <driver/timer/timer.h>
 #include <boot_info.h>
 #include <task/multi_task.h>
@@ -24,7 +24,10 @@
 
 void kloop();
 
-// グローバルext2ハンドル
+// グローバルFAT16ハンドル
+struct fat16_super *g_fat16_sb = NULL;
+
+/* 互換性のため ext2 のグローバルポインタを NULL 定義しておく */
 struct ext2_super *g_ext2_sb = NULL;
 
 // グローバルブート情報

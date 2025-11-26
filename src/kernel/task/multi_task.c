@@ -133,7 +133,7 @@ void task_init(void) {
 	tasks[0] = &idle_task;
 
 	scheduler_enabled = 1;
-        
+
 	for (int i = 0; i < 32; ++i) {
 		idle_task.fds[i] = -1;
 	}
@@ -143,7 +143,7 @@ void task_init(void) {
 	vfs_init();
 #ifdef INIT_MSG
 	printk("task_init: Multitasking initialized. Current context saved as idle task (TID=0, CR3=0x%lx)\n",
-	        (unsigned long)idle_task.regs.cr3);
+	       (unsigned long)idle_task.regs.cr3);
 #endif
 }
 
@@ -252,7 +252,6 @@ task_t *task_create(void (*entry)(void), const char *name, int kernel_mode) {
 	task->regs.rsi = task->regs.rdi = task->regs.rbp = 0;
 	task->regs.r8 = task->regs.r9 = task->regs.r10 = task->regs.r11 = 0;
 	task->regs.r12 = task->regs.r13 = task->regs.r14 = task->regs.r15 = 0;
-
 
 	/* initialize per-task fd table */
 	for (int i = 0; i < 32; ++i)

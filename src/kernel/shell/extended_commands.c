@@ -2,7 +2,7 @@
 #include <util/console.h>
 #include <mem/manager.h>
 #include <mem/map.h>
-#include <fs/ext/ext2.h>
+#include <fs/vfs.h>
 #include <driver/timer/apic.h>
 #ifdef UEFI_MODE
 #include <driver/timer/uefi_timer.h>
@@ -10,13 +10,7 @@
 #include <device/pci.h>
 #include <stdint.h>
 
-// 外部宣言: main.cで定義されているグローバル変数
-extern struct ext2_super *g_ext2_sb;
-
-// 現在のディレクトリのinode番号（デフォルトはルート）
-static uint32_t current_dir_inode = 2; // EXT2_ROOT_INO = 2
-
-// 現在のディレクトリパス
+// 現在のディレクトリパス（簡易実装）
 static char current_path[256] = "/";
 
 /**
@@ -80,23 +74,8 @@ static int cmd_ls(int argc, char **argv) {
 	(void)argc;
 	(void)argv;
 
-	if (g_ext2_sb == NULL) {
-		printk("Error: ext2 filesystem not mounted\n");
-		return -1;
-	}
-
-	// 現在のディレクトリのinodeを読み取る
-	struct ext2_inode dir_inode;
-	int result = ext2_read_inode(g_ext2_sb, current_dir_inode, &dir_inode);
-	if (result != 0) {
-		printk("Error: Failed to read directory inode (error=%d)\n",
-		       result);
-		return -1;
-	}
-
-	// ディレクトリの内容を一覧表示
-	result = ext2_list_dir(g_ext2_sb, &dir_inode);
-
+	/* Use VFS to list root (current implementation lists root only) */
+	int result = vfs_list_root();
 	if (result < 0) {
 		printk("Error: Failed to list directory (error=%d)\n", result);
 		return -1;
@@ -114,20 +93,27 @@ static int cmd_cat(int argc, char **argv) {
 		return -1;
 	}
 
-	if (g_ext2_sb == NULL) {
-		printk("Error: ext2 filesystem not mounted\n");
-		return -1;
-	}
-
 	const char *filename = argv[1];
 
 	// 最大8KBのファイルを読み込む（スタック上）
 	char buffer[8192];
 	size_t bytes_read = 0;
 
-	// ルートディレクトリからファイルを読み込む
-	int result = ext2_read_file(g_ext2_sb, filename, buffer, sizeof(buffer),
-				    &bytes_read);
+	void *buf = NULL;
+	uint32_t size = 0;
+	int result = vfs_read_file_all(filename, &buf, &size);
+	if (result == 0 && buf && size > 0) {
+		if (size > sizeof(buffer))
+			size = sizeof(buffer);
+		for (uint32_t i = 0; i < size; ++i)
+			buffer[i] = ((uint8_t *)buf)[i];
+		bytes_read = size;
+		kfree(buf);
+	} else {
+		printk("Error: Failed to read file '%s' (error code: %d)\n",
+			   filename, result);
+		return -1;
+	}
 
 	if (result != 0) {
 		printk("Error: Failed to read file '%s' (error code: %d)\n",
@@ -209,124 +195,40 @@ static int cmd_change_dir(int argc, char **argv) {
 		printk("Usage: cd <directory>\n");
 		return -1;
 	}
-
-	if (g_ext2_sb == NULL) {
-		printk("Error: ext2 filesystem not mounted\n");
-		return -1;
-	}
-
 	const char *path = argv[1];
-	uint32_t target_inode = 0;
-	char new_path[256];
-
-	// パスを解決
+	//uint32_t target_inode = 0;
+	//char new_path[256];
+	// Simplified: support only absolute root and relative "." and ".."
 	if (path[0] == '/') {
-		// 絶対パス
-		int result = ext2_resolve_path(g_ext2_sb, path, &target_inode);
-		if (result != 0) {
-			printk("cd: %s: No such directory\n", path);
-			return -1;
-		}
-		// パスをコピー
-		int i = 0;
-		while (path[i] && i < 255) {
-			new_path[i] = path[i];
-			i++;
-		}
-		new_path[i] = '\0';
-	} else {
-		// 相対パス
-		// 現在のパスと結合
-		int i = 0, j = 0;
-
-		// ".." の処理
-		if (path[0] == '.' && path[1] == '.' &&
-		    (path[2] == '\0' || path[2] == '/')) {
-			// 親ディレクトリへ移動
-			if (current_path[0] == '/' && current_path[1] == '\0') {
-				// すでにルートにいる場合
-				printk("already at root directory :P\n");
-				return 0;
-			}
-
-			// 現在のパスから最後の '/' を見つける
-			int last_slash = -1;
-			for (i = 0; current_path[i]; i++) {
-				if (current_path[i] == '/') {
-					last_slash = i;
-				}
-			}
-
-			if (last_slash <= 0) {
-				// ルートに戻る
-				new_path[0] = '/';
-				new_path[1] = '\0';
-			} else {
-				// 最後の '/' までコピー
-				for (i = 0; i < last_slash; i++) {
-					new_path[i] = current_path[i];
-				}
-				new_path[i] = '\0';
-			}
-		} else if (path[0] == '.' &&
-			   (path[1] == '\0' || path[1] == '/')) {
-			// "." - 現在のディレクトリ（何もしない）
+		// only allow root path for now
+		if (path[1] == '\0' || (path[1] == '/' && path[2] == '\0')) {
+			current_path[0] = '/';
+			current_path[1] = '\0';
 			return 0;
+		}
+		printk("cd: complex path resolution not implemented yet\n");
+		return -1;
+	} else if (path[0] == '.' && (path[1] == '\0' || path[1] == '/')) {
+		// '.' nothing
+		return 0;
+	} else if (path[0] == '.' && path[1] == '.' && (path[2] == '\0' || path[2] == '/')) {
+		// go to parent of current_path
+		if (current_path[0] == '/' && current_path[1] == '\0') {
+			printk("already at root directory :P\n");
+			return 0;
+		}
+		int last_slash = -1;
+		for (int i = 0; current_path[i]; ++i) if (current_path[i] == '/') last_slash = i;
+		if (last_slash <= 0) {
+			current_path[0] = '/'; current_path[1] = '\0';
 		} else {
-			// 通常のディレクトリ名
-			// 現在のパスをコピー
-			for (i = 0; current_path[i]; i++) {
-				new_path[i] = current_path[i];
-			}
-
-			// 末尾が '/' でない場合は追加
-			if (i > 0 && new_path[i - 1] != '/') {
-				new_path[i++] = '/';
-			}
-
-			// 新しいディレクトリ名を追加
-			for (j = 0; path[j] && i < 255; j++, i++) {
-				new_path[i] = path[j];
-			}
-			new_path[i] = '\0';
+			current_path[last_slash] = '\0';
+			if (last_slash == 0) { current_path[1] = '\0'; }
 		}
-
-		// 新しいパスを解決
-		int result =
-			ext2_resolve_path(g_ext2_sb, new_path, &target_inode);
-		if (result != 0) {
-			printk("cd: %s: No such directory\n", path);
-			return -1;
-		}
+		return 0;
 	}
-
-	// inodeを読み取ってディレクトリかどうか確認
-	struct ext2_inode target_inode_data;
-	int result =
-		ext2_read_inode(g_ext2_sb, target_inode, &target_inode_data);
-	if (result != 0) {
-		printk("cd: Failed to read inode\n");
-		return -1;
-	}
-
-	// ディレクトリかどうか確認
-	if ((target_inode_data.i_mode & 0xF000) != 0x4000) { // S_IFDIR = 0x4000
-		printk("cd: %s: Not a directory\n", path);
-		return -1;
-	}
-
-	// カレントディレクトリを更新
-	current_dir_inode = target_inode;
-
-	// パスを更新
-	int i = 0;
-	while (new_path[i] && i < 255) {
-		current_path[i] = new_path[i];
-		i++;
-	}
-	current_path[i] = '\0';
-
-	return 0;
+	printk("cd: complex path resolution not implemented yet\n");
+	return -1;
 }
 
 /**

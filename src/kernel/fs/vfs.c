@@ -471,3 +471,26 @@ int vfs_read_file_all(const char *path, void **out_buf, uint32_t *out_size) {
 	*out_size = (uint32_t)out_len;
 	return 0;
 }
+
+int vfs_list_root(void) {
+	if (!active_backend)
+		return -1;
+	/* if backend provides list_root, call it */
+	/* we added no explicit list_root pointer earlier; check for known backends by name */
+	if (active_backend->read_file == fat16_read_wrapper) {
+		struct fat16_super *s = (struct fat16_super *)active_sb;
+		if (!s)
+			return -1;
+		return fat16_list_root(s);
+	} else if (active_backend->read_file == ext2_read_wrapper) {
+		/* ext2: read inode 2 and call ext2_list_dir */
+		struct ext2_super *s = (struct ext2_super *)active_sb;
+		if (!s)
+			return -1;
+		struct ext2_inode inode;
+		if (ext2_read_inode(s, 2, &inode) != 0)
+			return -1;
+		return ext2_list_dir(s, &inode);
+	}
+	return -1;
+}

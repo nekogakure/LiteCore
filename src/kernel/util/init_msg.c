@@ -14,7 +14,8 @@
 #include <mem/manager.h>
 #include <mem/segment.h>
 #include <driver/ata.h>
-#include <fs/ext/ext2.h>
+#include <fs/fat/fat16.h>
+#include <fs/vfs.h>
 #include <fs/block_cache.h>
 #include <task/multi_task.h>
 
@@ -24,7 +25,7 @@
 #include <driver/timer/apic.h>
 #endif
 
-extern struct ext2_super *g_ext2_sb;
+extern struct fat16_super *g_fat16_sb;
 
 void init_font();
 
@@ -86,7 +87,7 @@ void kernel_init() {
 
 #ifdef INIT_MSG
 	new_line();
-	printk("> FILESYSTEM INIT (ext2)\n");
+	printk("> FILESYSTEM INIT (FAT16)\n");
 #endif
 	// ATAドライバを初期化
 	if (ata_init() != 0) {
@@ -106,21 +107,23 @@ void kernel_init() {
 			printk("Block cache initialized (32 KB, 32 entries)\n");
 #endif
 
-			// ext2ファイルシステムをキャッシュ経由でマウント
-			if (ext2_mount_with_cache(cache, &g_ext2_sb) == 0) {
 #ifdef INIT_MSG
-				printk("ext2 filesystem mounted successfully\n");
-				printk("  Block size: %u bytes\n",
-				       g_ext2_sb->block_size);
-				printk("  Total blocks: %u\n",
-				       g_ext2_sb->sb.s_blocks_count);
-				printk("  Free blocks: %u\n",
-				       g_ext2_sb->sb.s_free_blocks_count);
-				printk("  Total inodes: %u\n",
-				       g_ext2_sb->sb.s_inodes_count);
+				printk("Registering VFS backends\n");
+#endif
+			vfs_register_builtin_backends();
+			// VFS を通じてファイルシステムをマウント
+			if (vfs_mount_with_cache(cache) == 0) {
+#ifdef INIT_MSG
+				printk("FAT16 filesystem mounted successfully\n");
+				printk("  Bytes/sector: %u\n",
+				       g_fat16_sb->bytes_per_sector);
+				printk("  Sectors/cluster: %u\n",
+				       g_fat16_sb->sectors_per_cluster);
+				printk("  Total sectors: %u\n",
+				       g_fat16_sb->total_sectors);
 #endif
 			} else {
-				printk("Error: Failed to mount ext2 filesystem\n");
+				printk("Error: Failed to mount FAT16 filesystem\n");
 				block_cache_destroy(cache);
 			}
 
@@ -144,7 +147,7 @@ void kernel_init() {
 }
 
 void init_font() {
-	if (g_ext2_sb != NULL) {
+	if (g_fat16_sb != NULL) {
 		if (bdf_init("kernel/fonts/ter-u12b.bdf")) {
 		} else {
 			printk("Warning: Failed to load BDF font\n");

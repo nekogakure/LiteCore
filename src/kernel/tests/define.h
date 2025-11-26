@@ -2,7 +2,7 @@
 #define _TESTS_CONFIG_H
 
 // テストを実行するかどうか
-//#define TEST_TRUE
+#define TEST_TRUE
 
 #ifdef TEST_TRUE
 // メモリマップとメモリのテスト
@@ -21,6 +21,8 @@
 //#define VMEM_TEST
 // FAT12 test
 //#define FAT12_TEST
+// FAT16 test
+#define FAT16_TEST
 // ext2 test
 //#define EXT2_TEST
 // ACPI Timer test
@@ -28,7 +30,7 @@
 // APIC Timer test
 // #define APIC_TIMER_TEST
 // Multi Task test
-#define MULTI_TASK_TEST
+//#define MULTI_TASK_TEST
 
 /* -------- 宣言 -------- */
 #ifdef MEM_TEST
@@ -61,6 +63,10 @@ void vmem_test();
 
 #ifdef FAT12_TEST
 void fat12_test();
+#endif
+
+#ifdef FAT16_TEST
+void fat16_test();
 #endif
 
 #ifdef EXT2_TEST
