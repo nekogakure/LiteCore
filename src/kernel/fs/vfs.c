@@ -178,10 +178,19 @@ void vfs_register_builtin_backends(void) {
 int vfs_mount_with_cache(struct block_cache *cache) {
 	if (!cache)
 		return -1;
+	printk("vfs: attempting to mount %d registered backends\n",
+	       backend_count);
 	for (int i = 0; i < backend_count; ++i) {
 		void *sb = NULL;
-		if (backends[i]->mount_with_cache &&
-		    backends[i]->mount_with_cache(cache, &sb) == 0) {
+		if (!backends[i])
+			continue;
+		printk("vfs: trying backend %s\n", backends[i]->name);
+		int r = -1;
+		if (backends[i]->mount_with_cache)
+			r = backends[i]->mount_with_cache(cache, &sb);
+		printk("vfs: backend %s mount result %d\n", backends[i]->name,
+		       r);
+		if (r == 0) {
 			active_backend = backends[i];
 			active_sb = sb;
 			printk("vfs: mounted backend %s\n",
@@ -500,6 +509,38 @@ int vfs_list_root(void) {
 			return -1;
 		struct ext2_inode inode;
 		if (ext2_read_inode(s, 2, &inode) != 0)
+			return -1;
+		return ext2_list_dir(s, &inode);
+	}
+	return -1;
+}
+
+/* List a given absolute path. Delegates to backend-specific directory listing.
+ * Returns 0 on success, negative on error.
+ */
+int vfs_list_path(const char *path) {
+	if (!active_backend || !path)
+		return -1;
+
+	/* FAT16 backend */
+	if (active_backend->read_file == fat16_read_wrapper) {
+		struct fat16_super *s = (struct fat16_super *)active_sb;
+		if (!s)
+			return -1;
+		return fat16_list_dir(s, path);
+	} else if (active_backend->read_file == ext2_read_wrapper) {
+		/* ext2: resolve path to inode and call ext2_list_dir on it */
+		struct ext2_super *s = (struct ext2_super *)active_sb;
+		if (!s)
+			return -1;
+		uint32_t inode_num;
+		if (ext2_resolve_path(s, path, &inode_num) != 0)
+			return -1;
+		struct ext2_inode inode;
+		if (ext2_read_inode(s, inode_num, &inode) != 0)
+			return -1;
+		/* ensure it's a directory */
+		if (!(inode.i_mode & EXT2_S_IFDIR))
 			return -1;
 		return ext2_list_dir(s, &inode);
 	}

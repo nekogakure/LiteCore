@@ -98,8 +98,12 @@ void kernel_init() {
 		printk("ATA driver initialized\n");
 #endif
 
-		// ブロックキャッシュを初期化 (drive=1, block_size=4096, num_entries=32)
-		struct block_cache *cache = block_cache_init(1, 4096, 32);
+		// ブロックキャッシュを初期化 (use detected ATA drive)
+		int detected = ata_get_detected_drive();
+		if (detected < 0)
+			detected = 0; /* fallback to primary master */
+		struct block_cache *cache =
+			block_cache_init((uint8_t)detected, 4096, 32);
 		if (cache == NULL) {
 			printk("Error: Failed to initialize block cache\n");
 		} else {
@@ -148,7 +152,7 @@ void kernel_init() {
 
 void init_font() {
 	if (g_fat16_sb != NULL) {
-		if (bdf_init("kernel/fonts/ter-u12b.bdf")) {
+	if (bdf_init("/kernel/fonts/ter-u12b.bdf")) {
 		} else {
 			printk("Warning: Failed to load BDF font\n");
 		}

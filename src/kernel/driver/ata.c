@@ -3,6 +3,13 @@
 #include <util/console.h>
 #include <interrupt/irq.h>
 
+/* Detected drive id recorded after successful ata_init() */
+static int g_ata_detected_drive = -1;
+
+int ata_get_detected_drive(void) {
+	return g_ata_detected_drive;
+}
+
 /**
  * @brief ATAデバイスの準備完了を待つ
  */
@@ -81,11 +88,12 @@ int ata_init(void) {
 	const struct {
 		uint16_t base;
 		uint8_t drive_sel;
+		uint8_t drive_id; /* drive id used by ata_read_sectors */
 		const char *name;
 	} drives[] = {
-		{ ATA_PRIMARY_DATA, ATA_SLAVE, "Primary Slave (hdb)" },
-		{ ATA_SECONDARY_DATA, ATA_MASTER, "Secondary Master (hdc)" },
-		{ ATA_PRIMARY_DATA, ATA_MASTER, "Primary Master (hda)" },
+		{ ATA_PRIMARY_DATA, ATA_SLAVE, 1, "Primary Slave (hdb)" },
+		{ ATA_SECONDARY_DATA, ATA_MASTER, 2, "Secondary Master (hdc)" },
+		{ ATA_PRIMARY_DATA, ATA_MASTER, 0, "Primary Master (hda)" },
 	};
 
 	for (int i = 0; i < 3; i++) {
@@ -168,11 +176,21 @@ int ata_init(void) {
 		printk("ATA:   reading IDENTIFY data from base 0x%x\n",
 		       drives[i].base);
 #endif
+#ifdef INIT_MSG
 		for (int j = 0; j < 256; j++) {
 			(void)inw(drives[i].base);
 		}
+#else
+		for (int j = 0; j < 256; j++) {
+			(void)inw(drives[i].base);
+		}
+#endif
 #ifdef INIT_MSG
-		printk("ATA: %s detected successfully!\n", drives[i].name);
+#endif
+		g_ata_detected_drive = drives[i].drive_id;
+#ifdef INIT_MSG
+		printk("ATA: %s detected successfully! (drive=%u)\n",
+		       drives[i].name, g_ata_detected_drive);
 #endif
 		return 0;
 	}

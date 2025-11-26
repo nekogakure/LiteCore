@@ -15,6 +15,7 @@ struct fat16_super {
 	uint32_t fat_size_sectors;
 	uint32_t first_data_sector;
 	uint32_t root_dir_sector;
+	struct block_cache *cache;
 	uint8_t *image;
 	size_t image_size;
 };
@@ -22,6 +23,7 @@ struct fat16_super {
 int fat16_mount(void *image, size_t size, struct fat16_super **out);
 int fat16_mount_with_cache(struct block_cache *cache, struct fat16_super **out);
 int fat16_list_root(struct fat16_super *sb);
+int fat16_list_dir(struct fat16_super *sb, const char *path);
 int fat16_read_file(struct fat16_super *sb, const char *name, void *buf,
 		    size_t len, size_t *out_len);
 int fat16_get_file_size(struct fat16_super *sb, const char *name,

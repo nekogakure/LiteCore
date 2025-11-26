@@ -73,9 +73,9 @@ static int cmd_mem(int argc, char **argv) {
 static int cmd_ls(int argc, char **argv) {
 	(void)argc;
 	(void)argv;
-
-	/* Use VFS to list root (current implementation lists root only) */
-	int result = vfs_list_root();
+	/* List current directory via VFS */
+	const char *cwd = get_current_directory();
+	int result = vfs_list_path(cwd);
 	if (result < 0) {
 		printk("Error: Failed to list directory (error=%d)\n", result);
 		return -1;
@@ -289,10 +289,12 @@ static int cmd_change_dir(int argc, char **argv) {
 		return -1;
 	}
 
-	/* commit */
+	for (int i = 0; i < (int)sizeof(current_path); ++i)
+		current_path[i] = '\0';
 	for (int i = 0; i < (int)sizeof(current_path) - 1 && newpath[i]; ++i)
 		current_path[i] = newpath[i];
-	current_path[sizeof(current_path) - 1] = '\0';
+	/* ensure null termination */
+	current_path[(int)sizeof(current_path) - 1] = '\0';
 	return 0;
 }
 

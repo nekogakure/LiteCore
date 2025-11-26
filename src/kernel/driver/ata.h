@@ -65,6 +65,13 @@
 int ata_init(void);
 
 /**
+ * @brief Get the detected ATA drive id after ata_init()
+ *
+ * @return drive id (0=Primary Master,1=Primary Slave,2=Secondary Master,3=Secondary Slave) or -1 if none
+ */
+int ata_get_detected_drive(void);
+
+/**
  * @brief ATAデバイスからセクタを読み取る
  * 
  * @param drive ドライブ番号 (0=Primary Master, 1=Primary Slave, 2=Secondary Master, 3=Secondary Slave)
