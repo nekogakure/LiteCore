@@ -44,6 +44,18 @@ static uint32_t le32(const uint8_t *p) {
 	       ((uint32_t)p[3] << 24);
 }
 
+static void write_le16(uint8_t *p, uint16_t v) {
+	p[0] = (uint8_t)(v & 0xff);
+	p[1] = (uint8_t)((v >> 8) & 0xff);
+}
+
+static void write_le32(uint8_t *p, uint32_t v) {
+	p[0] = (uint8_t)(v & 0xff);
+	p[1] = (uint8_t)((v >> 8) & 0xff);
+	p[2] = (uint8_t)((v >> 16) & 0xff);
+	p[3] = (uint8_t)((v >> 24) & 0xff);
+}
+
 /**
  * @brief ext2イメージをマウントする
  */
@@ -119,7 +131,8 @@ int ext2_mount(const void *image, size_t size, struct ext2_super **out) {
 	/* グループディスクリプタテーブルの位置 */
 	/* スーパーブロックの次のブロックから始まる */
 	uint32_t sb_block = (sb->sb.s_first_data_block == 0) ? 1 : 2;
-	sb->group_desc_offset = sb_block * sb->block_size;
+	/* group_desc_offset はブロック番号として保持する（下流の処理はブロック番号を期待している） */
+	sb->group_desc_offset = sb_block;
 
 	*out = sb;
 	return 0;
@@ -665,6 +678,491 @@ int ext2_read_inode_data(struct ext2_super *sb, struct ext2_inode *inode,
 	if (out_len)
 		*out_len = bytes_read;
 
+	return 0;
+}
+
+/* ------- 書き込み関連の簡易実装（直接ブロックのみ対応） ------- */
+
+/* 空きブロックを割り当てる（簡易実装） */
+int ext2_allocate_block(struct ext2_super *sb, uint32_t *out_block) {
+	if (!sb || !sb->cache || !out_block)
+		return -1;
+
+	uint32_t bs = sb->block_size;
+	uint32_t blocks_per_group = sb->sb.s_blocks_per_group;
+
+	for (uint32_t g = 0; g < sb->num_groups; ++g) {
+		uint32_t gd_block_num = sb->group_desc_offset + (g * 32) / bs;
+		uint32_t gd_off = (g * 32) % bs;
+
+		uint8_t *gd_block = (uint8_t *)kmalloc(bs);
+		if (!gd_block)
+			return -2;
+		if (block_cache_read(sb->cache, gd_block_num, gd_block) != 0) {
+			kfree(gd_block);
+			continue;
+		}
+
+		uint32_t block_bitmap = le32(gd_block + gd_off + 0);
+
+		uint8_t *bm = (uint8_t *)kmalloc(bs);
+		if (!bm) {
+			kfree(gd_block);
+			return -3;
+		}
+		if (block_cache_read(sb->cache, block_bitmap, bm) != 0) {
+			kfree(bm);
+			kfree(gd_block);
+			continue;
+		}
+
+		for (uint32_t i = 0; i < blocks_per_group; ++i) {
+			uint32_t byte_idx = i / 8;
+			uint8_t bit_mask = (uint8_t)(1u << (i % 8));
+			if ((bm[byte_idx] & bit_mask) == 0) {
+				/* 割当て */
+				bm[byte_idx] |= bit_mask;
+				if (block_cache_write(sb->cache, block_bitmap,
+						      bm) != 0) {
+					kfree(bm);
+					kfree(gd_block);
+					return -4;
+				}
+
+				/* グループの空き数をデクリメント */
+				uint16_t bg_free = le16(gd_block + gd_off + 12);
+				if (bg_free > 0)
+					bg_free -= 1;
+				write_le16(gd_block + gd_off + 12, bg_free);
+				if (block_cache_write(sb->cache, gd_block_num,
+						      gd_block) != 0) {
+					kfree(bm);
+					kfree(gd_block);
+					return -5;
+				}
+
+				/* スーパーブロックの空き数を更新して書き戻す（簡易） */
+				if (sb->sb.s_free_blocks_count > 0)
+					sb->sb.s_free_blocks_count -= 1;
+				uint32_t sb_block_num = 1024 / bs;
+				uint8_t *sb_block = (uint8_t *)kmalloc(bs);
+				if (sb_block) {
+					if (block_cache_read(sb->cache,
+							     sb_block_num,
+							     sb_block) == 0) {
+						uint32_t sb_offset = 1024 % bs;
+						write_le32(
+							sb_block + sb_offset +
+								12,
+							sb->sb.s_free_blocks_count);
+						block_cache_write(sb->cache,
+								  sb_block_num,
+								  sb_block);
+					}
+					kfree(sb_block);
+				}
+
+				uint32_t allocated = g * blocks_per_group + i +
+						     sb->sb.s_first_data_block;
+				*out_block = allocated;
+				kfree(bm);
+				kfree(gd_block);
+				return 0;
+			}
+		}
+
+		kfree(bm);
+		kfree(gd_block);
+	}
+
+	return -6; /* 空きなし */
+}
+
+/* 空きinodeを割り当てる（内部使用、簡易実装） */
+static int ext2_allocate_inode(struct ext2_super *sb, uint32_t *out_inode) {
+	if (!sb || !sb->cache || !out_inode)
+		return -1;
+
+	uint32_t bs = sb->block_size;
+	uint32_t inodes_per_group = sb->sb.s_inodes_per_group;
+
+	for (uint32_t g = 0; g < sb->num_groups; ++g) {
+		uint32_t gd_block_num = sb->group_desc_offset + (g * 32) / bs;
+		uint32_t gd_off = (g * 32) % bs;
+
+		uint8_t *gd_block = (uint8_t *)kmalloc(bs);
+		if (!gd_block)
+			return -2;
+		if (block_cache_read(sb->cache, gd_block_num, gd_block) != 0) {
+			kfree(gd_block);
+			continue;
+		}
+
+		uint32_t inode_bitmap = le32(gd_block + gd_off + 4);
+
+		uint8_t *bm = (uint8_t *)kmalloc(bs);
+		if (!bm) {
+			kfree(gd_block);
+			return -3;
+		}
+		if (block_cache_read(sb->cache, inode_bitmap, bm) != 0) {
+			kfree(bm);
+			kfree(gd_block);
+			continue;
+		}
+
+		for (uint32_t i = 0; i < inodes_per_group; ++i) {
+			uint32_t byte_idx = i / 8;
+			uint8_t bit_mask = (uint8_t)(1u << (i % 8));
+			if ((bm[byte_idx] & bit_mask) == 0) {
+				bm[byte_idx] |= bit_mask;
+				if (block_cache_write(sb->cache, inode_bitmap,
+						      bm) != 0) {
+					kfree(bm);
+					kfree(gd_block);
+					return -4;
+				}
+
+				uint16_t bg_free_inodes =
+					le16(gd_block + gd_off + 14);
+				if (bg_free_inodes > 0)
+					bg_free_inodes -= 1;
+				write_le16(gd_block + gd_off + 14,
+					   bg_free_inodes);
+				if (block_cache_write(sb->cache, gd_block_num,
+						      gd_block) != 0) {
+					kfree(bm);
+					kfree(gd_block);
+					return -5;
+				}
+
+				if (sb->sb.s_free_inodes_count > 0)
+					sb->sb.s_free_inodes_count -= 1;
+				/* スーパーブロック書き戻し（簡易） */
+				uint32_t sb_block_num = 1024 / bs;
+				uint8_t *sb_block = (uint8_t *)kmalloc(bs);
+				if (sb_block) {
+					if (block_cache_read(sb->cache,
+							     sb_block_num,
+							     sb_block) == 0) {
+						uint32_t sb_offset = 1024 % bs;
+						write_le32(
+							sb_block + sb_offset +
+								16,
+							sb->sb.s_free_inodes_count);
+						block_cache_write(sb->cache,
+								  sb_block_num,
+								  sb_block);
+					}
+					kfree(sb_block);
+				}
+
+				uint32_t inode_num =
+					g * inodes_per_group + i + 1;
+				*out_inode = inode_num;
+				kfree(bm);
+				kfree(gd_block);
+				return 0;
+			}
+		}
+
+		kfree(bm);
+		kfree(gd_block);
+	}
+
+	return -6; /* 空きなし */
+}
+
+/* inodeをディスクに書き込む（簡易実装） */
+int ext2_write_inode(struct ext2_super *sb, uint32_t inode_num,
+		     struct ext2_inode *inode) {
+	if (!sb || !sb->cache || !inode || inode_num == 0)
+		return -1;
+
+	uint32_t inode_index = inode_num - 1;
+	uint32_t group = inode_index / sb->sb.s_inodes_per_group;
+	uint32_t local_index = inode_index % sb->sb.s_inodes_per_group;
+	if (group >= sb->num_groups)
+		return -2;
+
+	uint32_t bs = sb->block_size;
+	uint32_t gd_block_num = sb->group_desc_offset + (group * 32) / bs;
+	uint32_t gd_off = (group * 32) % bs;
+
+	uint8_t *gd_block = (uint8_t *)kmalloc(bs);
+	if (!gd_block)
+		return -3;
+	if (block_cache_read(sb->cache, gd_block_num, gd_block) != 0) {
+		kfree(gd_block);
+		return -4;
+	}
+
+	uint32_t inode_table = le32(gd_block + gd_off + 8);
+	uint32_t inode_size = (sb->sb.s_inode_size > 0) ? sb->sb.s_inode_size :
+							  128;
+	uint32_t inode_block_num =
+		inode_table + (local_index * inode_size) / bs;
+	uint32_t inode_offset_in_block = (local_index * inode_size) % bs;
+
+	uint8_t *inode_block = (uint8_t *)kmalloc(bs);
+	if (!inode_block) {
+		kfree(gd_block);
+		return -5;
+	}
+	if (block_cache_read(sb->cache, inode_block_num, inode_block) != 0) {
+		kfree(inode_block);
+		kfree(gd_block);
+		return -6;
+	}
+
+	/* 書き込み */
+	write_le16(inode_block + inode_offset_in_block + 0, inode->i_mode);
+	write_le16(inode_block + inode_offset_in_block + 2, inode->i_uid);
+	write_le32(inode_block + inode_offset_in_block + 4, inode->i_size);
+	write_le32(inode_block + inode_offset_in_block + 8, inode->i_atime);
+	write_le32(inode_block + inode_offset_in_block + 12, inode->i_ctime);
+	write_le32(inode_block + inode_offset_in_block + 16, inode->i_mtime);
+	write_le32(inode_block + inode_offset_in_block + 20, inode->i_dtime);
+	write_le16(inode_block + inode_offset_in_block + 24, inode->i_gid);
+	write_le16(inode_block + inode_offset_in_block + 26,
+		   inode->i_links_count);
+	write_le32(inode_block + inode_offset_in_block + 28, inode->i_blocks);
+	write_le32(inode_block + inode_offset_in_block + 32, inode->i_flags);
+	write_le32(inode_block + inode_offset_in_block + 36, inode->i_osd1);
+	for (int i = 0; i < 15; ++i) {
+		write_le32(inode_block + inode_offset_in_block + 40 + i * 4,
+			   inode->i_block[i]);
+	}
+	write_le32(inode_block + inode_offset_in_block + 100,
+		   inode->i_generation);
+	write_le32(inode_block + inode_offset_in_block + 104,
+		   inode->i_file_acl);
+	write_le32(inode_block + inode_offset_in_block + 108, inode->i_dir_acl);
+	write_le32(inode_block + inode_offset_in_block + 112, inode->i_faddr);
+
+	int w = block_cache_write(sb->cache, inode_block_num, inode_block);
+	kfree(inode_block);
+	kfree(gd_block);
+	return (w == 0) ? 0 : -7;
+}
+
+/* inodeのデータを書き込む（簡易実装: 直接ブロックのみ） */
+int ext2_write_inode_data(struct ext2_super *sb, struct ext2_inode *inode,
+			  const void *buf, size_t len, uint32_t offset,
+			  size_t *out_len) {
+	if (!sb || !sb->cache || !inode || !buf)
+		return -1;
+
+	uint32_t bs = sb->block_size;
+	uint32_t bytes_written = 0;
+	uint32_t current_offset = offset;
+
+	while (bytes_written < len) {
+		uint32_t block_idx = current_offset / bs;
+		uint32_t block_off = current_offset % bs;
+		if (block_idx >= 12) {
+			/* 直接ブロックのみ対応 */
+			break;
+		}
+
+		uint32_t block_num = inode->i_block[block_idx];
+		if (block_num == 0) {
+			uint32_t newb;
+			if (ext2_allocate_block(sb, &newb) != 0)
+				break;
+			inode->i_block[block_idx] = newb;
+			inode->i_blocks += bs / 512;
+			block_num = newb;
+		}
+
+		uint8_t *bbuf = (uint8_t *)kmalloc(bs);
+		if (!bbuf)
+			break;
+		if (block_cache_read(sb->cache, block_num, bbuf) != 0) {
+			for (uint32_t i = 0; i < bs; ++i)
+				bbuf[i] = 0;
+		}
+
+		uint32_t to_copy = bs - block_off;
+		if (to_copy > (len - bytes_written))
+			to_copy = (uint32_t)(len - bytes_written);
+
+		for (uint32_t i = 0; i < to_copy; ++i)
+			bbuf[block_off + i] =
+				((const uint8_t *)buf)[bytes_written + i];
+
+		if (block_cache_write(sb->cache, block_num, bbuf) != 0) {
+			kfree(bbuf);
+			break;
+		}
+		kfree(bbuf);
+
+		bytes_written += to_copy;
+		current_offset += to_copy;
+	}
+
+	uint32_t new_size = offset + bytes_written;
+	if (new_size > inode->i_size)
+		inode->i_size = new_size;
+	if (out_len)
+		*out_len = bytes_written;
+	return 0;
+}
+
+/* ブロック取得または割当て（簡易: 直接ブロックのみ） */
+int ext2_get_or_alloc_block(struct ext2_super *sb, struct ext2_inode *inode,
+			    uint32_t block_index, uint32_t *out_block_num) {
+	if (!sb || !sb->cache || !inode || !out_block_num)
+		return -1;
+
+	if (block_index < 12) {
+		uint32_t b = inode->i_block[block_index];
+		if (b == 0) {
+			uint32_t newb;
+			if (ext2_allocate_block(sb, &newb) != 0)
+				return -2;
+			inode->i_block[block_index] = newb;
+			*out_block_num = newb;
+			return 0;
+		}
+		*out_block_num = b;
+		return 0;
+	}
+	return -3; /* 非対応 */
+}
+
+/* ルート直下にファイルを作成（簡易実装） */
+int ext2_create_file(struct ext2_super *sb, const char *path, uint16_t mode,
+		     uint32_t *out_inode_num) {
+	if (!sb || !sb->cache || !path || !out_inode_num)
+		return -1;
+	/* パスは "/name" 形式のみ対応 */
+	if (path[0] != '/')
+		return -2;
+	const char *name = path + 1;
+	if (name[0] == '\0')
+		return -3;
+	for (const char *p = name; *p; ++p) {
+		if (*p == '/')
+			return -3;
+	}
+
+	/* 既存ファイルチェック */
+	struct ext2_inode root_inode;
+	if (ext2_read_inode(sb, EXT2_ROOT_INO, &root_inode) != 0)
+		return -4;
+	uint32_t existing;
+	if (ext2_find_file_in_dir(sb, &root_inode, name, &existing) == 0)
+		return -5; /* 既に存在 */
+
+	uint32_t new_inode_num;
+	if (ext2_allocate_inode(sb, &new_inode_num) != 0)
+		return -6;
+
+	struct ext2_inode new_inode;
+	mem_set(&new_inode, 0, sizeof(new_inode));
+	new_inode.i_mode = mode;
+	new_inode.i_uid = 0;
+	new_inode.i_gid = 0;
+	new_inode.i_size = 0;
+	new_inode.i_links_count = 1;
+	new_inode.i_blocks = 0;
+
+	if (ext2_write_inode(sb, new_inode_num, &new_inode) != 0)
+		return -7;
+
+	/* ルートディレクトリの最初のブロックにエントリを追加する */
+	uint32_t block_num = root_inode.i_block[0];
+	if (block_num == 0) {
+		uint32_t nb;
+		if (ext2_allocate_block(sb, &nb) != 0)
+			return -8;
+		root_inode.i_block[0] = nb;
+		root_inode.i_blocks += sb->block_size / 512;
+		root_inode.i_size += sb->block_size;
+	}
+
+	uint8_t *block = (uint8_t *)kmalloc(sb->block_size);
+	if (!block)
+		return -9;
+	if (block_cache_read(sb->cache, root_inode.i_block[0], block) != 0) {
+		/* 新規ブロックはゼロクリア */
+		for (uint32_t i = 0; i < sb->block_size; ++i)
+			block[i] = 0;
+	}
+
+	uint16_t name_len = (uint16_t)str_len(name);
+	uint16_t needed = (uint16_t)(((8 + name_len + 3) / 4) * 4);
+
+	uint32_t offset = 0;
+	uint32_t last_offset = 0;
+	uint16_t last_rec_len = 0;
+	uint8_t last_name_len = 0;
+	int found_slot = 0;
+
+	while (offset < sb->block_size) {
+		uint32_t ino = le32(block + offset + 0);
+		uint16_t rec_len = le16(block + offset + 4);
+		uint8_t nlen = block[offset + 6];
+		if (rec_len == 0)
+			break;
+		if (ino == 0 && rec_len >= needed) {
+			/* 空きエントリを利用 */
+			write_le32(block + offset + 0, new_inode_num);
+			write_le16(block + offset + 4, rec_len);
+			block[offset + 6] = (uint8_t)name_len;
+			block[offset + 7] = EXT2_FT_REG_FILE;
+			for (int i = 0; i < name_len; ++i)
+				block[offset + 8 + i] = name[i];
+			found_slot = 1;
+			break;
+		}
+		last_offset = offset;
+		last_rec_len = rec_len;
+		last_name_len = nlen;
+		offset += rec_len;
+	}
+
+	if (!found_slot) {
+		/* 最後のエントリを分割できるか試す */
+		if (last_rec_len == 0 ||
+		    last_offset + last_rec_len > sb->block_size) {
+			kfree(block);
+			return -10;
+		}
+		uint16_t minimal_last =
+			(uint16_t)(((8 + last_name_len + 3) / 4) * 4);
+		if (last_rec_len >= minimal_last + needed) {
+			/* 最後のエントリのrec_lenを縮小して新しいエントリを作る */
+			write_le16(block + last_offset + 4, minimal_last);
+			uint32_t new_off = last_offset + minimal_last;
+			uint16_t new_rec = last_rec_len - minimal_last;
+			write_le32(block + new_off + 0, new_inode_num);
+			write_le16(block + new_off + 4, new_rec);
+			block[new_off + 6] = (uint8_t)name_len;
+			block[new_off + 7] = EXT2_FT_REG_FILE;
+			for (int i = 0; i < name_len; ++i)
+				block[new_off + 8 + i] = name[i];
+			found_slot = 1;
+		}
+	}
+
+	if (!found_slot) {
+		kfree(block);
+		return -11;
+	}
+
+	if (block_cache_write(sb->cache, root_inode.i_block[0], block) != 0) {
+		kfree(block);
+		return -12;
+	}
+	kfree(block);
+
+	/* ルートinodeを書き戻す */
+	if (ext2_write_inode(sb, EXT2_ROOT_INO, &root_inode) != 0)
+		return -13;
+
+	*out_inode_num = new_inode_num;
 	return 0;
 }
 

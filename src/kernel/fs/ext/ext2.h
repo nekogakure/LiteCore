@@ -242,6 +242,49 @@ int ext2_read_file_by_path(struct ext2_super *sb, const char *path, void *buf,
 			   size_t len, uint32_t offset, size_t *out_len);
 
 /**
+ * @brief 空きブロックを割り当てる（簡易実装）
+ * @param sb マウント済みsuper
+ * @param out_block 割り当てられたブロック番号を返す
+ * @return 0 成功、負値はエラー
+ */
+int ext2_allocate_block(struct ext2_super *sb, uint32_t *out_block);
+
+/**
+ * @brief inodeの内容をディスクに書き込む（簡易実装）
+ * @param sb マウント済みsuper
+ * @param inode_num 書き込むinode番号
+ * @param inode 書き込むinodeデータ
+ * @return 0 成功、負値はエラー
+ */
+int ext2_write_inode(struct ext2_super *sb, uint32_t inode_num,
+		     struct ext2_inode *inode);
+
+/**
+ * @brief inodeのデータをファイルに書き込む（簡易実装、直接ブロックのみ）
+ * @param sb マウント済みsuper
+ * @param inode 書き込むinode（変更されたサイズ等はこの構造体に反映される）
+ * @param buf 書き込むデータ
+ * @param len 書き込むバイト数
+ * @param offset 書き込み開始オフセット
+ * @param out_len 実際に書き込んだバイト数を返す
+ * @return 0 成功、負値はエラー
+ */
+int ext2_write_inode_data(struct ext2_super *sb, struct ext2_inode *inode,
+			  const void *buf, size_t len, uint32_t offset,
+			  size_t *out_len);
+
+/**
+ * @brief パスでファイルを作成する（簡易実装: ルート直下のみ対応）
+ * @param sb マウント済みsuper
+ * @param path 作成するファイルパス（"/name" 形式のみサポート）
+ * @param mode ファイルモード
+ * @param out_inode 作成したinode番号を返す
+ * @return 0 成功、負値はエラー
+ */
+int ext2_create_file(struct ext2_super *sb, const char *path, uint16_t mode,
+		     uint32_t *out_inode_num);
+
+/**
  * @brief ディレクトリの内容を一覧表示する（デバッグ用）
  * @param sb マウント済みsuper
  * @param dir_inode ディレクトリのinode

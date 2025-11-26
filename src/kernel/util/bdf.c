@@ -1,10 +1,8 @@
-#include <fs/ext/ext2.h>
+#include <fs/vfs.h>
 #include <mem/manager.h>
 #include <util/bdf.h>
 #include <util/io.h>
 
-// グローバルext2ハンドル
-extern struct ext2_super *g_ext2_sb;
 
 static bdf_font_t font;
 static int initialized = 0;
@@ -233,57 +231,23 @@ int bdf_init(const char *path) {
 	if (initialized) {
 		return 1;
 	}
-
-	if (!g_ext2_sb) {
-		printk("BDF: ext2 filesystem not mounted\n");
+	void *buf = NULL;
+	uint32_t size = 0;
+	int r = vfs_read_file_all(path, &buf, &size);
+	if (r != 0) {
+		printk("BDF: Failed to read %s via VFS (err=%d)\n", path, r);
 		return 0;
 	}
-
-	// パスからinode番号を解決
-	uint32_t inode_num;
-	int result = ext2_resolve_path(g_ext2_sb, path, &inode_num);
-	if (result != 0) {
-		printk("BDF: Failed to resolve path %s\n", path);
+	if (!buf || size == 0 || size > 1024 * 1024) {
+		if (buf)
+			kfree(buf);
+		printk("BDF: Invalid file size: %u\n", (uint32_t)size);
 		return 0;
 	}
-
-	// inodeを読み取る
-	struct ext2_inode inode;
-	result = ext2_read_inode(g_ext2_sb, inode_num, &inode);
-	if (result != 0) {
-		printk("BDF: Failed to read inode\n");
-		return 0;
-	}
-
-	// ファイルサイズを取得
-	size_t file_size = inode.i_size;
-	if (file_size == 0 ||
-	    file_size > 1024 * 1024) { // 1MBを超える場合はエラー
-		printk("BDF: Invalid file size: %u\n", (uint32_t)file_size);
-		return 0;
-	}
-
-	// メモリを確保
-	char *buffer = (char *)kmalloc((uint32_t)file_size + 1);
-	if (!buffer) {
-		printk("BDF: Failed to allocate memory\n");
-		return 0;
-	}
-
-	// ファイルデータを読み込む
-	size_t bytes_read = 0;
-	result = ext2_read_inode_data(g_ext2_sb, &inode, buffer, file_size, 0,
-				      &bytes_read);
-	if (result != 0 || bytes_read == 0) {
-		printk("BDF: Failed to read file data\n");
-		kfree(buffer);
-		return 0;
-	}
-
-	buffer[bytes_read] = '\0';
+	char *buffer = (char *)buf;
 
 	// BDFファイルをパース
-	result = parse_bdf(buffer, bytes_read);
+	int result = parse_bdf(buffer, size);
 	kfree(buffer);
 
 	if (result) {

@@ -51,6 +51,12 @@ void run_test() {
 	new_line();
 #endif
 
+#ifdef FAT16_TEST
+	printk("> FAT16 TEST\n");
+	fat16_test();
+	new_line();
+#endif
+
 #ifdef EXT2_TEST
 	printk("> EXT2 TEST\n");
 	ext2_test();
