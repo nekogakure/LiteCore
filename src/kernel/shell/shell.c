@@ -3,7 +3,6 @@
 #include <shell/commands.h>
 #include <util/console.h>
 #include <device/keyboard.h>
-#include <fs/fs.h>
 
 #define SHELL_BUFFER_SIZE 256
 
