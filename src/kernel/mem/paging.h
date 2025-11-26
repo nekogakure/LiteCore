@@ -13,6 +13,10 @@ void paging_enable(void);
 void *alloc_page_table(void);
 int map_page(uint32_t phys, uint32_t virt, uint32_t flags);
 int unmap_page(uint32_t virt);
+// map/unmap into an arbitrary page directory (physical address)
+int map_page_pd(uint32_t pd_phys, uint32_t phys, uint32_t virt,
+               uint32_t flags);
+int unmap_page_pd(uint32_t pd_phys, uint32_t virt);
 int map_range(uint32_t phys_start, uint32_t virt_start, size_t size,
 	      uint32_t flags);
 void page_fault_handler_ex(uint32_t vec, uint32_t error_code, uint32_t eip);

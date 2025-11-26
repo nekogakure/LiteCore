@@ -94,6 +94,109 @@ int map_page(uint32_t phys, uint32_t virt, uint32_t flags) {
 }
 
 /**
+ * @fn map_page_pd
+ * @brief 指定のページディレクトリ（物理アドレスpd_phys）へ物理アドレスphysを
+ *        仮想アドレスvirtにflags属性でマッピングする
+ * @return 0: 成功 -1: 失敗
+ */
+int map_page_pd(uint32_t pd_phys, uint32_t phys, uint32_t virt,
+				uint32_t flags) {
+	if ((flags & PAGING_PRESENT) == 0)
+		flags |= PAGING_PRESENT;
+
+	uint32_t pd_idx = (virt >> 22) & 0x3FF;
+	uint32_t pt_idx = (virt >> 12) & 0x3FF;
+
+	uint32_t pd_virt = vmem_phys_to_virt(pd_phys);
+	if (pd_virt == 0) {
+		printk("map_page_pd: vmem_phys_to_virt returned 0 for pd_phys=0x%x\n",
+			   (unsigned)pd_phys);
+		return -1;
+	}
+
+	uint32_t *pd = (uint32_t *)(uintptr_t)pd_virt;
+	uint32_t pde = pd[pd_idx];
+	uint32_t *pt;
+	if ((pde & PAGING_PRESENT) == 0) {
+		void *new_pt_virt = alloc_page_table();
+		if (!new_pt_virt) {
+			printk("map_page_pd: alloc_page_table failed for pd_idx=%u\n",
+				   (unsigned)pd_idx);
+			return -1;
+		}
+		uint32_t new_pt_phys = vmem_virt_to_phys((uint32_t)(uintptr_t)new_pt_virt);
+		if (new_pt_phys == 0) {
+			printk("map_page_pd: vmem_virt_to_phys returned 0 for new_pt_virt=0x%x\n",
+				   (unsigned)(uintptr_t)new_pt_virt);
+			return -1;
+		}
+		pd[pd_idx] = (new_pt_phys & 0xFFFFF000) | (PAGING_PRESENT | PAGING_RW);
+		pt = (uint32_t *)new_pt_virt;
+	} else {
+		uint32_t pt_phys = pde & 0xFFFFF000;
+		uint32_t pt_virt = vmem_phys_to_virt(pt_phys);
+		if (pt_virt == 0) {
+			printk("map_page_pd: vmem_phys_to_virt returned 0 for pt_phys=0x%x (pd_idx=%u)\n",
+				   (unsigned)pt_phys, (unsigned)pd_idx);
+			return -1;
+		}
+		pt = (uint32_t *)(uintptr_t)pt_virt;
+	}
+
+	pt[pt_idx] = (phys & 0xFFFFF000) | (flags & 0xFFF);
+	invlpg((void *)(uintptr_t)virt);
+	return 0;
+}
+
+/**
+ * @fn unmap_page_pd
+ * @brief 指定ページディレクトリ(pd_phys)からvirtをアンマップする
+ */
+int unmap_page_pd(uint32_t pd_phys, uint32_t virt) {
+	uint32_t pd_idx = (virt >> 22) & 0x3FF;
+	uint32_t pt_idx = (virt >> 12) & 0x3FF;
+
+	uint32_t pd_virt = vmem_phys_to_virt(pd_phys);
+	if (pd_virt == 0) {
+		printk("unmap_page_pd: vmem_phys_to_virt returned 0 for pd_phys=0x%x\n",
+			   (unsigned)pd_phys);
+		return -1;
+	}
+	uint32_t *pd = (uint32_t *)(uintptr_t)pd_virt;
+
+	uint32_t pde = pd[pd_idx];
+	if ((pde & PAGING_PRESENT) == 0)
+		return -1;
+	uint32_t pt_phys = pde & 0xFFFFF000;
+	uint32_t pt_virt = vmem_phys_to_virt(pt_phys);
+	if (pt_virt == 0) {
+		printk("unmap_page_pd: vmem_phys_to_virt returned 0 for pt_phys=0x%x (pd_idx=%u)\n",
+			   (unsigned)pt_phys, (unsigned)pd_idx);
+		return -1;
+	}
+	uint32_t *pt = (uint32_t *)(uintptr_t)pt_virt;
+	if ((pt[pt_idx] & PAGING_PRESENT) == 0)
+		return -1;
+	pt[pt_idx] = 0;
+	invlpg((void *)(uintptr_t)virt);
+
+	// check if page table became empty -> free it and clear PDE
+	int empty = 1;
+	for (int i = 0; i < 1024; ++i) {
+		if (pt[i] & PAGING_PRESENT) {
+			empty = 0;
+			break;
+		}
+	}
+	if (empty) {
+		pd[pd_idx] = 0x00000000;
+		free_frame((void *)(uintptr_t)pt_phys);
+	}
+
+	return 0;
+}
+
+/**
  * @fn unmap_page
  * @brief 仮想アドレスvirtに対応するページをアンマップする
  * @param virt アンマップする仮想アドレス

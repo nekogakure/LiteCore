@@ -207,6 +207,10 @@ task_t *task_create(void (*entry)(void), const char *name, int kernel_mode) {
 		task->page_directory = current_cr3_val;
 		task->user_stack = 0;
 
+		/* init per-task brk */
+		task->user_brk = 0;
+		task->user_brk_size = 0;
+
 		// スタックの初期化：entry関数が戻る先としてtask_exitをpush
 		// task_switch は ret 命令で task->regs.rip にジャンプする
 		// entry 関数が ret で戻る時、スタックの task_exit にジャンプする
@@ -239,6 +243,10 @@ task_t *task_create(void (*entry)(void), const char *name, int kernel_mode) {
 		uint32_t ustack_virt =
 			vmem_phys_to_virt((uint32_t)(uintptr_t)ustack) + 0x1000;
 		task->user_stack = ustack_virt;
+
+		/* init per-task brk */
+		task->user_brk = 0;
+		task->user_brk_size = 0;
 
 		// レジスタを初期化
 		task->regs.rsp = ustack_virt;

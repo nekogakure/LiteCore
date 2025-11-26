@@ -12,6 +12,7 @@
 #define SYS_lseek 7
 #define SYS_open 8
 #define SYS_isatty 9
+#define SYS_get_reent 10
 
 void syscall_entry_c(uint64_t *regs_stack, uint32_t vec);
 
