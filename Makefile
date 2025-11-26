@@ -168,7 +168,7 @@ $(ESP_IMG): $(BOOTX64) $(KERNEL)
 
 $(EXT2_IMG): $(KERNEL)
 	@rm -f $(EXT2_IMG)
-	@echo "Creating ext2 filesystem image..."
+	@echo "Creating FAT16 filesystem image..."
 	@mkdir -p bin/fs_tmp/kernel/fonts
 	@cp -f $(FONTS) bin/fs_tmp/kernel/fonts/ 2>/dev/null || true
 	@find bin -type f \
@@ -179,9 +179,9 @@ $(EXT2_IMG): $(KERNEL)
 		-exec bash -c 'dest="bin/fs_tmp/$${1#bin/}"; mkdir -p "$$(dirname "$$dest")"; cp "$$1" "$$dest"' _ {} \;
 	@mkdir -p bin/fs_tmp
 	@cp README.md bin/fs_tmp/README.md 2>/dev/null || true
-	@python3 tools/mk_ext2_image.py $(EXT2_IMG) 256000 bin/fs_tmp
+	@python3 tools/mk_fat16_image.py $(EXT2_IMG) 256000 bin/fs_tmp
 	@rm -rf bin/fs_tmp/fs_content
-	@echo "ext2 image created: $(EXT2_IMG)"
+	@echo "fat16 image created: $(EXT2_IMG)"
 
 run: $(ESP_IMG) $(EXT2_IMG)
 	$(QEMU) $(QEMU_FLAGS) --drive file=$(ESP_IMG),format=raw -drive file=$(EXT2_IMG),format=raw,if=ide
